@@ -1,0 +1,10 @@
+{
+  "title": "Trellis 右侧任务阶段面板",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  }
+}
