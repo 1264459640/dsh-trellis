@@ -1,0 +1,11 @@
+{
+  "title": "精致小巧的 Trellis 任务看板 (Mini Kanban)",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "会话头部徽标点击展开 Mini 看板：两列活跃看板 + 按月折叠归档 + 详情面板 + 显式会话指针绑定/解绑（per-session 文件隔离）。"
+}

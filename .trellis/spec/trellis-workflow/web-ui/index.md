@@ -51,3 +51,22 @@
   `C:\Users\12644\.dsh\settings.yaml` 的 `trellis-workflow.allowlist` 时，该会话徽标按
   `no-match` 隐藏（属配置，非缺陷）；验证 UI 需把项目根加入 allowlist 并**重启 DSH**
   （静态 Cordis 插件改动无热重载）。
+
+## Mini 任务看板约定（feat-08-17-trellis-kanban 沉淀）
+
+7. **会话级活动任务解析**（`activeTaskForSession`）：本会话指针文件
+   `<sessionFileBasename(sessionId)>.json` 存在时以其 `current_task` 为准（含显式
+   `null` = 已解绑，**不回退** canonical）；文件不存在（legacy 会话）才回退
+   `activeTaskPointer` 项目级选择。`resolveProjectState` 带 sessionId 解析——
+   面包屑/trellis_state/chip 摘要三处一致，并行会话各绑各的任务互不覆盖。
+8. **看板 API**：`POST /trellis-workflow/api/board`（读取，trust-fence + 会话存活 +
+   header.cwd → allowlist；浏览器触发时允许直接 fs 读取，因其由用户显式打开、低频）；
+   `POST /trellis-workflow/api/bind`（变更）：请求只带 `{sessionId, taskSlug|null}`；
+   **项目 root 永远来自会话 header**，taskSlug 过白名单
+   `/^[A-Za-z0-9._-]{1,120}$/` + 对 root 存在性校验；只写本会话指针文件，写后刷新
+   chip 缓存（refreshSummary → lruSet）。浏览（board）绝不改状态；变更只有显式按钮。
+9. **归档按月份折叠**：slug `MM-DD` 段（`monthKeyFromSlug`）分组；completed 任务只读，
+   禁止激活；月份数字倒序、默认折叠、无时间戳 slug 归「其他」桶。
+10. **Cordis `ctx.inject(services, cb)` 回调收到的是子 Context**：`cb` 内
+    `web.fs`/`web.sessions`/`web.get('sandboxPolicy')` 均可直接使用（`web` = 子 ctx，
+    非首个服务对象）；依赖该形态写路由，勿假设参数是单个服务。
