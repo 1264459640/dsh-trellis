@@ -42,6 +42,12 @@ import {
   TASK_STATUSES,
   artifactTemplateNames,
 } from '../lib/task.js'
+import {
+  buildBoard,
+  readTask,
+  invalidateArchiveBucket,
+  clearArchiveCache,
+} from '../lib/board.js'
 
 test('meta constants', () => {
   assert.equal(NAME, 'trellis-workflow')
@@ -297,4 +303,111 @@ test('isTrustedApiRequest - trusted hosts allowlist', () => {
     ),
     false
   )
+})
+
+test('readTask parses task metadata and artifacts correctly', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-readtask-'))
+  try {
+    const taskDir = path.join(root, '.trellis', 'tasks', 'feat-08-18-test')
+    mkdirSync(taskDir, { recursive: true })
+    writeFileSync(
+      path.join(taskDir, 'task.json'),
+      JSON.stringify({
+        title: 'Test Feature',
+        status: 'in_progress',
+        work: { type: 'feat', stage: 'impl' },
+      })
+    )
+    writeFileSync(path.join(taskDir, 'prd.md'), '# PRD')
+    writeFileSync(path.join(taskDir, 'design.md'), '# Design')
+
+    const fs = mockFs(root)
+    const dirEntry = {
+      name: 'feat-08-18-test',
+      target: { targetKey: taskDir, displayPath: taskDir },
+    }
+    const res = await readTask(fs, dirEntry, { month: '2025-08', archived: false })
+    assert.ok(res)
+    assert.equal(res.slug, 'feat-08-18-test')
+    assert.equal(res.title, 'Test Feature')
+    assert.equal(res.status, 'in_progress')
+    assert.equal(res.workType, 'feat')
+    assert.equal(res.stage, 'impl')
+    assert.equal(res.month, '2025-08')
+    assert.equal(res.archived, false)
+    assert.ok(res.artifacts.includes('prd.md'))
+    assert.ok(res.artifacts.includes('design.md'))
+
+    // Missing task.json -> null
+    const emptyDir = path.join(root, '.trellis', 'tasks', 'empty-dir')
+    mkdirSync(emptyDir, { recursive: true })
+    const resEmpty = await readTask(fs, { name: 'empty-dir', target: { targetKey: emptyDir } }, { month: null, archived: false })
+    assert.equal(resEmpty, null)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('buildBoard resolves active tasks, archive buckets, and session pointers with caching', async () => {
+  clearArchiveCache()
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-board-'))
+  try {
+    const activeDir = path.join(root, '.trellis', 'tasks', 'feat-08-18-active')
+    mkdirSync(activeDir, { recursive: true })
+    writeFileSync(
+      path.join(activeDir, 'task.json'),
+      JSON.stringify({
+        title: 'Active Task',
+        status: 'planning',
+        work: { type: 'feat', stage: 'prd' },
+      })
+    )
+
+    const archiveDir = path.join(root, '.trellis', 'tasks', 'archive', '2025-07', 'feat-07-10-archived')
+    mkdirSync(archiveDir, { recursive: true })
+    writeFileSync(
+      path.join(archiveDir, 'task.json'),
+      JSON.stringify({
+        title: 'Archived Task',
+        status: 'completed',
+        work: { type: 'feat', stage: 'completed' },
+      })
+    )
+
+    const sessionsDir = path.join(root, '.trellis', '.runtime', 'sessions')
+    mkdirSync(sessionsDir, { recursive: true })
+    writeFileSync(
+      path.join(sessionsDir, 'session-abc.json'),
+      JSON.stringify({ current_task: '.trellis/tasks/feat-08-18-active' })
+    )
+
+    const fs = mockFs(root)
+    const board = await buildBoard(fs, root, 'session-abc')
+    assert.equal(board.kind, 'board')
+    assert.equal(board.currentTask, 'feat-08-18-active')
+    assert.equal(board.tasks.length, 2)
+
+    const activeItem = board.tasks.find((t) => t.slug === 'feat-08-18-active')
+    assert.ok(activeItem)
+    assert.equal(activeItem.status, 'planning')
+    assert.equal(activeItem.archived, false)
+
+    const archivedItem = board.tasks.find((t) => t.slug === 'feat-07-10-archived')
+    assert.ok(archivedItem)
+    assert.equal(archivedItem.status, 'completed')
+    assert.equal(archivedItem.archived, true)
+    assert.equal(archivedItem.month, '2025-07')
+
+    // Second run should use in-memory archive cache
+    const boardCached = await buildBoard(fs, root, 'session-abc')
+    assert.equal(boardCached.tasks.length, 2)
+
+    // Invalidation test
+    invalidateArchiveBucket(root, '2025-07')
+    const boardRevalidated = await buildBoard(fs, root, 'session-abc')
+    assert.equal(boardRevalidated.tasks.length, 2)
+  } finally {
+    clearArchiveCache()
+    rmSync(root, { recursive: true, force: true })
+  }
 })
