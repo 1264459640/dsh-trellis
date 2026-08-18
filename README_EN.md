@@ -110,7 +110,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # from a packed tarball (pnpm pack, no publishing involved)
-dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.2.tgz
+dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.3.tgz
 ```
 
 The package declares `dsh.bundle.patch` (its `cordis.patch.yml`), so `add` lets the loader's
