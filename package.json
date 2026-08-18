@@ -23,6 +23,7 @@
     "trellis-install": "./scripts/install.mjs"
   },
   "scripts": {
+    "test": "node --test test/**/*.test.js",
     "install:trellis": "node ./scripts/install.mjs"
   },
   "exports": {
@@ -40,7 +41,8 @@
     "lib",
     "skills",
     "scripts",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README_EN.md"
   ],
   "license": "MIT",
   "peerDependencies": {
