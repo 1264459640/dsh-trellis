@@ -1,7 +1,7 @@
 # trellis-workflow 自激活层（profile bundle patch）
 #
 # 本文件通过 package.json 的 `dsh.bundle.patch` 声明，随 `dsh plugin --profile
-# <name> add <本包>` 自动成为该 profile 的 bundle 层。`insert` 把插件行插入
+# web add <本包>` 自动成为该 profile 的 bundle 层。`insert` 把插件行插入
 # 合成树，从而激活注入层；`dsh plugin remove` 时随 bundle 一并移除。
 # 若需按项目覆盖配置（如 allowlist），可在 profile 的 cordis.patch.yml 里加
 # 同名 id 行仅写 config，loader 按 id 合并、profile 层优先。

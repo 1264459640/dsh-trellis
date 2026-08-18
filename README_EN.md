@@ -94,13 +94,13 @@ routing table), copied alongside into the project's `.agents/skills/_templates/`
 
 ```sh
 # from the npm registry (after publishing)
-dsh plugin --profile <name> add dsh-trellis
+dsh plugin --profile web add dsh-trellis
 
 # from a source checkout (development)
-dsh plugin --profile <name> add link:/abs/path/to/dsh-trellis
+dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # from a packed tarball (pnpm pack, no publishing involved)
-dsh plugin --profile <name> add file:/abs/path/to/dsh-trellis-0.1.0.tgz
+dsh plugin --profile web add file:/abs/path/to/dsh-trellis-0.1.0.tgz
 ```
 
 The package declares `dsh.bundle.patch` (its `cordis.patch.yml`), so `add` lets the loader's
@@ -109,13 +109,13 @@ reconcile merge it into the profile's `dsh.profile.bundles` layer stack — **re
 same CLI and clears the config row together with the dependency:
 
 ```sh
-dsh plugin --profile <name> remove dsh-trellis
+dsh plugin --profile web remove dsh-trellis
 ```
 
 <details>
 <summary><b>Manual install (bypass the CLI, step by step)</b></summary>
 
-1. `cd ~/.dsh/profiles/<name>`
+1. `cd ~/.dsh/profiles/web`
 2. Add `"dsh-trellis": "link:/abs/path/to/dsh-trellis"` to `package.json` dependencies, then run
    `pnpm install`
 3. Append the mount row to `cordis.patch.yml`:
@@ -136,10 +136,10 @@ dsh plugin --profile <name> remove dsh-trellis
 <summary><b>Update</b></summary>
 
 ```sh
-dsh plugin --profile <name> add dsh-trellis
+dsh plugin --profile web add dsh-trellis
 ```
 
-Re-run the command (or bump the version in `~/.dsh/profiles/<name>/package.json` and
+Re-run the command (or bump the version in `~/.dsh/profiles/web/package.json` and
 `pnpm install`). Host-half changes need a DSH restart; client-half changes only need a hard refresh.
 
 </details>
@@ -153,7 +153,7 @@ Re-run the command (or bump the version in `~/.dsh/profiles/<name>/package.json`
 | No "Trellis workflow" tab in Settings | The harness `WEB_SETTINGS_NAMESPACES` wasn't patched (run `node scripts/install.mjs --patch-harness`) or DSH wasn't restarted; alternatively edit the `trellis-workflow:` section in `$DSH_HOME/settings.yaml` (hot-reloaded) |
 | Breadcrumb never injects | Session cwd isn't under `allowlist`; the message contains `skipKeywords` (default `no-trellis`); or it isn't the `injectStep` (default 1) |
 | Settings break over LAN | Settings RPC is loopback-only (a harness-wide restriction) |
-| Stale link left in node_modules after remove | pnpm doesn't reap `link:` dependencies — inert and harmless; clean up with `node scripts/install.mjs --uninstall --profile <name>` |
+| Stale link left in node_modules after remove | pnpm doesn't reap `link:` dependencies — inert and harmless; clean up with `node scripts/install.mjs --uninstall --profile web` |
 
 </details>
 

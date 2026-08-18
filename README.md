@@ -80,13 +80,13 @@
 
 ```sh
 # 从 npm registry（发布后）
-dsh plugin --profile <name> add dsh-trellis
+dsh plugin --profile web add dsh-trellis
 
 # 从本地源码 checkout（开发）
-dsh plugin --profile <name> add link:/abs/path/to/dsh-trellis
+dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # 从打包 tarball（pnpm pack，无需发布）
-dsh plugin --profile <name> add file:/abs/path/to/dsh-trellis-0.1.0.tgz
+dsh plugin --profile web add file:/abs/path/to/dsh-trellis-0.1.0.tgz
 ```
 
 包声明了 `dsh.bundle.patch`（随包的 `cordis.patch.yml`），`add` 后由 loader 的 reconcile 自动把包
@@ -94,13 +94,13 @@ dsh plugin --profile <name> add file:/abs/path/to/dsh-trellis-0.1.0.tgz
 浏览器生效）。卸载同样走 CLI，配置行与依赖一并清除：
 
 ```sh
-dsh plugin --profile <name> remove dsh-trellis
+dsh plugin --profile web remove dsh-trellis
 ```
 
 <details>
 <summary><b>手动安装（绕过 CLI，想看清每一步）</b></summary>
 
-1. `cd ~/.dsh/profiles/<name>`
+1. `cd ~/.dsh/profiles/web`
 2. 在 `package.json` 的 dependencies 加 `"dsh-trellis": "link:/abs/path/to/dsh-trellis"`，然后
    `pnpm install`
 3. 在 `cordis.patch.yml` 追加挂载行：
@@ -120,10 +120,10 @@ dsh plugin --profile <name> remove dsh-trellis
 <summary><b>更新</b></summary>
 
 ```sh
-dsh plugin --profile <name> add dsh-trellis
+dsh plugin --profile web add dsh-trellis
 ```
 
-重跑一次即可（或改高 `~/.dsh/profiles/<name>/package.json` 里的版本后 `pnpm install`）。host 半
+重跑一次即可（或改高 `~/.dsh/profiles/web/package.json` 里的版本后 `pnpm install`）。host 半
 改动需重启 DSH；client 半改动硬刷新浏览器即可。
 
 </details>
@@ -137,7 +137,7 @@ dsh plugin --profile <name> add dsh-trellis
 | 设置页没有「Trellis 工作流」页签 | 未补丁 harness 的 `WEB_SETTINGS_NAMESPACES`（跑 `node scripts/install.mjs --patch-harness`）或未重启；也可直接编辑 `$DSH_HOME/settings.yaml` 的 `trellis-workflow:` 段（热重载） |
 | 面包屑不注入 | 会话 cwd 不在 `allowlist`；消息含 `skipKeywords`（默认 `no-trellis`）；不是 `injectStep`（默认 1） |
 | 局域网 IP 访问时设置功能失效 | 设置 RPC 仅对本机回环地址开放（harness 全局限制） |
-| remove 后 node_modules 残留链接 | pnpm 不回收 `link:` 依赖，惰性无害；可用 `node scripts/install.mjs --uninstall --profile <name>` 彻底清理 |
+| remove 后 node_modules 残留链接 | pnpm 不回收 `link:` 依赖，惰性无害；可用 `node scripts/install.mjs --uninstall --profile web` 彻底清理 |
 
 </details>
 
