@@ -27,12 +27,16 @@
    }
    ```
 3. 原生 `status` 仍只用：`planning` → `in_progress` → `completed`（archive）。
-4. 细阶段用 `work.stage` + 产物文件恢复；**仓库产物优先于聊天历史**。
-5. 写代码前读 `.trellis/spec/`（对应分层 + `guides/` 思考指南）。
-6. 规划/需求澄清加载 `trellis-brainstorm`；实现前 `trellis-before-dev`；质量门 `trellis-check`；
-   收工走原生 Trellis 生命周期（commit → `trellis-finish-work` / archive）；沉淀 `trellis-update-spec`。
-7. 人卡点未通过时，禁止写 `status=in_progress`（或禁止进入写码阶段）。
-8. **slug 规范**：新任务目录名必须为 `<work-type>-<mm-dd>-<短名>`（如 `feat-01-15-billing-export`，
+4. **归档用内置工具 `trellis_task_archive`**：把 `.trellis/tasks/<slug>/` 原子移入
+   `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 `<yyyy-mm>` = slug 的 `mm` + 当年
+   （与看板读取共用同一逻辑，写读永远一致；无 `mm-dd` 的遗留 slug 归 `other/`），并自动解绑
+   指向该任务的会话指针（归档任务只读，不再可激活）。归档**只移动、不删除**记录。
+5. 细阶段用 `work.stage` + 产物文件恢复；**仓库产物优先于聊天历史**。
+6. 写代码前读 `.trellis/spec/`（对应分层 + `guides/` 思考指南）。
+7. 规划/需求澄清加载 `trellis-brainstorm`；实现前 `trellis-before-dev`；质量门 `trellis-check`；
+   收工走原生 Trellis 生命周期（commit → `trellis-finish-work` / `trellis_task_archive`）；沉淀 `trellis-update-spec`。
+8. 人卡点未通过时，禁止写 `status=in_progress`（或禁止进入写码阶段）。
+9. **slug 规范**：新任务目录名必须为 `<work-type>-<mm-dd>-<短名>`（如 `feat-01-15-billing-export`，
    mm-dd 为创建日期）；插件每轮在 breadcrumb / `trellis_state` 校验，不合规会提示。
 
 ## 路由
@@ -88,7 +92,7 @@ Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review�
 |----------------|-----------------|
 | planning | feat: prd/design/design-review；issue: report/analyze；refactor: scan/design |
 | in_progress | feat: impl/review/check；issue: fix/fix-note；refactor: apply |
-| completed | archived |
+| completed | archived（`.trellis/tasks/archive/<yyyy-mm>/<slug>`） |
 
 ## 子代理
 

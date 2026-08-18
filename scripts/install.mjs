@@ -5,7 +5,7 @@
  * Wires a DSH profile so the plugin's injection layer actually loads:
  *
  *   1. dependency link  — ensures
- *      `<profile>/node_modules/dsh-trellis` is a junction to
+ *      `<profile>/node_modules/@banana-peeljj12/dsh-trellis` is a junction to
  *      this package (idempotent; recreates nothing that already points here);
  *   2. config row       — ensures `cordis.patch.yml` contains the
  *      `- id: trellis-workflow` loader row with the requested config
@@ -30,7 +30,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PLUGIN_ID = 'trellis-workflow'
-const PLUGIN_NAME = 'dsh-trellis'
+const PLUGIN_NAME = '@banana-peeljj12/dsh-trellis'
 const PKG_IN_NM = path.join('node_modules', PLUGIN_NAME)
 
 // ---------------------------------------------------------------------------
@@ -143,7 +143,8 @@ function dshHome() {
 /** This package is installed inside a profile's node_modules — derive the name. */
 function profileFromPackagePath() {
   const norm = PACKAGE_ROOT.replace(/\\/g, '/')
-  const m = /\/profiles\/([^/]+)\/node_modules\/dsh-trellis$/.exec(norm)
+  const escaped = PLUGIN_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = new RegExp(`/profiles/([^/]+)/node_modules/${escaped}$`).exec(norm)
   return m ? m[1] : null
 }
 

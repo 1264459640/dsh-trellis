@@ -8,4 +8,4 @@
 
 - insert:
     - id: trellis-workflow
-      name: 'dsh-trellis'
+      name: '@banana-peeljj12/dsh-trellis'

@@ -29,3 +29,33 @@
 
 - 绑定路由的 taskSlug 严格格式校验；目标 task.json 存在性校验；root 永远来自会话 header（请求只带 sessionId + taskSlug）。
 - 浏览（board）不改任何状态；变更只在显式按钮触发。
+
+## 修复（08-18）— 归档布局统一为 `.trellis/tasks/archive/yyyy-mm`
+
+用户验收发现：归档动作无任何实现/约定（收工落点随意）、看板只平铺读 `tasks/`（归档树不可见）、
+月份键只有 `mm`。统一决策：归档目标 `.trellis/tasks/archive/<yyyy-mm>/<slug>/`，月份键 =
+slug 的 `mm` + 当年 —— 写入与读取共用 `ymKeyFromSlug`，写读永远一致；无 `mm-dd` 的遗留 slug
+归 `other` 桶。
+
+### 新增
+- `trellis_task_archive` 模型工具（对照 `trellis_task_create` 的结构/沙箱/输出）：
+  completed 校验 → 原子移动 → 解绑指向该任务的会话指针。
+- `lib/archive.js`：`validateArchiveArgs` / `archiveTargetOf` / `archiveTaskRecord` /
+  `assertPolicyAllowsWrite`（+ `isPathUnder`）。
+- `ymKeyFromSlug(slug, year)`（state.js，写读共用）。
+- 迁移手段说明：dsh-fs 无 move/delete 原语，移动为**受控 node:fs 例外** —— slug 正则
+  `^[A-Za-z0-9._-]{1,120}$`、源/目标恒在 `root/.trellis/tasks/` 内（同盘 rename）、root 只取
+  会话 header allowlist 命中结果、对会话沙箱策略 fail-closed（read-only / workspace-write 越出
+  workspaceRoot 拒绝）；指针清理仍走 ctx.fs。
+
+### 修改
+- `buildBoard`：递归读活动树 `tasks/*`（跳过 `archive`，month=`ymKeyFromSlug`，archived:false）+
+  归档树 `tasks/archive/<bucket>/*`（month=桶名，archived:true）；同 slug 归档副本优先。
+- `KanbanArchive`（client.js）：键为 `yyyy-mm`/`other`，按 (年,月) 倒序、键即标签（中文仍显示桶名
+  如 `2025-08`），兜底 `其他` 不变。
+- 技能/文档：`trellis-finish-work` 改用 `trellis_task_archive` 收工；`work-types.md`、README 明示
+  布局与受控例外。
+
+### 验证
+- `npm test`：17/17 全绿 —— 含 `archiveTaskRecord` 端到端（原子移动 + 产物随迁 + 会话指针解绑 +
+  completed 守卫 + legacy → other 桶）与 `assertPolicyAllowsWrite` 失败闭合。

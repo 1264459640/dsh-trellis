@@ -45,6 +45,12 @@ keep their accumulated spec**.
   type, initializes `.trellis/templates/` on first use, **and synchronously updates the
   `current_task` pointer in `.trellis/.runtime/sessions/`** — fixing the classic "task created but
   session not synced, so no active task resolves".
+- 🗄️ **One-shot archiving** — `trellis_task_archive` (used by `trellis-finish-work` at wrap-up)
+  atomically moves a completed task into `.trellis/tasks/archive/<yyyy-mm>/<slug>/` — month key =
+  the slug's `mm` + the current year, computed by the SAME helper the kanban board reader uses, so
+  writing and reading always agree; legacy slugs without an `mm-dd` segment go under `other/`. It
+  also unbinds every session that had the task bound (archived tasks are read-only and leave the
+  active board). Archiving moves the record — it never deletes it.
 - 🔍 **Phase diagnostics** — `trellis_state` answers "which workflow phase is this project in" and
   validates the active task slug.
 - 🏷️ **Web phase chip & Mini kanban** — on web profiles, a chip appears at the right of the session header
@@ -72,6 +78,10 @@ here, MIT), driven by the `_templates/work-types.md` routing table:
 
 - Native `status` stays `planning` → `in_progress` → `completed` (archive); fine-grained stages
   live in `work.stage` + artifact files, and **repository artifacts win over chat history**.
+- Archive layout (write/read consistent): a completed task is moved by `trellis_task_archive` to
+  `.trellis/tasks/archive/<yyyy-mm>/<slug>/`, month key = the slug's `mm` + the current year
+  (e.g. `feat-08-15-x` → `2025-08`; legacy slugs without an `mm-dd` go under `other/`); the kanban
+  reads the archive tree with the same rule and folds it by `yyyy-mm`.
 - The `standard` lane has **human checkpoints**: design needs user approval, design-review needs an
   independent reviewer pass, check must pass before archive; a failing checkpoint forbids writing
   `status=in_progress`.
@@ -94,13 +104,13 @@ routing table), copied alongside into the project's `.agents/skills/_templates/`
 
 ```sh
 # from the npm registry (after publishing)
-dsh plugin --profile web add dsh-trellis
+dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 
 # from a source checkout (development)
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # from a packed tarball (pnpm pack, no publishing involved)
-dsh plugin --profile web add file:/abs/path/to/dsh-trellis-0.1.0.tgz
+dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.2.tgz
 ```
 
 The package declares `dsh.bundle.patch` (its `cordis.patch.yml`), so `add` lets the loader's
@@ -109,20 +119,38 @@ reconcile merge it into the profile's `dsh.profile.bundles` layer stack — **re
 same CLI and clears the config row together with the dependency:
 
 ```sh
-dsh plugin --profile web remove dsh-trellis
+dsh plugin --profile web remove @banana-peeljj12/dsh-trellis
 ```
+
+### ⚠️ Important: Configure Project Allowlist
+
+> **Note**: By default, the allowlist is empty (`allowlist: []`). After installing and mounting the plugin, **you must add your project root path to the allowlist** for breadcrumb injection, skill provisioning, task tools, and kanban features to take effect for that project.
+
+Three ways to configure the allowlist:
+
+1. **Web Settings (Recommended, takes effect immediately without restart)**:
+   Restart DSH and refresh the browser, navigate to **Settings → Plugins → Trellis workflow**, add your project's absolute path (e.g. `/path/to/your/project`) under **Allowlist Projects (allowlist)**, and click Save.
+2. **User Settings File (`settings.yaml`, hot-reloaded)**:
+   Edit `~/.dsh/settings.yaml` (or `%USERPROFILE%\.dsh\settings.yaml` on Windows):
+   ```yaml
+   trellis-workflow:
+     allowlist:
+       - /path/to/your/project
+   ```
+3. **Profile Configuration (`cordis.patch.yml`)**:
+   Specify `allowlist` in `~/.dsh/profiles/web/cordis.patch.yml` under the plugin configuration (see below).
 
 <details>
 <summary><b>Manual install (bypass the CLI, step by step)</b></summary>
 
 1. `cd ~/.dsh/profiles/web`
-2. Add `"dsh-trellis": "link:/abs/path/to/dsh-trellis"` to `package.json` dependencies, then run
+2. Add `"@banana-peeljj12/dsh-trellis": "link:/abs/path/to/dsh-trellis"` to `package.json` dependencies, then run
    `pnpm install`
 3. Append the mount row to `cordis.patch.yml`:
    ```yaml
    - insert:
        - id: trellis-workflow
-         name: 'dsh-trellis'
+         name: '@banana-peeljj12/dsh-trellis'
    ```
 4. Restart DSH; hard-refresh the browser (Cmd/Ctrl+Shift+R)
 
@@ -136,7 +164,7 @@ dsh plugin --profile web remove dsh-trellis
 <summary><b>Update</b></summary>
 
 ```sh
-dsh plugin --profile web add dsh-trellis
+dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 ```
 
 Re-run the command (or bump the version in `~/.dsh/profiles/web/package.json` and
@@ -149,7 +177,7 @@ Re-run the command (or bump the version in `~/.dsh/profiles/web/package.json` an
 
 | Symptom | Cause / fix |
 |---|---|
-| Nothing takes effect | Host-half changes don't hot-reload: restart DSH; client-half changes need a hard browser refresh |
+| Nothing takes effect | 1. Project not added to allowlist (default is empty, add your project root path in Settings or settings.yaml); 2. Host-half changes don't hot-reload: restart DSH; 3. Client-half changes need a hard browser refresh |
 | No "Trellis workflow" tab in Settings | The harness `WEB_SETTINGS_NAMESPACES` wasn't patched (run `node scripts/install.mjs --patch-harness`) or DSH wasn't restarted; alternatively edit the `trellis-workflow:` section in `$DSH_HOME/settings.yaml` (hot-reloaded) |
 | Breadcrumb never injects | Session cwd isn't under `allowlist`; the message contains `skipKeywords` (default `no-trellis`); or it isn't the `injectStep` (default 1) |
 | Settings break over LAN | Settings RPC is loopback-only (a harness-wide restriction) |
@@ -170,7 +198,7 @@ Mount row in `cordis.patch.yml` (or the host profile):
 
 ```yaml
 - id: trellis-workflow
-  name: 'dsh-trellis'
+  name: '@banana-peeljj12/dsh-trellis'
   config:
     allowlist:
       - /path/to/your/project
@@ -210,11 +238,12 @@ directly into `$DSH_HOME/settings.yaml` — hot-reloaded, equally restart-free.
 
 ```
 dsh-trellis/
-  package.json            # ESM cordis plugin package (name: dsh-trellis, MIT)
+  package.json            # ESM cordis plugin package (name: @banana-peeljj12/dsh-trellis, MIT)
   cordis.patch.yml        # dsh.bundle.patch self-activating layer (insert row)
   lib/
     index.js              # entry: agent/pre-step breadcrumb + skill provisioning + trellis_state / trellis_task_create + Web chip
     task.js               # trellis_task_create write side: slug validation / task.json / template seeding / session pointer sync
+    archive.js            # trellis_task_archive write side: archive target / completed guard / atomic move (guarded node:fs) / pointer unbind
     resolve.js            # cwd → project root + .trellis asset paths
     state.js              # phase resolution: session → active task → status → phase + workflow.md breadcrumb + summary/track
     breadcrumb.js         # createUserMessage injection + no-trellis escape hatch
@@ -256,9 +285,16 @@ legacy installer `scripts/install.mjs` remains available as an alternative (it d
 - The route sits behind a loopback trust fence (loopback host + same-origin markers, mirroring the
   official `isTrustedApiRequest` semantics) plus method / path / body-size checks; errors return
   stable status words only, leaking nothing internal.
-- Task creation and skill copying go through `ctx.fs` with a per-call sandbox policy; sandbox
+- Task creation, archive pointer cleanup and skill copying go through `ctx.fs` with a per-call
+  sandbox policy; sandbox
   denials map to the standard `[sandbox: …]` marker and follow the same escalation flow as the
   harness's own editor tools.
+- The archive **directory move** is a documented, controlled exception (dsh-fs has no
+  move/delete primitive, and the harness's own model file tools expose none either): it uses a
+  `node:fs` atomic rename, but the slug is strictly regex-validated, source and target always stay
+  inside `.trellis/tasks/` (same drive), the root comes only from the session header allowlist
+  match, and the move is fail-closed on the session's sandbox policy (read-only denies;
+  workspace-write denies outside its `workspaceRoot`) — no silent bypass in any confined mode.
 - A skill-provisioning failure only warns and never breaks the current turn's injection (the
   missing skills can be copied on a later turn).
 

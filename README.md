@@ -39,6 +39,10 @@
   （status=planning）+ 播种该工作类型的产物模板 + 首次使用初始化 `.trellis/templates/` + **同步写
   `.trellis/.runtime/sessions/` 的 `current_task` 指针**」——修掉"只建 task 不同步 session，导致
   解析不到 active task"的常见问题。
+- 🗄️ **归档一步到位**：`trellis_task_archive`（配合收工走 `trellis-finish-work`）把已完成任务原子
+  移入 `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 = slug 的 `mm` + 当年，与看板读取共用
+  同一辅助函数，**写读永远一致**；无 `mm-dd` 的遗留 slug 归 `other/`。自动解绑所有指向该任务的
+  会话指针（归档任务只读、不再占活跃看板），归档只移动、不删除记录。
 - 🔍 **阶段诊断**：`trellis_state` 工具随时回答"某项目当前处于工作流的哪个阶段"，并校验任务 slug。
 - 🏷️ **Web 阶段徽标 & Mini 任务看板**：web profile 下会话标题行右侧嵌入一枚徽标（官方 additive 座位
   `conversation.session.header.utilities`），紧凑展示当前活动任务的类型与阶段（如 `功能 · design`），
@@ -60,6 +64,10 @@
 
 - 原生 `status` 仍只用 `planning` → `in_progress` → `completed`（archive）；细阶段放在
   `work.stage` + 产物文件，**仓库产物优先于聊天历史**。
+- 归档布局（写读一致）：completed 任务经 `trellis_task_archive` 移入
+  `.trellis/tasks/archive/<yyyy-mm>/<slug>/`，月份键 = slug 的 `mm` + 当年（如 `feat-08-15-x` →
+  `2025-08`；无 `mm-dd` 的遗留 slug 归 `other/`）；看板按同一规则递归识别归档树并按 `yyyy-mm`
+  折叠展示。
 - Standard 车道带**人卡点**：design 需用户 approve、design-review 需独立 reviewer passed、check
   必须通过后才能 archive；人卡点未过时禁止写 `status=in_progress`。
 - 新任务目录名必须为 `<work-type>-<mm-dd>-<短名>`（mm-dd 为创建日期）。
@@ -80,13 +88,13 @@
 
 ```sh
 # 从 npm registry（发布后）
-dsh plugin --profile web add dsh-trellis
+dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 
 # 从本地源码 checkout（开发）
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # 从打包 tarball（pnpm pack，无需发布）
-dsh plugin --profile web add file:/abs/path/to/dsh-trellis-0.1.0.tgz
+dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.2.tgz
 ```
 
 包声明了 `dsh.bundle.patch`（随包的 `cordis.patch.yml`），`add` 后由 loader 的 reconcile 自动把包
@@ -94,20 +102,38 @@ dsh plugin --profile web add file:/abs/path/to/dsh-trellis-0.1.0.tgz
 浏览器生效）。卸载同样走 CLI，配置行与依赖一并清除：
 
 ```sh
-dsh plugin --profile web remove dsh-trellis
+dsh plugin --profile web remove @banana-peeljj12/dsh-trellis
 ```
+
+### ⚠️ 重要：配置项目白名单（Allowlist）
+
+> **注意**：插件安装后**默认白名单为空（`allowlist: []`）**。挂载插件后，**必须先将目标项目的根路径加入白名单**，插件的面包屑注入、技能自动供给、任务管理工具与阶段看板才会对该项目生效。
+
+添加白名单的三种方式：
+
+1. **Web 设置页（推荐，免重启即时生效）**：
+   重启 DSH 并刷新浏览器后，进入左侧边栏「**设置 → 插件 → Trellis 工作流**」，在「**白名单项目 (allowlist)**」输入框中添加项目绝对路径（如 `/path/to/your/project`），点击保存即可立即生效。
+2. **用户配置文件（`settings.yaml`，热重载）**：
+   编辑 `~/.dsh/settings.yaml`（Windows 为 `%USERPROFILE%\.dsh\settings.yaml`），添加：
+   ```yaml
+   trellis-workflow:
+     allowlist:
+       - /path/to/your/project
+   ```
+3. **Profile 配置文件（`cordis.patch.yml`）**：
+   在 profile 的 `cordis.patch.yml` 中为插件指定 `allowlist` 配置（见下方配置说明）。
 
 <details>
 <summary><b>手动安装（绕过 CLI，想看清每一步）</b></summary>
 
 1. `cd ~/.dsh/profiles/web`
-2. 在 `package.json` 的 dependencies 加 `"dsh-trellis": "link:/abs/path/to/dsh-trellis"`，然后
+2. 在 `package.json` 的 dependencies 加 `"@banana-peeljj12/dsh-trellis": "link:/abs/path/to/dsh-trellis"`，然后
    `pnpm install`
 3. 在 `cordis.patch.yml` 追加挂载行：
    ```yaml
    - insert:
        - id: trellis-workflow
-         name: 'dsh-trellis'
+         name: '@banana-peeljj12/dsh-trellis'
    ```
 4. 重启 DSH；浏览器硬刷新（Cmd/Ctrl+Shift+R）
 
@@ -120,7 +146,7 @@ dsh plugin --profile web remove dsh-trellis
 <summary><b>更新</b></summary>
 
 ```sh
-dsh plugin --profile web add dsh-trellis
+dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 ```
 
 重跑一次即可（或改高 `~/.dsh/profiles/web/package.json` 里的版本后 `pnpm install`）。host 半
@@ -133,7 +159,7 @@ dsh plugin --profile web add dsh-trellis
 
 | 现象 | 原因与解决 |
 |---|---|
-| 功能没生效 | host 半改动不热加载，重启 DSH；client 半改动硬刷新浏览器 |
+| 功能没生效 | ① 项目未加入白名单（默认 allowlist 为空，需在 Web 设置或 settings.yaml 中添加项目根路径）；② host 半改动不热加载，重启 DSH；③ client 半改动硬刷新浏览器 |
 | 设置页没有「Trellis 工作流」页签 | 未补丁 harness 的 `WEB_SETTINGS_NAMESPACES`（跑 `node scripts/install.mjs --patch-harness`）或未重启；也可直接编辑 `$DSH_HOME/settings.yaml` 的 `trellis-workflow:` 段（热重载） |
 | 面包屑不注入 | 会话 cwd 不在 `allowlist`；消息含 `skipKeywords`（默认 `no-trellis`）；不是 `injectStep`（默认 1） |
 | 局域网 IP 访问时设置功能失效 | 设置 RPC 仅对本机回环地址开放（harness 全局限制） |
@@ -154,7 +180,7 @@ dsh plugin --profile web add dsh-trellis
 
 ```yaml
 - id: trellis-workflow
-  name: 'dsh-trellis'
+  name: '@banana-peeljj12/dsh-trellis'
   config:
     allowlist:
       - /path/to/your/project
@@ -193,11 +219,12 @@ schema 默认值 <- cordis.patch.yml 的 config（base）<- Web 设置页的用�
 
 ```
 dsh-trellis/
-  package.json            # ESM cordis 插件包（name: dsh-trellis, MIT）
+  package.json            # ESM cordis 插件包（name: @banana-peeljj12/dsh-trellis, MIT）
   cordis.patch.yml        # dsh.bundle.patch 自激活层（insert 插件行）
   lib/
-    index.js              # 主入口：agent/pre-step 面包屑 + 技能供给 + trellis_state / trellis_task_create + Web 徽标
+    index.js              # 主入口：agent/pre-step 面包屑 + 技能供给 + trellis_state / trellis_task_create / trellis_task_archive + Web 徽标
     task.js               # trellis_task_create 写入侧：slug 校验 / task.json 构造 / 模板播种 / session 指针同步
+    archive.js            # trellis_task_archive 写入侧：归档目标 / completed 校验 / 原子移动（受控 node:fs）/ 指针解绑
     resolve.js            # cwd → 项目根 + .trellis 资产路径
     state.js              # 阶段解析：session → 活跃任务 → status → phase + workflow.md 面包屑 + 任务摘要/轨道
     breadcrumb.js         # createUserMessage 构造注入消息 + no-trellis 逃生口
@@ -236,8 +263,12 @@ dsh-trellis/
   空态，与未知会话不可区分，防探测）。
 - 路由受本地信任围栏保护（回环 host + 同源标记，等价官方 `isTrustedApiRequest` 语义），并做
   method / 路径 / 请求体大小校验；错误只返回稳定状态词，不泄露内部细节。
-- 任务创建与技能复制全部走 `ctx.fs` + 每调用沙箱策略；沙箱拒绝映射为标准 `[sandbox: …]` 标记，
-  与 harness 编辑工具走同一升级流程。
+- 任务创建、归档指针清理与技能复制全部走 `ctx.fs` + 每调用沙箱策略；沙箱拒绝映射为标准
+  `[sandbox: …]` 标记，与 harness 编辑工具走同一升级流程。
+- 归档的**目录移动**是文档化受控例外（dsh-fs 无 move/delete 原语，且 harness 模型文件工具也无）：
+  用 `node:fs` 原子 rename，但 slug 严格正则校验、源/目标恒在 `.trellis/tasks/` 内、root 只取会话
+  header 命中 allowlist 的结果，并对会话沙箱策略 fail-closed（read-only 拒绝；workspace-write 越出
+  workspaceRoot 拒绝）——任何受限模式下都不静默绕过。
 - 技能供给失败只告警、绝不打断当轮注入（缺失技能下轮可补复制）。
 
 ## ⚠️ 已知限制
