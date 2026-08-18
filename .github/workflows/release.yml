@@ -31,6 +31,11 @@ jobs:
           node-version: 22.x
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install --frozen-lockfile
+
       - name: Run unit tests
         run: npm test
 
