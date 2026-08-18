@@ -13,6 +13,11 @@
   🌏 <a href="./README.md"><b>中文</b></a> · <a href="./README_EN.md">English</a>
 </div>
 
+<p align="center">
+  <img src="./docs/images/web-phase-chip.png" width="49%" alt="Web 阶段徽标与阶段轨道" />
+  <img src="./docs/images/web-kanban.png" width="49%" alt="Mini 任务看板与归档折叠" />
+</p>
+
 `dsh-trellis` 是 [Trellis](https://github.com/mindfold-ai/trellis) 工作流在
 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）上的**适配移植**——
 本项目**只是**把 Trellis 的流程语义接到 DSH 上，不是新的工作流体系，也不属于
@@ -35,9 +40,9 @@
   `.trellis/.runtime/sessions/` 的 `current_task` 指针**」——修掉"只建 task 不同步 session，导致
   解析不到 active task"的常见问题。
 - 🔍 **阶段诊断**：`trellis_state` 工具随时回答"某项目当前处于工作流的哪个阶段"，并校验任务 slug。
-- 🏷️ **Web 阶段徽标**：web profile 下会话标题行右侧嵌入一枚徽标（官方 additive 座位
+- 🏷️ **Web 阶段徽标 & Mini 任务看板**：web profile 下会话标题行右侧嵌入一枚徽标（官方 additive 座位
   `conversation.session.header.utilities`），紧凑展示当前活动任务的类型与阶段（如 `功能 · design`），
-  悬停/点击展开该工作类型的完整阶段轨道；数据来自 host 按会话发布的**只读缓存摘要**，浏览器请求
+  悬停/点击展开该工作类型的完整阶段轨道与 Mini 任务看板（支持快速切换会话绑定的任务、按月份折叠查看归档任务）；数据来自 host 按会话发布的**只读缓存摘要**，浏览器请求
   绝不触发项目解析或文件读取。headless（无 web 服务）profile 下此功能整体不激活，其余功能不受影响。
 - ✅ **slug 校验**：活动任务目录必须符合 `<work-type>-<mm-dd>-<name>`（如
   `feat-01-15-billing-export`）；不合规时每轮面包屑与 `trellis_state` 都会给出修正提示。

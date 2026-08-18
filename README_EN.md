@@ -13,6 +13,11 @@
   🌏 <a href="./README.md">中文</a> · <a href="./README_EN.md"><b>English</b></a>
 </div>
 
+<p align="center">
+  <img src="./docs/images/web-phase-chip.png" width="49%" alt="Web phase chip and stage track popover" />
+  <img src="./docs/images/web-kanban.png" width="49%" alt="Mini task kanban board and monthly archive grouping" />
+</p>
+
 `dsh-trellis` is an **adaptation** of the [Trellis](https://github.com/mindfold-ai/trellis)
 workflow for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) — nothing
 more: it ports Trellis's workflow semantics onto DSH, and is neither a new workflow system nor an
@@ -42,9 +47,10 @@ keep their accumulated spec**.
   session not synced, so no active task resolves".
 - 🔍 **Phase diagnostics** — `trellis_state` answers "which workflow phase is this project in" and
   validates the active task slug.
-- 🏷️ **Web phase chip** — on web profiles, a chip appears at the right of the session header
+- 🏷️ **Web phase chip & Mini kanban** — on web profiles, a chip appears at the right of the session header
   (official additive seat `conversation.session.header.utilities`) showing the active task's type
-  and stage (e.g. `功能 · design`); hover/click expands the full stage track for that work type.
+  and stage (e.g. `功能 · design`); hover/click expands the full stage track for that work type and a
+  mini task kanban board (switch active task bindings, browse monthly archived tasks).
   Data comes from a host-side **read-only cache summary**; browser requests never trigger project
   resolution or file reads. Headless profiles (no web service) simply don't activate this feature;
   everything else is unaffected.
