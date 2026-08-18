@@ -23,7 +23,7 @@
     "trellis-install": "./scripts/install.mjs"
   },
   "scripts": {
-    "test": "node --test test/**/*.test.js",
+    "test": "node --test test/",
     "install:trellis": "node ./scripts/install.mjs"
   },
   "exports": {
