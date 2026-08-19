@@ -17,7 +17,7 @@ description: "Refactor workflow for behavior-preserving optimization, splitting,
    `scan.md` 等模板、并**同步写 `.trellis/.runtime/sessions/` 的 `current_task`**，面包屑/
    阶段/Web 徽标立即生效，无需手动写 session 文件）。slug=`<work-type>-<mm-dd>-<短名>`，
    如 `refactor-01-15-xxx`；工具会自动校验/推导。
-3. 写入扩展块：
+3. 更新阶段或状态使用内置工具 **`trellis_task_update`**（如 `status=in_progress, stage=apply`；自动校验轨道并刷新 Web 徽标）：
    ```json
    "work": { "type": "refactor", "mode": "standard", "stage": "scan" }
    ```

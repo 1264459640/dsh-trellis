@@ -39,6 +39,7 @@
   （status=planning）+ 播种该工作类型的产物模板 + 首次使用初始化 `.trellis/templates/` + **同步写
   `.trellis/.runtime/sessions/` 的 `current_task` 指针**」——修掉"只建 task 不同步 session，导致
   解析不到 active task"的常见问题。
+- 🔄 **更新任务与状态流转**：`trellis_task_update` 支持原子更新任务的 `status`（`planning` / `in_progress` / `completed`）、`work.stage`、`mode`、`title` 与 `description`。省略 `slug` 时自动作用于当前 session 绑定的活动任务，并对工作流 stage 轨道合法性进行校验，更新后自动刷新 Web 状态徽标缓存。
 - 🗄️ **归档一步到位**：`trellis_task_archive`（配合收工走 `trellis-finish-work`）把已完成任务原子
   移入 `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 = slug 的 `mm` + 当年，与看板读取共用
   同一辅助函数，**写读永远一致**；无 `mm-dd` 的遗留 slug 归 `other/`。自动解绑所有指向该任务的
@@ -222,8 +223,8 @@ dsh-trellis/
   package.json            # ESM cordis 插件包（name: @banana-peeljj12/dsh-trellis, MIT）
   cordis.patch.yml        # dsh.bundle.patch 自激活层（insert 插件行）
   lib/
-    index.js              # 主入口：agent/pre-step 面包屑 + 技能供给 + trellis_state / trellis_task_create / trellis_task_archive + Web 徽标
-    task.js               # trellis_task_create 写入侧：slug 校验 / task.json 构造 / 模板播种 / session 指针同步
+    index.js              # 主入口：agent/pre-step 面包屑 + 技能供给 + trellis_state / trellis_task_create / trellis_task_update / trellis_task_archive + Web 徽标
+    task.js               # task 创建与更新：slug 校验 / task.json 构造与修改 / 模板播种 / session 指针同步
     archive.js            # trellis_task_archive 写入侧：归档目标 / completed 校验 / 原子移动（受控 node:fs）/ 指针解绑
     resolve.js            # cwd → 项目根 + .trellis 资产路径
     state.js              # 阶段解析：session → 活跃任务 → status → phase + workflow.md 面包屑 + 任务摘要/轨道

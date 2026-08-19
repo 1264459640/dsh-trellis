@@ -17,7 +17,7 @@ description: "Feature workflow for new functionality or feature rework: resume a
    slug 必须为 `<work-type>-<mm-dd>-<短名>`，如 `feat-01-15-xxx`；工具会自动校验/推导。
 2. 若有 active task：用 `trellis_state` 或读 `.trellis/.runtime/sessions/*.json` 的
    `current_task` 恢复；也可加载 `trellis-continue`。
-3. 在 `task.json` 写入/更新扩展块（保留原生 status 字段）：
+3. 更新阶段或状态使用内置工具 **`trellis_task_update`**（如 `status=in_progress, stage=impl`；自动校验轨道并刷新 Web 徽标）：
    ```json
    "work": { "type": "feat", "mode": "standard", "stage": "prd", "execution_lane": "standard" }
    ```

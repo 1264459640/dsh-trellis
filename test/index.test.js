@@ -44,6 +44,9 @@ import {
   TASK_STATUSES,
   artifactTemplateNames,
   createTaskRecord,
+  validateUpdateArgs,
+  updateTaskRecord,
+  findActiveTaskSlug,
   CANONICAL_SESSION_FILE,
 } from '../lib/task.js'
 import {
@@ -475,6 +478,140 @@ test('createTaskRecord with sessionId writes ONLY the session file and does not 
 
     const sessionBContent = JSON.parse(readFileSync(path.join(sessionsDir, 'sess_b.json'), 'utf8'))
     assert.equal(sessionBContent.current_task, '.trellis/tasks/feat-08-18-task-b')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('validateUpdateArgs validates status, mode, title and rejects empty updates', () => {
+  // Empty arguments
+  assert.equal(validateUpdateArgs({}).ok, false)
+  assert.equal(validateUpdateArgs(null).ok, false)
+
+  // Valid updates
+  const valid1 = validateUpdateArgs({ status: 'in_progress', stage: 'impl' })
+  assert.equal(valid1.ok, true)
+  assert.equal(valid1.args.status, 'in_progress')
+  assert.equal(valid1.args.stage, 'impl')
+
+  const valid2 = validateUpdateArgs({ mode: 'quick', title: 'New Title', description: 'Updated desc' })
+  assert.equal(valid2.ok, true)
+  assert.equal(valid2.args.mode, 'quick')
+  assert.equal(valid2.args.title, 'New Title')
+  assert.equal(valid2.args.description, 'Updated desc')
+
+  // Invalid status
+  const invalidStatus = validateUpdateArgs({ status: 'invalid_status' })
+  assert.equal(invalidStatus.ok, false)
+  assert.match(invalidStatus.error, /status 必须是/)
+
+  // Invalid mode
+  const invalidMode = validateUpdateArgs({ mode: 'ultra' })
+  assert.equal(invalidMode.ok, false)
+  assert.match(invalidMode.error, /mode 必须是/)
+
+  // Empty title string
+  const emptyTitle = validateUpdateArgs({ title: '   ' })
+  assert.equal(emptyTitle.ok, false)
+  assert.match(emptyTitle.error, /title 不能为空字符串/)
+})
+
+test('updateTaskRecord updates fields, validates stage on track, and handles session active task resolution', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-update-test-'))
+  try {
+    const fs = mockFs(root)
+    const taskDir = path.join(root, '.trellis', 'tasks', 'feat-08-19-demo')
+    mkdirSync(taskDir, { recursive: true })
+    writeFileSync(
+      path.join(taskDir, 'task.json'),
+      JSON.stringify({
+        title: 'Initial Title',
+        status: 'planning',
+        work: {
+          type: 'feat',
+          mode: 'standard',
+          stage: 'prd',
+          execution_lane: 'standard',
+        },
+      }),
+    )
+
+    const sessionsDir = path.join(root, '.trellis', '.runtime', 'sessions')
+    mkdirSync(sessionsDir, { recursive: true })
+    writeFileSync(
+      path.join(sessionsDir, 'sess_test.json'),
+      JSON.stringify({ current_task: '.trellis/tasks/feat-08-19-demo' }),
+    )
+
+    // 1. Update with invalid stage for feat track -> fail
+    const resInvalidStage = await updateTaskRecord(
+      fs,
+      root,
+      { slug: 'feat-08-19-demo', stage: 'invalid_stage' },
+      { sessionId: 'sess_test' },
+    )
+    assert.equal(resInvalidStage.ok, false)
+    assert.match(resInvalidStage.error, /stage 不在 feat 轨道上/)
+
+    // 2. Update status and stage with explicit slug
+    const resValid = await updateTaskRecord(
+      fs,
+      root,
+      {
+        slug: 'feat-08-19-demo',
+        status: 'in_progress',
+        stage: 'impl',
+        title: 'Updated Title',
+        mode: 'quick',
+        description: 'New Description',
+      },
+      { sessionId: 'sess_test' },
+    )
+    assert.equal(resValid.ok, true)
+    assert.equal(resValid.slug, 'feat-08-19-demo')
+    assert.equal(resValid.taskJson.title, 'Updated Title')
+    assert.equal(resValid.taskJson.status, 'in_progress')
+    assert.equal(resValid.taskJson.work.stage, 'impl')
+    assert.equal(resValid.taskJson.work.mode, 'quick')
+    assert.equal(resValid.taskJson.work.execution_lane, 'quick')
+    assert.equal(resValid.taskJson.description, 'New Description')
+
+    // Verify task.json written on disk
+    const saved = JSON.parse(readFileSync(path.join(taskDir, 'task.json'), 'utf8'))
+    assert.equal(saved.title, 'Updated Title')
+    assert.equal(saved.status, 'in_progress')
+    assert.equal(saved.work.stage, 'impl')
+
+    // 3. Update with omitted slug (resolves from session pointer)
+    const resAutoSlug = await updateTaskRecord(
+      fs,
+      root,
+      { stage: 'review' },
+      { sessionId: 'sess_test' },
+    )
+    assert.equal(resAutoSlug.ok, true)
+    assert.equal(resAutoSlug.slug, 'feat-08-19-demo')
+    assert.equal(resAutoSlug.taskJson.work.stage, 'review')
+
+    // 4. Update non-existent task
+    const resNotFound = await updateTaskRecord(
+      fs,
+      root,
+      { slug: 'feat-08-19-nonexistent', status: 'completed' },
+      { sessionId: 'sess_test' },
+    )
+    assert.equal(resNotFound.ok, false)
+    assert.match(resNotFound.error, /任务不存在/)
+
+    // 5. Update with omitted slug when session has no active task
+    const resNoActive = await updateTaskRecord(
+      fs,
+      root,
+      { status: 'completed' },
+      { sessionId: 'sess_other' },
+    )
+    assert.equal(resNoActive.ok, false)
+    assert.match(resNoActive.error, /未指定 slug 且当前 session 未绑定任何活动任务/)
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

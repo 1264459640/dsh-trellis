@@ -58,6 +58,41 @@ export interface TrellisTaskCreateResult {
   initialized: string[] | null
 }
 
+/** Shape returned by the `trellis_task_update` tool. */
+export interface TrellisTaskUpdateResult {
+  ok: boolean
+  /** Human-readable error when ok=false, else null. */
+  error: string | null
+  /** Allowlist-matched project root (empty when outside the allowlist). */
+  project: string | null
+  /** Updated task slug (`<work-type>-<mm-dd>-<name>`), null on failure. */
+  slug: string | null
+  /** Task dir reference (".trellis/tasks/<slug>"), null on failure. */
+  taskDir: string | null
+  title: string | null
+  status: string | null
+  workType: string | null
+  stage: string | null
+  phase: TrellisPhase | null
+  /** Bound runtime session file (e.g. "sess_abc.json"), null on failure or unbound. */
+  boundSessionFile: string | null
+}
+
+/** Shape returned by the `trellis_task_archive` tool. */
+export interface TrellisTaskArchiveResult {
+  ok: boolean
+  /** Human-readable error when ok=false, else null. */
+  error: string | null
+  /** Allowlist-matched project root. */
+  project: string | null
+  slug: string | null
+  taskDir: string | null
+  month: string | null
+  bucket: string | null
+  archivedAt: string | null
+  unbound: string[] | null
+}
+
 /** Plugin configuration. */
 export interface TrellisWorkflowConfig {
   /** Project roots allowed to receive a breadcrumb. */

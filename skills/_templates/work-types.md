@@ -15,7 +15,8 @@
 2. **建 task 用内置工具 `trellis_task_create`**：它会写 `.trellis/tasks/<slug>/task.json`
    （status=planning）、播种产物模板，并**同步写 `.trellis/.runtime/sessions/` 的
    `current_task`**，让面包屑/阶段/Web 徽标立即生效。不要手动建目录或手写 session 文件。
-2. `task.json` 扩展字段（手写维护，不破坏原生 status）：
+3. **更新 task 状态与阶段用内置工具 `trellis_task_update`**：支持安全修改 `status`、`stage`、`mode`、`title` 与 `description`，自动校验工作流轨道并实时刷新 Web 状态徽标缓存（未指定 `slug` 时自动作用于当前会话绑定的活动任务）。
+4. `task.json` 扩展字段结构（由 `trellis_task_create` / `trellis_task_update` 维护，不破坏原生 status）：
    ```json
    {
      "work": {
@@ -26,8 +27,8 @@
      }
    }
    ```
-3. 原生 `status` 仍只用：`planning` → `in_progress` → `completed`（archive）。
-4. **归档用内置工具 `trellis_task_archive`**：把 `.trellis/tasks/<slug>/` 原子移入
+5. 原生 `status` 仍只用：`planning` → `in_progress` → `completed`（archive）。
+6. **归档用内置工具 `trellis_task_archive`**：把 `.trellis/tasks/<slug>/` 原子移入
    `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 `<yyyy-mm>` = slug 的 `mm` + 当年
    （与看板读取共用同一逻辑，写读永远一致；无 `mm-dd` 的遗留 slug 归 `other/`），并自动解绑
    指向该任务的会话指针（归档任务只读，不再可激活）。归档**只移动、不删除**记录。

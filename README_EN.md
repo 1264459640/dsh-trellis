@@ -45,6 +45,10 @@ keep their accumulated spec**.
   type, initializes `.trellis/templates/` on first use, **and synchronously updates the
   `current_task` pointer in `.trellis/.runtime/sessions/`** — fixing the classic "task created but
   session not synced, so no active task resolves".
+- 🔄 **Task update & stage transitions** — `trellis_task_update` updates an existing task's `status`
+  (`planning` / `in_progress` / `completed`), `work.stage`, `mode`, `title`, and `description`. When
+  `slug` is omitted, it defaults to the active task bound to this session, validates stage transitions
+  against the workType track, and synchronously refreshes the Web chip cache.
 - 🗄️ **One-shot archiving** — `trellis_task_archive` (used by `trellis-finish-work` at wrap-up)
   atomically moves a completed task into `.trellis/tasks/archive/<yyyy-mm>/<slug>/` — month key =
   the slug's `mm` + the current year, computed by the SAME helper the kanban board reader uses, so
@@ -241,8 +245,8 @@ dsh-trellis/
   package.json            # ESM cordis plugin package (name: @banana-peeljj12/dsh-trellis, MIT)
   cordis.patch.yml        # dsh.bundle.patch self-activating layer (insert row)
   lib/
-    index.js              # entry: agent/pre-step breadcrumb + skill provisioning + trellis_state / trellis_task_create + Web chip
-    task.js               # trellis_task_create write side: slug validation / task.json / template seeding / session pointer sync
+    index.js              # entry: agent/pre-step breadcrumb + skill provisioning + trellis_state / trellis_task_create / trellis_task_update / trellis_task_archive + Web chip
+    task.js               # task creation & update: slug validation / task.json / template seeding / session pointer sync
     archive.js            # trellis_task_archive write side: archive target / completed guard / atomic move (guarded node:fs) / pointer unbind
     resolve.js            # cwd → project root + .trellis asset paths
     state.js              # phase resolution: session → active task → status → phase + workflow.md breadcrumb + summary/track
