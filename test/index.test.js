@@ -18,6 +18,8 @@ import {
   monthKeyFromSlug,
   ymKeyFromSlug,
   TRACKS,
+  activeTaskForSession,
+  activeTaskPointer,
 } from '../lib/state.js'
 import { isTrustedApiRequest } from '../lib/trust.js'
 import {
@@ -41,6 +43,8 @@ import {
   WORK_TYPES,
   TASK_STATUSES,
   artifactTemplateNames,
+  createTaskRecord,
+  CANONICAL_SESSION_FILE,
 } from '../lib/task.js'
 import {
   buildBoard,
@@ -408,6 +412,70 @@ test('buildBoard resolves active tasks, archive buckets, and session pointers wi
     assert.equal(boardRevalidated.tasks.length, 2)
   } finally {
     clearArchiveCache()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('activeTaskForSession enforces strict per-session isolation without cross-session bleeding', () => {
+  const sessions = [
+    { name: 'dsh-session.json', taskDir: '.trellis/tasks/global-task' },
+    { name: 'sess_a.json', taskDir: '.trellis/tasks/task-a' },
+    { name: 'sess_b.json', taskDir: '.trellis/tasks/task-b' },
+    { name: 'sess_unbound.json', taskDir: null },
+  ]
+
+  // Session A resolves task-a
+  assert.equal(activeTaskForSession(sessions, 'sess_a.json'), '.trellis/tasks/task-a')
+  // Session B resolves task-b
+  assert.equal(activeTaskForSession(sessions, 'sess_b.json'), '.trellis/tasks/task-b')
+  // Session C (no file) must resolve to null, NOT fallback to global or another session
+  assert.equal(activeTaskForSession(sessions, 'sess_c.json'), null)
+  // Unbound session resolves to null
+  assert.equal(activeTaskForSession(sessions, 'sess_unbound.json'), null)
+  // No session specified (fallback/headless) picks global canonical
+  assert.equal(activeTaskForSession(sessions, null), '.trellis/tasks/global-task')
+})
+
+test('createTaskRecord with sessionId writes ONLY the session file and does not clobber other sessions', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-create-session-'))
+  try {
+    const fs = mockFs(root)
+    const sessionsDir = path.join(root, '.trellis', '.runtime', 'sessions')
+    mkdirSync(sessionsDir, { recursive: true })
+
+    // Session A already working on Task A
+    writeFileSync(
+      path.join(sessionsDir, 'sess_a.json'),
+      JSON.stringify({ current_task: '.trellis/tasks/feat-08-18-task-a' }),
+    )
+
+    // Session B creates Task B
+    const res = await createTaskRecord(
+      fs,
+      root,
+      {
+        workType: 'feat',
+        title: 'Task B',
+        mode: 'standard',
+        status: 'planning',
+        slug: 'feat-08-18-task-b',
+      },
+      { sessionId: 'sess_b' },
+    )
+
+    assert.equal(res.ok, true)
+    // Only sess_b.json should be written
+    assert.deepEqual(res.sessionFiles, ['sess_b.json'])
+    assert.equal(existsSync(path.join(sessionsDir, 'sess_b.json')), true)
+    assert.equal(existsSync(path.join(sessionsDir, 'dsh-session.json')), false)
+
+    // Session A pointer must NOT be affected
+    const sessionAContent = JSON.parse(readFileSync(path.join(sessionsDir, 'sess_a.json'), 'utf8'))
+    assert.equal(sessionAContent.current_task, '.trellis/tasks/feat-08-18-task-a')
+
+    const sessionBContent = JSON.parse(readFileSync(path.join(sessionsDir, 'sess_b.json'), 'utf8'))
+    assert.equal(sessionBContent.current_task, '.trellis/tasks/feat-08-18-task-b')
+  } finally {
     rmSync(root, { recursive: true, force: true })
   }
 })
