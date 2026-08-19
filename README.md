@@ -94,7 +94,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 
 # 从打包 tarball（pnpm pack，无需发布）
-dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.4.tgz
+dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.5.tgz
 ```
 
 包声明了 `dsh.bundle.patch`（随包的 `cordis.patch.yml`），`add` 后由 loader 的 reconcile 自动把包
