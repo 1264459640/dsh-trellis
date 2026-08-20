@@ -616,3 +616,62 @@ test('updateTaskRecord updates fields, validates stage on track, and handles ses
     rmSync(root, { recursive: true, force: true })
   }
 })
+
+test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-guard-test-'))
+  const { execFileSync } = await import('node:child_process')
+  try {
+    execFileSync('git', ['init'], { cwd: root, stdio: 'pipe' })
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: root, stdio: 'pipe' })
+    execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: root, stdio: 'pipe' })
+
+    const fs = mockFs(root)
+    const resCreate = await createTaskRecord(fs, root, {
+      title: 'Git Guard Test',
+      workType: 'feat',
+      slug: 'feat-08-20-git-test',
+    })
+    assert.equal(resCreate.ok, true)
+
+    // Initial commit so repo has a HEAD
+    execFileSync('git', ['add', '.'], { cwd: root, stdio: 'pipe' })
+    execFileSync('git', ['commit', '-m', 'Initial commit'], { cwd: root, stdio: 'pipe' })
+
+    // 1. Create a dirty file in working tree
+    writeFileSync(path.join(root, 'dirty.js'), 'console.log(1)')
+
+    // 2. updateTaskRecord with status=completed should fail
+    const updateFail = await updateTaskRecord(fs, root, {
+      slug: 'feat-08-20-git-test',
+      status: 'completed',
+    })
+    assert.equal(updateFail.ok, false)
+    assert.match(updateFail.error, /\[trellis\/git_dirty\]/)
+    assert.match(updateFail.error, /dirty\.js/)
+
+    // 3. updateTaskRecord with force=true should succeed
+    const updateForce = await updateTaskRecord(fs, root, {
+      slug: 'feat-08-20-git-test',
+      status: 'completed',
+      force: true,
+    })
+    assert.equal(updateForce.ok, true)
+    assert.equal(updateForce.taskJson.status, 'completed')
+
+    // 4. archiveTaskRecord on dirty repo should fail
+    const archiveFail = await archiveTaskRecord(fs, root, {
+      slug: 'feat-08-20-git-test',
+    })
+    assert.equal(archiveFail.ok, false)
+    assert.match(archiveFail.error, /\[trellis\/git_dirty\]/)
+
+    // 5. archiveTaskRecord with force=true should succeed
+    const archiveForce = await archiveTaskRecord(fs, root, {
+      slug: 'feat-08-20-git-test',
+      force: true,
+    })
+    assert.equal(archiveForce.ok, true)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})

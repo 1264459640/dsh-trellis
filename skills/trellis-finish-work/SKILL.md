@@ -11,7 +11,9 @@ Run this skill to finish a task that has been archived or reported completed.
 
 1. **Confirm commit state.** If the working tree is dirty, return to the commit
    step and land the work commits first — never interleave bookkeeping commits
-   with work commits.
+   with work commits. Note: `trellis_task_update(status: 'completed')` and
+   `trellis_task_archive` enforce a hard git cleanliness guardrail and will
+   reject operations if uncommitted code changes exist in the workspace.
 2. **Run the commit flow** (work commits → archive commit → journal commit) if it
    has not already happened. Do not `git push` unless the user asks.
 3. **Archive the completed task.** A task whose `status` is `completed` leaves
