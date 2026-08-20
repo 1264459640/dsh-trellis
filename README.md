@@ -2,182 +2,167 @@
 
 <!-- Hero -->
 <div align="center">
-  <b style="font-size: 1.15em;">Trellis 工作流适配进 DeepSeek Harness —— 每步触发 · 技能引导 · 阶段可见</b><br /><br />
+  <b style="font-size: 1.25em;">Trellis 工作流适配进 DeepSeek Harness</b><br />
+  <sub>让 AI 编程先规划后动手 · 步骤清晰 · 阶段可视 · 告别失控</sub><br /><br />
   <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
-  <img alt="每步触发" src="https://img.shields.io/badge/-每步触发-4d6bfe" /> <img alt="技能供给" src="https://img.shields.io/badge/-技能供给-4d6bfe" /> <img alt="建任务工具" src="https://img.shields.io/badge/-建任务工具-4d6bfe" /> <img alt="Web 阶段徽标" src="https://img.shields.io/badge/-Web%20阶段徽标-4d6bfe" /><br /><br />
-  <b>每回合注入项目任务状态面包屑</b>，把 <code>trellis-*</code> 技能随项目供给，<br />
-  并提供建任务 / 查阶段的原生工具与 Web 界面阶段徽标。
+  <img alt="Node Version" src="https://img.shields.io/badge/Node.js-≥20-green.svg" />
+  <img alt="每步提醒" src="https://img.shields.io/badge/-每步提醒-4d6bfe" />
+  <img alt="技能自供给" src="https://img.shields.io/badge/-技能自供给-4d6bfe" />
+  <img alt="Web 看板" src="https://img.shields.io/badge/-Web%20看板-4d6bfe" />
+  <br /><br />
+  <b>每轮对话自动注入任务状态面包屑</b>，把 15+ <code>trellis-*</code> 工作流技能随项目自动补齐，<br />
+  并提供开箱即用的任务管理工具与 Web 端可视化阶段徽标 / Mini 任务看板。
 </div>
 
 <div align="center">
   🌏 <a href="./README.md"><b>中文</b></a> · <a href="./README_EN.md">English</a>
 </div>
 
+<br />
+
 <p align="center">
   <img src="./docs/images/web-phase-chip.png" width="49%" alt="Web 阶段徽标与阶段轨道" />
   <img src="./docs/images/web-kanban.png" width="49%" alt="Mini 任务看板与归档折叠" />
 </p>
 
-`dsh-trellis` 是 [Trellis](https://github.com/mindfold-ai/trellis) 工作流在
-[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）上的**适配移植**——
-本项目**只是**把 Trellis 的流程语义接到 DSH 上，不是新的工作流体系，也不属于
-[Mindfold](https://mindfold.ai) 的官方产物。**自包含、MIT、零外部运行时**：不需要 Python、
-不携带任何 Trellis AGPL 源码，状态机与技能内容均为本包重写；运行时按各项目自身的 `.trellis/`
-读取，因此**直接继承已有 Trellis 项目的沉淀**。
+---
 
-## ✨ 功能一览
+## 💡 为什么需要 dsh-trellis？
 
-- 🧭 **每步触发（面包屑注入）**：订阅 `agent/pre-step` waterfall，命中白名单项目后读取
-  `.trellis/.runtime/sessions/*.json` 的 `current_task` → `task.json.status` → 阶段，并把一条
-  user 角色面包屑注入本轮消息流（等价 Trellis 官方 per-turn breadcrumb，提醒而非强制）。只在新
-  用户消息的首步注入；消息含 `no-trellis` 等关键词时整轮跳过。
-- 🧩 **技能随项目供给**：15 个 `trellis-*` 技能随包携带（包内 `skills/` 为权威副本），会话开始时
-  检测项目 `.agents/skills/`——缺则复制（含共享 `_templates/`）、有则跳过；由 harness 内置的
-  `dsh-skill-filesystem` provider 从项目根发现（`source: project-agents`），**无需注册、无需改
-  profile**。项目可自由增改自己的技能副本，删掉的技能下轮自动补回。
-- 🛠️ **建任务一步到位**：`trellis_task_create` 一次性完成「写 `.trellis/tasks/<slug>/task.json`
-  （status=planning）+ 播种该工作类型的产物模板 + 首次使用初始化 `.trellis/templates/` + **同步写
-  `.trellis/.runtime/sessions/` 的 `current_task` 指针**」——修掉"只建 task 不同步 session，导致
-  解析不到 active task"的常见问题。
-- 🔄 **更新任务与状态流转**：`trellis_task_update` 支持原子更新任务的 `status`（`planning` / `in_progress` / `completed`）、`work.stage`、`mode`、`title` 与 `description`。省略 `slug` 时自动作用于当前 session 绑定的活动任务，并对工作流 stage 轨道合法性进行校验，更新后自动刷新 Web 状态徽标缓存。
-- 🗄️ **归档一步到位**：`trellis_task_archive`（配合收工走 `trellis-finish-work`）把已完成任务原子
-  移入 `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 = slug 的 `mm` + 当年，与看板读取共用
-  同一辅助函数，**写读永远一致**；无 `mm-dd` 的遗留 slug 归 `other/`。自动解绑所有指向该任务的
-  会话指针（归档任务只读、不再占活跃看板），归档只移动、不删除记录。
-- 🔍 **阶段诊断**：`trellis_state` 工具随时回答"某项目当前处于工作流的哪个阶段"，并校验任务 slug。
-- 🏷️ **Web 阶段徽标 & Mini 任务看板**：web profile 下会话标题行右侧嵌入一枚徽标（官方 additive 座位
-  `conversation.session.header.utilities`），紧凑展示当前活动任务的类型与阶段（如 `功能 · design`），
-  悬停/点击展开该工作类型的完整阶段轨道与 Mini 任务看板（支持快速切换会话绑定的任务、按月份折叠查看归档任务）；数据来自 host 按会话发布的**只读缓存摘要**，浏览器请求
-  绝不触发项目解析或文件读取。headless（无 web 服务）profile 下此功能整体不激活，其余功能不受影响。
-- ✅ **slug 校验**：活动任务目录必须符合 `<work-type>-<mm-dd>-<name>`（如
-  `feat-01-15-billing-export`）；不合规时每轮面包屑与 `trellis_state` 都会给出修正提示。
+在日常使用 AI Agent 写代码时，你是否经常遇到这些痛点：
+- 🤯 **聊着聊着就跑偏**：多轮对话后，AI 忘了原本的目标是什么，开始乱改不相干的代码。
+- 🏃 **不假思索直接瞎写**：提一个新需求，AI 连架构和影响面都没搞清楚就直接写代码，产生大量回归 Bug。
+- ❓ **进度完全黑盒**：不知道 AI 到底在做需求设计、写代码还是在做测试，卡住了也难以排查。
 
-## 🧠 工作流模型
+**`dsh-trellis` 把成熟的 [Trellis](https://github.com/mindfold-ai/trellis) 结构化工程工作流带到了 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness)。**
 
-插件内置三类工作流——通用化改编自 [CodeStable](https://github.com/codestable/CodeStable)
-（FTM/CodeStable 思路，内容为本包重写、MIT），由 `_templates/work-types.md` 路由表驱动：
+它让 AI 像资深工程师一样工作：
+1. 🧠 **有记忆、不迷路**：每轮对话开始时，插件会自动将当前任务进度和阶段目标提醒给 AI。
+2. 📐 **先规划、后动手**：遵循规范的工作流——做功能先写 PRD/方案，修 Bug 先分析定位，通过审查验收后再归档。
+3. 📊 **直观可视化**：Web 界面右上角常驻当前任务徽标，点击一键展开任务看板与阶段进度，随时切换与回顾。
+4. 🪶 **轻量零负担**：纯 Node.js ESM 实现，零外部依赖，不需要 Python，不侵入项目源码。
 
-| 工作类型 | 入口技能 | 阶段轨道 | 说明 |
-|---|---|---|---|
-| 新功能 / 功能改造 | `trellis-feat` | prd → design → design-review → impl → review → check | quick / standard 两条车道 |
-| Bug / 异常 / 回归 | `trellis-issue` | report → analyze → fix → fix-note | 反复调试时配合 `trellis-break-loop` |
-| 行为等价重构 | `trellis-refactor` | scan → design → apply | 行为变更转 feat / issue |
+---
 
-- 原生 `status` 仍只用 `planning` → `in_progress` → `completed`（archive）；细阶段放在
-  `work.stage` + 产物文件，**仓库产物优先于聊天历史**。
-- 归档布局（写读一致）：completed 任务经 `trellis_task_archive` 移入
-  `.trellis/tasks/archive/<yyyy-mm>/<slug>/`，月份键 = slug 的 `mm` + 当年（如 `feat-08-15-x` →
-  `2025-08`；无 `mm-dd` 的遗留 slug 归 `other/`）；看板按同一规则递归识别归档树并按 `yyyy-mm`
-  折叠展示。
-- Standard 车道带**人卡点**：design 需用户 approve、design-review 需独立 reviewer passed、check
-  必须通过后才能 archive；人卡点未过时禁止写 `status=in_progress`。
-- 新任务目录名必须为 `<work-type>-<mm-dd>-<短名>`（mm-dd 为创建日期）。
+## ⚡ 30 秒极速上手
 
-随包 15 个技能（`skills/`，权威副本，按需复制到项目 `.agents/skills/`）：
+### 1. 安装插件
 
-`trellis-start` · `trellis-brainstorm` · `trellis-before-dev` · `trellis-check` ·
-`trellis-update-spec` · `trellis-finish-work` · `trellis-continue` · `trellis-break-loop` ·
-`trellis-channel` · `trellis-meta` · `trellis-session-insight` · `trellis-spec-bootstrap` ·
-`trellis-feat` · `trellis-issue` · `trellis-refactor`
-
-外加共享产物模板 `_templates/`（`feat/` `issue/` `refactor/` + `work-types.md` 路由表），随技能一并
-复制到项目 `.agents/skills/_templates/`。
-
-## 🚀 安装
-
-**前置**：DSH 已装好（`dsh web` 能正常运行），Node.js ≥ 20。
+确保环境满足 Node.js ≥ 20 且 DSH 正常运行，在终端执行：
 
 ```sh
-# 从 npm registry（发布后）
+# 安装插件
 dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 
-# 从本地源码 checkout（开发）
+# 更新插件到最新版本
+dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
+
+# 本地源码开发安装
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
-
-# 从打包 tarball（pnpm pack，无需发布）
-dsh plugin --profile web add file:/abs/path/to/banana-peeljj12-dsh-trellis-0.1.0-rc.5.tgz
 ```
 
-包声明了 `dsh.bundle.patch`（随包的 `cordis.patch.yml`），`add` 后由 loader 的 reconcile 自动把包
-并入该 profile 的 `dsh.profile.bundles` 层栈，**重启 DSH 即挂载**（host 半改动；client 半硬刷新
-浏览器生效）。卸载同样走 CLI，配置行与依赖一并清除：
+安装完成后，**重启一次 DSH 服务**。
 
-```sh
-dsh plugin --profile web remove @banana-peeljj12/dsh-trellis
+### 2. 添加项目到白名单
+
+插件默认不拦截未授权的项目。重启后，只需在 Web 界面完成一次配置：
+
+1. 刷新 DSH 浏览器页面。
+2. 点击左下角 **设置 → 插件 → Trellis 工作流**。
+3. 在 **白名单项目 (allowlist)** 中填入你的项目绝对路径（如 `/home/user/my-project` 或 `D:/projects/my-project`），点击保存即可**即时生效**。
+
+> 💡 也可以直接在 `~/.dsh/settings.yaml` 中配置 `trellis-workflow.allowlist`，详见下方配置章节。
+
+### 3. 开始使用！
+
+在会话中直接像平时一样提需求即可，例如：
+> *“帮我在用户系统里加一个微信扫码登录功能”*
+
+AI 将会自动识别意图，引导你创建 Trellis 任务（如 `feat-08-20-wechat-login`），生成 PRD 需求规划，一步一步稳健推进！
+
+---
+
+## 🧭 三大内置工作流
+
+`dsh-trellis` 内置了三套经过实战检验的标准工程流，由路由表自动分发：
+
+| 工作类型 | 入口技能 | 标准推进流程 | 适用场景 |
+|---|---|---|---|
+| **新功能开发** | `trellis-feat` | `需求规划 (prd)` → `方案设计 (design)` → `方案评审 (review)` → `代码实现 (impl)` → `代码审查 (review)` → `质量验收 (check)` | 新增功能、重构改版。支持快速通道 (quick) 与标准通道 (standard) |
+| **缺陷修复** | `trellis-issue` | `问题报告 (report)` → `根因分析 (analyze)` → `精准修复 (fix)` → `修复记录 (fix-note)` | Bug 修复、异常排查、性能回归。遇死循环可自动调用 `trellis-break-loop` |
+| **行为重构** | `trellis-refactor` | `代码扫描 (scan)` → `重构方案 (design)` → `实施改造 (apply)` | 保持外部行为不变的代码优化、结构拆分、技术债清理 |
+
+### 🚀 快速通道 vs 🛡️ 标准通道
+- **快速通道 (`quick`)**：适用于局部小改动、挂载点明确的轻量任务，跳过繁重评审直接进入实现与验证。
+- **标准通道 (`standard`)**：关键节点设置**人工卡点**（如设计方案必须经由用户确认、代码必须通过独立 review 与测试验收后方可归档），适合中大型复杂特性。
+
+---
+
+## ✨ 核心特性一览
+
+### 1. 🧭 静默且聪明的状态提醒（面包屑注入）
+- 每当用户发送一条新消息时，插件会自动在首步为 AI 注入当前任务状态（包含当前处于哪个阶段、下一步该做什么）。
+- **不刷屏**：仅在每轮新消息的首步提醒，中间工具调用步骤保持干净。
+- **随时逃生**：只要用户消息中包含 `no-trellis` 关键字，该轮对话即完全跳过工作流拦截。
+
+### 2. 🧩 15+ 工作流技能随项目自动供给
+- 随包内置 15 个经过精细调优的 `trellis-*` 技能及模板（位于包内 `skills/`）。
+- 打开会话时，插件会自动检查项目根目录的 `.agents/skills/`，**缺什么补什么**，无需手动复制或修改 Profile。
+- 项目自身可以自由修改已生成的技能副本；如果不小心删除了，下一轮会自动补齐。
+
+### 3. 🏷️ Web 阶段徽标 & Mini 任务看板
+- 会话标题右侧优雅嵌入当前阶段徽标（如 `功能 · design`）。
+- 点击/悬停可展开当前工作类型的完整阶段轨道。
+- 点击可呼出 **Mini 任务看板**：
+  - 🔄 **快速切换**：在多个活跃任务之间一键切换会话绑定。
+  - 🗄️ **归档折叠**：自动按月份（如 `2025-08`）折叠已完成的历史任务，清晰易查。
+- 极致性能：全部基于 Host 端只读缓存摘要，浏览器端纯展示，绝不触发额外耗时扫描。
+
+### 4. 🛠️ 规范化的任务全生命周期工具
+- `trellis_task_create`：一键创建任务目录、初始化产物模板（prd/design）、规范命名格式（`<type>-<mm-dd>-<name>`），并同步绑定到当前会话。
+- `trellis_task_update`：原子化更新任务阶段（`stage`）与状态（`status`），自动校验阶段转移合法性并刷新界面徽标。
+- `trellis_task_archive`：任务完成后，一键移入归档目录，自动解绑会话指针，保持看板清爽。
+- `trellis_state`：随时诊断当前项目所处的工作流阶段与健康度。
+
+---
+
+## ⚙️ 详细配置
+
+插件支持通过 **Web 界面**（推荐）、**用户全局配置** 或 **Profile 补丁** 进行配置：
+
+### 配置项说明
+
+| 配置字段 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `allowlist` | `string[]` | `[]` | **核心白名单**：生效的项目根绝对路径列表。为空时不拦截任何项目 |
+| `injectStep` | `number` | `1` | 面包屑注入步数（默认 1，即每个新提问的首步注入） |
+| `skipKeywords` | `string[]` | `['no-trellis']` | 只要消息中包含这些单词，该轮对话不注入工作流面包屑 |
+| `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析 |
+
+### 方式一：Web 设置界面（免重启、即时生效）
+
+1. 重启 DSH 后，访问左下角 **设置 → 插件 → Trellis 工作流**。
+2. 增删白名单路径或调整参数，点击保存即刻写入生效。
+
+### 方式二：用户配置文件（`settings.yaml`，热重载）
+
+编辑 `~/.dsh/settings.yaml`（Windows 为 `%USERPROFILE%\.dsh\settings.yaml`）：
+
+```yaml
+trellis-workflow:
+  allowlist:
+    - /home/bananapeel/my-awesome-project
+    - /mnt/d/code/another-project
+  injectStep: 1
+  skipKeywords:
+    - no-trellis
+  inline: false
 ```
 
-### ⚠️ 重要：配置项目白名单（Allowlist）
-
-> **注意**：插件安装后**默认白名单为空（`allowlist: []`）**。挂载插件后，**必须先将目标项目的根路径加入白名单**，插件的面包屑注入、技能自动供给、任务管理工具与阶段看板才会对该项目生效。
-
-添加白名单的三种方式：
-
-1. **Web 设置页（推荐，免重启即时生效）**：
-   重启 DSH 并刷新浏览器后，进入左侧边栏「**设置 → 插件 → Trellis 工作流**」，在「**白名单项目 (allowlist)**」输入框中添加项目绝对路径（如 `/path/to/your/project`），点击保存即可立即生效。
-2. **用户配置文件（`settings.yaml`，热重载）**：
-   编辑 `~/.dsh/settings.yaml`（Windows 为 `%USERPROFILE%\.dsh\settings.yaml`），添加：
-   ```yaml
-   trellis-workflow:
-     allowlist:
-       - /path/to/your/project
-   ```
-3. **Profile 配置文件（`cordis.patch.yml`）**：
-   在 profile 的 `cordis.patch.yml` 中为插件指定 `allowlist` 配置（见下方配置说明）。
-
 <details>
-<summary><b>手动安装（绕过 CLI，想看清每一步）</b></summary>
+<summary><b>方式三：Profile 配置文件（cordis.patch.yml）</b></summary>
 
-1. `cd ~/.dsh/profiles/web`
-2. 在 `package.json` 的 dependencies 加 `"@banana-peeljj12/dsh-trellis": "link:/abs/path/to/dsh-trellis"`，然后
-   `pnpm install`
-3. 在 `cordis.patch.yml` 追加挂载行：
-   ```yaml
-   - insert:
-       - id: trellis-workflow
-         name: '@banana-peeljj12/dsh-trellis'
-   ```
-4. 重启 DSH；浏览器硬刷新（Cmd/Ctrl+Shift+R）
-
-> `@deepseek-ai/*` peer 依赖按 Node ESM 解析：包在 profile 之外时，需要让它们从 profile 的
-> hoisted `node_modules` 解析到（CLI 安装会自动处理）。
-
-</details>
-
-<details>
-<summary><b>更新</b></summary>
-
-```sh
-dsh plugin --profile web add @banana-peeljj12/dsh-trellis
-```
-
-重跑一次即可（或改高 `~/.dsh/profiles/web/package.json` 里的版本后 `pnpm install`）。host 半
-改动需重启 DSH；client 半改动硬刷新浏览器即可。
-
-</details>
-
-<details>
-<summary><b>常见问题</b></summary>
-
-| 现象 | 原因与解决 |
-|---|---|
-| 功能没生效 | ① 项目未加入白名单（默认 allowlist 为空，需在 Web 设置或 settings.yaml 中添加项目根路径）；② host 半改动不热加载，重启 DSH；③ client 半改动硬刷新浏览器 |
-| 设置页没有「Trellis 工作流」页签 | 未补丁 harness 的 `WEB_SETTINGS_NAMESPACES`（跑 `node scripts/install.mjs --patch-harness`）或未重启；也可直接编辑 `$DSH_HOME/settings.yaml` 的 `trellis-workflow:` 段（热重载） |
-| 面包屑不注入 | 会话 cwd 不在 `allowlist`；消息含 `skipKeywords`（默认 `no-trellis`）；不是 `injectStep`（默认 1） |
-| 局域网 IP 访问时设置功能失效 | 设置 RPC 仅对本机回环地址开放（harness 全局限制） |
-| remove 后 node_modules 残留链接 | pnpm 不回收 `link:` 依赖，惰性无害；可用 `node scripts/install.mjs --uninstall --profile web` 彻底清理 |
-
-</details>
-
-## ⚙️ 配置
-
-| 字段 | 类型 / 默认 | 说明 |
-|---|---|---|
-| `allowlist` | `string[]`，默认 `[]` | 注入白名单项目根（效果上的"工作区级"）；为空则不注入任何项目 |
-| `injectStep` | `number`，默认 `1` | 只在该步注入（1 = 每个新用户消息的首步），避免刷屏 |
-| `skipKeywords` | `string[]`，默认 `['no-trellis']` | 消息里出现这些独立单词时本轮跳过注入 |
-| `inline` | `boolean`，默认 `false` | 按 codex-inline 调度解析阶段名（`planning-inline` / `in_progress-inline`） |
-
-`cordis.patch.yml`（或宿主 profile）中挂载本插件的行：
+在当前使用的 profile 的 `cordis.patch.yml` 中直接声明：
 
 ```yaml
 - id: trellis-workflow
@@ -189,126 +174,81 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis
     skipKeywords: ['no-trellis']
     inline: false
 ```
-
-配置分层：
-
-```text
-schema 默认值 <- cordis.patch.yml 的 config（base）<- Web 设置页的用户文档
-```
-
-<details>
-<summary><b>Web 设置（白名单在线编辑，免重启）</b></summary>
-
-插件提供 host 侧设置命名空间 `trellis-workflow` 与一个随包分发的客户端设置页签（经 `dsh.client`
-清单由 web 自动加载）。**重启 DSH 后**，侧边栏「设置 → 插件」出现「Trellis 工作流」页签，可在线
-增删 `allowlist`（项目根）、改 `injectStep` / `skipKeywords` / `inline`；保存即写入用户设置文档并
-即时生效（下一轮注入即用新值），无需改 yml、无需重启。Web 里覆盖的字段优先于 patch.yml；重置后
-回落到 patch.yml / 默认值。
-
-**前置（path A，必须）**：harness 只向 Web 客户端暴露 `WEB_SETTINGS_NAMESPACES` 名单内的设置
-命名空间。安装器 `node scripts/install.mjs --patch-harness` 会幂等补丁该名单（自动扫描常见 harness
-安装位置；DSH 升级覆盖 harness 后可重跑补回）。未补丁时页签会提示"当前 harness 未向 Web
-暴露…"。
-
-**绕过（path B）**：设置 RPC 仅对本机回环地址开放（局域网访问时设置功能整体降级）。非回环或不想
-改 harness 时，直接编辑 `$DSH_HOME/settings.yaml` 写 `trellis-workflow:` 段——热重载、同样免重启
-生效。
-
 </details>
 
-## 🛠️ 开发与构建
+---
 
-```
+## 🛠️ 二次开发与架构说明
+
+### 目录结构
+
+```text
 dsh-trellis/
-  package.json            # ESM cordis 插件包（name: @banana-peeljj12/dsh-trellis, MIT）
-  cordis.patch.yml        # dsh.bundle.patch 自激活层（insert 插件行）
-  lib/
-    index.js              # 主入口：agent/pre-step 面包屑 + 技能供给 + trellis_state / trellis_task_create / trellis_task_update / trellis_task_archive + Web 徽标
-    task.js               # task 创建与更新：slug 校验 / task.json 构造与修改 / 模板播种 / session 指针同步
-    archive.js            # trellis_task_archive 写入侧：归档目标 / completed 校验 / 原子移动（受控 node:fs）/ 指针解绑
-    resolve.js            # cwd → 项目根 + .trellis 资产路径
-    state.js              # 阶段解析：session → 活跃任务 → status → phase + workflow.md 面包屑 + 任务摘要/轨道
-    breadcrumb.js         # createUserMessage 构造注入消息 + no-trellis 逃生口
-    trust.js              # 本地同源 / 防 DNS-rebinding 围栏（Web 只读路由）
-    skills.js             # 技能供给：检测项目 .agents/skills/ 并复制缺失技能与 _templates/
-    settings.js           # 可选 settings 命名空间（Web 设置页）
-    meta.js               # 名称 / 配置 Schema / 默认值
-    types/index.d.ts
-  skills/trellis-*/SKILL.md   # 15 个随包技能（权威副本）
-  skills/_templates/          # 产物模板 + work-types.md 路由表
-  scripts/install.mjs         # 传统安装器（bin: trellis-install）
+├── package.json            # npm 插件包元数据（@banana-peeljj12/dsh-trellis, MIT）
+├── cordis.patch.yml        # dsh.bundle 自动挂载层声明
+├── lib/
+│   ├── index.js            # 插件总入口：注册 pre-step 拦截器、生命周期、RPC 路由与工具集
+│   ├── task.js             # 任务创建与更新：slug 规范校验、模板初始化、session 指针同步
+│   ├── archive.js          # 任务归档：原子迁移至 archive/<yyyy-mm>/、解绑指针
+│   ├── resolve.js          # 路径解析：基于 cwd 识别项目根与 .trellis 资产
+│   ├── state.js            # 状态机：解析会话绑定、读取当前 stage、组装摘要与阶段轨道
+│   ├── breadcrumb.js       # 构造每轮向 AI 注入的提示词与逃生词过滤
+│   ├── trust.js            # 本地回环同源安全校验（防御 DNS-rebinding）
+│   ├── skills.js           # 技能供给：按需向项目 .agents/skills/ 补齐权威副本
+│   ├── settings.js         # Web 设置页命名空间注册与存储交互
+│   └── meta.js             # 配置项 Schema 与默认值
+├── skills/                 # 15 个随包权威技能副本
+│   ├── trellis-*/SKILL.md  # 技能正文定义
+│   └── _templates/         # 任务产物模板 (prd/design/review 等) 与路由表
+└── scripts/
+    └── install.mjs         # 独立辅助安装脚本
 ```
 
-纯 JavaScript、零构建、零运行时依赖（`@deepseek-ai/*` 为 peer，由 web profile 提供）；client 半是
-手写零构建 bundle，经公共 slot 系统注册（阶段徽标用官方 additive 座位
-`conversation.session.header.utilities`）。传统安装器 `scripts/install.mjs` 仍是可用的备选工具
-（不依赖 `dsh.bundle`，直接维护 `cordis.patch.yml` 行 + 依赖链接）：
+### 技术要点
+- **零构建、纯标准 ESM**：无 TypeScript 编译负担，改动即生效。
+- **只读缓存隔离**：Web 端的查询请求只命中内存只读缓存，杜绝频繁读取磁盘。
+- **沙箱与安全隔离**：文件操作全部遵循 DSH 的 `ctx.fs` 沙箱安全规范，避免越权访问。
 
-| 参数 | 说明 |
-|---|---|
-| `--profile <name>` | 目标 profile；缺省时自动识别"包含本插件"的那个 |
-| `--allowlist <path>` | 注入白名单项目根，可重复 |
-| `--inject-step <n>` | 只在该步注入（默认 1） |
-| `--skip-keywords a,b` | 消息含这些词时本轮跳过注入 |
-| `--inline` | 按 codex-inline 调度解析阶段 |
-| `--auto` | 幂等自动模式（供包装脚本使用） |
-| `--dry-run` | 只预览改动，不写盘 |
-| `--patch-harness` | 只补丁 harness 的 `WEB_SETTINGS_NAMESPACES` 白名单（无需 profile） |
-| `--uninstall` | 一步卸载：配置行 + 依赖链接 + `package.json` 依赖项 |
-| `--fix-deps` | 清理 `package.json` 中指向不存在路径的 trellis link 依赖 |
+---
 
-## 🔐 安全
+## ❓ 常见问题（FAQ）
 
-- Web 徽标数据来自 host 侧**只读缓存**：`POST /trellis-workflow/api/task-state` 只接收
-  `{ sessionId }`，响应绝不含路径；浏览器请求**永不**触发项目解析或文件读取（cache miss 返回稳定
-  空态，与未知会话不可区分，防探测）。
-- 路由受本地信任围栏保护（回环 host + 同源标记，等价官方 `isTrustedApiRequest` 语义），并做
-  method / 路径 / 请求体大小校验；错误只返回稳定状态词，不泄露内部细节。
-- 任务创建、归档指针清理与技能复制全部走 `ctx.fs` + 每调用沙箱策略；沙箱拒绝映射为标准
-  `[sandbox: …]` 标记，与 harness 编辑工具走同一升级流程。
-- 归档的**目录移动**是文档化受控例外（dsh-fs 无 move/delete 原语，且 harness 模型文件工具也无）：
-  用 `node:fs` 原子 rename，但 slug 严格正则校验、源/目标恒在 `.trellis/tasks/` 内、root 只取会话
-  header 命中 allowlist 的结果，并对会话沙箱策略 fail-closed（read-only 拒绝；workspace-write 越出
-  workspaceRoot 拒绝）——任何受限模式下都不静默绕过。
-- 技能供给失败只告警、绝不打断当轮注入（缺失技能下轮可补复制）。
+<details>
+<summary><b>Q1: 安装后对话没有出现 Trellis 提醒？</b></summary>
 
-## ⚠️ 已知限制
+- **检查白名单**：默认情况下 `allowlist` 为空。请在 Web 设置或 `settings.yaml` 中将当前项目的根目录绝对路径加入 `allowlist`。
+- **检查服务重启**：插件刚安装后需要重启一次 DSH 服务，并硬刷新浏览器（`Ctrl+F5` 或 `Cmd+Shift+R`）。
+- **检查逃生词**：确认提问中没有触发 `no-trellis` 关键字。
+</details>
 
-- headless（无 web 服务）profile 下 Web 阶段徽标整体不激活，其余功能不受影响。
-- 只在会话 cwd 命中 `allowlist` 的项目里注入；项目需自带 `.trellis/`（无 `workflow.md` 时用内置
-  兜底面包屑文案）。
-- Web 设置 RPC 仅限本机回环（harness 全局限制）。
-- slug 校验是提醒而非强制——不合规的任务仍可推进，只是每轮收到修正提示。
-- 只消费 Trellis 流程语义，任务文件布局需与 `.trellis/` 约定一致。
+<details>
+<summary><b>Q2: Web 设置页没有看到「Trellis 工作流」选项？</b></summary>
 
-## 🖥️ 平台支持
+- 若当前 DSH 版本未对第三方插件暴露设置页，可运行 `node scripts/install.mjs --patch-harness` 一键补丁；或者直接编辑 `~/.dsh/settings.yaml` 中的 `trellis-workflow:` 段落（同样支持热重载，无需重启）。
+</details>
 
-Windows / Linux / macOS 均可（纯 Node ESM，无原生依赖、无构建产物差异）。Node.js ≥ 20。
+<details>
+<summary><b>Q3: 如何彻底卸载？</b></summary>
+
+```sh
+dsh plugin --profile web remove @banana-peeljj12/dsh-trellis
+```
+如果需要清理本地 link 缓存残留，可执行 `node scripts/install.mjs --uninstall --profile web`。
+</details>
+
+---
 
 ## 🙏 致谢
 
-`dsh-trellis` 是 [Trellis](https://github.com/mindfold-ai/trellis)（作者
-[Mindfold](https://mindfold.ai)，AGPL-3.0-only）在 DeepSeek Harness 上的**适配移植**：
+- **[Trellis](https://github.com/mindfold-ai/trellis)**（作者 [Mindfold](https://mindfold.ai)，AGPL-3.0-only）：
+  感谢 Mindfold 团队开源了出色的 Trellis 工作流思路。本项目仅移植了其**流程语义**（阶段轨道、任务产物规范与面包屑机制），代码与技能内容均为独立重写，不包含任何 AGPL 源码，以 MIT 许可证发布。
+- **[CodeStable](https://github.com/codestable/CodeStable)**：
+  感谢 CodeStable 团队，内置的三大工作流（feat / issue / refactor）结构通用化改编自其优秀的工程化设计思路。
+- **[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)**：
+  强大的大模型 Agent 运行时底座。
 
-- 只复用 Trellis 的**流程语义**（active-task 面包屑、`[workflow-state:*]` 阶段块、阶段轨道与
-  产物约定），不复制其代码与文档正文；
-- 本包不含任何 AGPL 源码，状态机、技能与模板均为独立重写，以 MIT 许可发布；
-- 本项目与 Mindfold **无隶属、无背书关系**，只是 Trellis 思路在 DSH 生态的第三方适配；
-  部署 Trellis 本体时请遵循其 AGPL-3.0 许可条款。
+---
 
-感谢 Mindfold 团队设计并开源了 Trellis 工作流。
+## 📄 开源许可证
 
-内置的三类工作流（feat / issue / refactor）则通用化改编自
-[CodeStable](https://github.com/codestable/CodeStable)（源自 FTM/CodeStable 思路）——同样只参考
-流程设计、内容为本包重写；感谢 CodeStable 团队的流程设计。
-
-## 🔗 友情链接
-
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) —— 本插件的宿主
-- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) —— 服务化侧边栏工作台插件
-- [Trellis](https://github.com/mindfold-ai/trellis) —— 被适配的工作流本体（本插件仅移植其流程语义）
-- [CodeStable](https://github.com/codestable/CodeStable) —— 三类工作流（feat / issue / refactor）的改编来源
-
-## 许可
-
-MIT。本包不含 Trellis AGPL 源码；工作流语义参考 Trellis，内容为本包重写。
+本项目基于 [MIT 许可证](./LICENSE) 开源发布。
