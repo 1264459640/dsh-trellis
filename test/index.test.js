@@ -671,6 +671,44 @@ test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo
       force: true,
     })
     assert.equal(archiveForce.ok, true)
+
+    // 6. Test modified_files verification in updateTaskRecord & archiveTaskRecord
+    const root2 = mkdtempSync(path.join(tmpdir(), 'trellis-modified-verify-'))
+    try {
+      execFileSync('git', ['init'], { cwd: root2, stdio: 'pipe' })
+      execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: root2, stdio: 'pipe' })
+      execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: root2, stdio: 'pipe' })
+      const fs2 = mockFs(root2)
+      await createTaskRecord(fs2, root2, {
+        title: 'Task 2',
+        workType: 'feat',
+        slug: 'feat-08-20-task2',
+      })
+      writeFileSync(path.join(root2, 'real-committed.js'), 'hello')
+      execFileSync('git', ['add', '.'], { cwd: root2, stdio: 'pipe' })
+      execFileSync('git', ['commit', '-m', 'Commit real file'], { cwd: root2, stdio: 'pipe' })
+
+      // Fails when claiming uncommitted file
+      const updateUncommitted = await updateTaskRecord(fs2, root2, {
+        slug: 'feat-08-20-task2',
+        status: 'completed',
+        modified_files: ['not-in-git.js'],
+      })
+      assert.equal(updateUncommitted.ok, false)
+      assert.match(updateUncommitted.error, /\[trellis\/git_uncommitted\]/)
+      assert.match(updateUncommitted.error, /not-in-git\.js/)
+
+      // Succeeds when claiming real committed file
+      const updateCommitted = await updateTaskRecord(fs2, root2, {
+        slug: 'feat-08-20-task2',
+        status: 'completed',
+        modified_files: ['real-committed.js'],
+      })
+      assert.equal(updateCommitted.ok, true)
+      assert.equal(updateCommitted.taskJson.status, 'completed')
+    } finally {
+      rmSync(root2, { recursive: true, force: true })
+    }
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

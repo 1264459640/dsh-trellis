@@ -13,8 +13,16 @@ import {
   parsePorcelainOutput,
   filterDirtyEntries,
   checkGitCleanliness,
+  fetchRecentCommittedFiles,
+  normalizeRelPath,
   DEFAULT_GIT_IGNORES,
 } from '../lib/git.js'
+
+test('normalizeRelPath trims, slash-normalizes, and removes leading ./', () => {
+  assert.equal(normalizeRelPath('.\\src\\foo.js'), 'src/foo.js')
+  assert.equal(normalizeRelPath('./lib/git.js'), 'lib/git.js')
+  assert.equal(normalizeRelPath('   path/to/file.ts  '), 'path/to/file.ts')
+})
 
 test('parsePorcelainOutput parses standard git status lines', () => {
   const sample = ` M lib/task.js\n?? new-file.txt\nD  deleted.js\n R old.js -> new.js\n?? "with space.js"\n`
@@ -88,6 +96,37 @@ test('checkGitCleanliness in git repo: clean, dirty, runtime ignored, force=true
 
     // 4. force: true bypasses dirty check
     const forceCheck = await checkGitCleanliness(tempDir, { force: true })
+    assert.equal(forceCheck.clean, true)
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true })
+  }
+})
+
+test('checkGitCleanliness verifies modifiedFiles against recent commit history', async () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'trellis-modified-files-'))
+  try {
+    execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' })
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, stdio: 'pipe' })
+    execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: tempDir, stdio: 'pipe' })
+
+    writeFileSync(path.join(tempDir, 'fileA.js'), 'console.log("A")')
+    execFileSync('git', ['add', '.'], { cwd: tempDir, stdio: 'pipe' })
+    execFileSync('git', ['commit', '-m', 'Commit fileA'], { cwd: tempDir, stdio: 'pipe' })
+
+    // 1. Declared modifiedFiles contains committed file -> clean: true
+    const validCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js'] })
+    assert.equal(validCheck.clean, true)
+    assert.equal(validCheck.isGitRepo, true)
+
+    // 2. Declared modifiedFiles contains uncommitted/fake file -> clean: false, [trellis/git_uncommitted]
+    const fakeCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js', 'lib/uncommitted-fake.js'] })
+    assert.equal(fakeCheck.clean, false)
+    assert.ok(fakeCheck.error.includes('[trellis/git_uncommitted]'))
+    assert.ok(fakeCheck.error.includes('lib/uncommitted-fake.js'))
+    assert.deepEqual(fakeCheck.uncommittedFiles, ['lib/uncommitted-fake.js'])
+
+    // 3. force: true bypasses uncommitted modifiedFiles check
+    const forceCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['lib/uncommitted-fake.js'], force: true })
     assert.equal(forceCheck.clean, true)
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
