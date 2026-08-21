@@ -94,9 +94,10 @@ test('checkGitCleanliness in git repo: clean, dirty, runtime ignored, force=true
     assert.ok(dirtyCheck.error.includes('[trellis/git_dirty]'))
     assert.ok(dirtyCheck.error.includes('init.txt'))
 
-    // 4. force: true bypasses dirty check
+    // 4. Passing force parameter is ignored and still blocked
     const forceCheck = await checkGitCleanliness(tempDir, { force: true })
-    assert.equal(forceCheck.clean, true)
+    assert.equal(forceCheck.clean, false)
+    assert.ok(forceCheck.dirtyFiles.length >= 1)
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }
@@ -125,9 +126,10 @@ test('checkGitCleanliness verifies modifiedFiles against recent commit history',
     assert.ok(fakeCheck.error.includes('lib/uncommitted-fake.js'))
     assert.deepEqual(fakeCheck.uncommittedFiles, ['lib/uncommitted-fake.js'])
 
-    // 3. force: true bypasses uncommitted modifiedFiles check
+    // 3. Passing force parameter is ignored and still blocked
     const forceCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['lib/uncommitted-fake.js'], force: true })
-    assert.equal(forceCheck.clean, true)
+    assert.equal(forceCheck.clean, false)
+    assert.ok(forceCheck.error.includes('[trellis/git_uncommitted]'))
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

@@ -640,37 +640,44 @@ test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo
     // 1. Create a dirty file in working tree
     writeFileSync(path.join(root, 'dirty.js'), 'console.log(1)')
 
-    // 2. updateTaskRecord with status=completed should fail
+    // 2. updateTaskRecord with status=completed should fail (even if force=true is passed)
     const updateFail = await updateTaskRecord(fs, root, {
       slug: 'feat-08-20-git-test',
       status: 'completed',
+      force: true,
     })
     assert.equal(updateFail.ok, false)
     assert.match(updateFail.error, /\[trellis\/git_dirty\]/)
     assert.match(updateFail.error, /dirty\.js/)
 
-    // 3. updateTaskRecord with force=true should succeed
-    const updateForce = await updateTaskRecord(fs, root, {
+    // 3. Commit dirty file so task can be legally completed
+    execFileSync('git', ['add', '.'], { cwd: root, stdio: 'pipe' })
+    execFileSync('git', ['commit', '-m', 'Commit dirty file'], { cwd: root, stdio: 'pipe' })
+
+    const updateValid = await updateTaskRecord(fs, root, {
       slug: 'feat-08-20-git-test',
       status: 'completed',
-      force: true,
     })
-    assert.equal(updateForce.ok, true)
-    assert.equal(updateForce.taskJson.status, 'completed')
+    assert.equal(updateValid.ok, true)
+    assert.equal(updateValid.taskJson.status, 'completed')
 
-    // 4. archiveTaskRecord on dirty repo should fail
+    // 4. Create another dirty file; archiveTaskRecord on dirty repo should fail (even if force=true)
+    writeFileSync(path.join(root, 'dirty2.js'), 'console.log(2)')
     const archiveFail = await archiveTaskRecord(fs, root, {
       slug: 'feat-08-20-git-test',
+      force: true,
     })
     assert.equal(archiveFail.ok, false)
     assert.match(archiveFail.error, /\[trellis\/git_dirty\]/)
 
-    // 5. archiveTaskRecord with force=true should succeed
-    const archiveForce = await archiveTaskRecord(fs, root, {
+    // 5. Commit dirty2 file; archiveTaskRecord succeeds
+    execFileSync('git', ['add', '.'], { cwd: root, stdio: 'pipe' })
+    execFileSync('git', ['commit', '-m', 'Commit dirty2'], { cwd: root, stdio: 'pipe' })
+
+    const archiveSuccess = await archiveTaskRecord(fs, root, {
       slug: 'feat-08-20-git-test',
-      force: true,
     })
-    assert.equal(archiveForce.ok, true)
+    assert.equal(archiveSuccess.ok, true)
 
     // 6. Test modified_files verification in updateTaskRecord & archiveTaskRecord
     const root2 = mkdtempSync(path.join(tmpdir(), 'trellis-modified-verify-'))
