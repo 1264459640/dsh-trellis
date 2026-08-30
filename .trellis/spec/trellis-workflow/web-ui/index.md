@@ -9,6 +9,12 @@
    - 会话头部右侧状态/徽标 → `conversation.session.header.utilities`（list / session scope /
      additive，fresh id；组件经框架标准 prop `sessionId` 拿当前会话 id，**无需订阅
      `sessions.list`**；会话切换由框架按 key=sessionId 重挂载自动重取）。
+   - **blank 会话（新对话，首条消息前）header 整体隐藏**（harness `hideChrome =
+     blank && composerPhase === 'blank'` → header children 不渲染），utilities 座位
+     不可达 → 同一 chip 必须再注册 `conversation.input.dock`（list / session scope，
+     composer 卡片上方独立行，hero 阶段同样渲染，goal bar 先例）；该 hero 座位组件
+     （`HeroTaskChip`）以与 header 隐藏**完全相同的谓词**自隐藏（owner props
+     `InputZone.session` 快照携带 `blank`/`composerPhase`），两座位互斥、徽标永不重复。
    - frame 级悬浮层（badge/toast/pill）才用 `shell.overlay`（root scope，需自行经
      `sessions` 服务取当前 id）。
    - 注册一律按 settings tab 先例包裹 `ctx.slots.inject('<slot>', () => ctx.slots.register(...))`：
@@ -51,6 +57,11 @@
   `C:\Users\12644\.dsh\settings.yaml` 的 `trellis-workflow.allowlist` 时，该会话徽标按
   `no-match` 隐藏（属配置，非缺陷）；验证 UI 需把项目根加入 allowlist 并**重启 DSH**
   （静态 Cordis 插件改动无热重载）。
+- **新对话看不到徽标 → 无法激活任务**：blank 会话的 session header 被 harness 隐藏
+  （`children: !hideChrome && ...`），只注册 utilities 座位时新对话（首条消息前）徽标
+  完全不可达——必须补 `conversation.input.dock` hero 座位（见约定 1）。blank 会话在
+  host 端真实存在（`connectWorkspace` 经 `session.create` 创建，cwd=workspace 路径），
+  task-state/board/bind API 在首条消息前即可正常解析。
 
 ## Mini 任务看板约定（feat-08-17-trellis-kanban 沉淀）
 

@@ -111,6 +111,7 @@ The AI will automatically guide you through creating a Trellis task (e.g., `feat
 
 ### 3. 🏷️ Web Phase Chip & Mini Kanban Board
 - Displays a compact phase badge (e.g. `feat · design`) on the session header bar.
+- **Works in brand-new conversations too**: before the first message, the chip sits at the top-right above the input box, so a task can be activated before work starts.
 - Hover or click to view the full stage pipeline.
 - Click to open the **Mini Kanban**:
   - 🔄 **Quick Switch**: Switch the active task binding with one click.
