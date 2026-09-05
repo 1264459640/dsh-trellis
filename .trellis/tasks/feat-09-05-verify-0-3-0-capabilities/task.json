@@ -4,7 +4,7 @@
   "work": {
     "type": "feat",
     "mode": "standard",
-    "stage": "impl",
+    "stage": "check",
     "execution_lane": "standard"
   },
   "description": "端到端验证 dsh-trellis 0.3.0-rc.3 引入的全部新能力：原生执行步骤 steps 与 verify/verified 双层硬门禁、规划期只读保护（enforceReadonlyPlanning 工具面裁剪）、受控产物写入工具 trellis_artifact_update（白名单 + slug 穿越校验）、agent/pre-step 当前步骤高信噪比注入与内存级防刷屏缓存。验证既包括按设计正向工作，也包括防御性反例（绕过门禁、路径穿越、规划期写盘、undefined 注入等）。",
@@ -68,12 +68,14 @@
     {
       "id": "check",
       "title": "收尾确认",
-      "status": "pending",
+      "status": "completed",
       "acceptance": [
         "lint/类型检查/测试通过（npm test 等按项目约定）",
         "生产率 check.md 验收报告产出"
       ],
-      "verify": true
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "check.md 已产出并提交（8a2e2ef）；语法/单测/全量 53/53 通过；rc.4 Release+tag+main 已同步远端"
     }
   ]
 }
