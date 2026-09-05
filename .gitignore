@@ -7,3 +7,6 @@ node_modules/
 .agents/
 .trellis/templates/
 .trellis/.runtime/sessions/session-*.json
+
+# Transient clipboard screenshots (Snipaste) — not part of the deliverable
+Snipaste_*
