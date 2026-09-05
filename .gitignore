@@ -8,5 +8,8 @@ node_modules/
 .trellis/templates/
 .trellis/.runtime/sessions/session-*.json
 
+# Local build output (pnpm pack) — never committed
+dist/
+
 # Transient clipboard screenshots (Snipaste) — not part of the deliverable
 Snipaste_*
