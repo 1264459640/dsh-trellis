@@ -119,10 +119,17 @@ The AI will automatically guide you through creating a Trellis task (e.g., `feat
 - High Performance: Backed by host-side read-only caching; requests never trigger slow filesystem scans.
 
 ### 4. 🛠️ Complete Task Lifecycle Tools
-- `trellis_task_create`: Scaffold task directories, initialize PRD/Design templates, enforce `<type>-<mm-dd>-<name>` conventions, and bind session pointers.
-- `trellis_task_update`: Update stages and statuses atomically with track validation and UI cache sync.
+- `trellis_task_create`: Scaffold task directories, initialize PRD/Design templates, support granular `steps` checklists, enforce `<type>-<mm-dd>-<name>` conventions, and bind session pointers.
+- `trellis_task_update`: Update stages, statuses, the full steps list (`steps`) or a single step (`step`) atomically with track validation, quality-gate enforcement, and UI cache sync.
+- `trellis_artifact_update`: Write the current task's stage documents (PRD / design / review / check) through a sandboxed channel confined to the task directory — project source code stays untouchable.
 - `trellis_task_archive`: Atomically move finished tasks to archive directories and unbind sessions.
 - `trellis_state`: Inspect workflow diagnostics anytime.
+
+### 5. 🎯 Native Steps, Quality Gates & Read-only Planning
+- **Active Step Breadcrumb (SNR First)**: In the implementation phase, the plugin injects only the currently focused step along with its quantitative acceptance criteria (`acceptance`), and degrades to a one-line reminder on repeat — instead of dumping the full checklist on every turn.
+- **Step Verification Gate**: Steps declared with `verify: true` cannot be marked `completed` until an explicit conclusion (`verified: true` with notes) is recorded by the tool layer.
+- **Task Completion Guardrail**: Refuses to mark the overall task as `completed` or archive it if any steps remain pending or unverified.
+- **Read-only Planning (Optional)**: When `enforceReadonlyPlanning: true` is enabled, generic write tools (`write`, `edit`) are pruned during the planning phase; only read/analysis tools and `trellis_artifact_update` remain, enforcing thorough research and specification before code writing begins.
 
 ---
 
@@ -134,6 +141,7 @@ The AI will automatically guide you through creating a Trellis task (e.g., `feat
 | `injectStep` | `number` | `1` | Turn step number to inject breadcrumb (1 = first step). |
 | `skipKeywords` | `string[]` | `['no-trellis']` | Skip breadcrumb injection if the user prompt contains any of these keywords. |
 | `inline` | `boolean` | `false` | Enable codex-inline style phase resolution. |
+| `enforceReadonlyPlanning` | `boolean` | `false` | **Read-only Planning**: Prune generic write tools (`write` / `edit`) during the planning phase; only read tools and `trellis_artifact_update` remain. |
 
 ### Configuration Options
 
@@ -147,6 +155,7 @@ The AI will automatically guide you through creating a Trellis task (e.g., `feat
      skipKeywords:
        - no-trellis
      inline: false
+     enforceReadonlyPlanning: false
    ```
 
 ---

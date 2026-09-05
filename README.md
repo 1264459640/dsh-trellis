@@ -120,10 +120,17 @@ AI 将会自动识别意图，引导你创建 Trellis 任务（如 `feat-08-20-w
 - 极致性能：全部基于 Host 端只读缓存摘要，浏览器端纯展示，绝不触发额外耗时扫描。
 
 ### 4. 🛠️ 规范化的任务全生命周期工具
-- `trellis_task_create`：一键创建任务目录、初始化产物模板（prd/design）、规范命名格式（`<type>-<mm-dd>-<name>`），并同步绑定到当前会话。
-- `trellis_task_update`：原子化更新任务阶段（`stage`）与状态（`status`），自动校验阶段转移合法性并刷新界面徽标。
+- `trellis_task_create`：一键创建任务目录、初始化产物模板（prd/design）、支持传入细粒度 `steps` 执行步骤清单、规范命名格式（`<type>-<mm-dd>-<name>`），并同步绑定到当前会话。
+- `trellis_task_update`：原子化更新任务阶段（`stage`）、状态（`status`）、批量重置步骤清单（`steps`）或推进单个步骤（`step`），自动校验步骤质量门禁并刷新界面徽标。
+- `trellis_artifact_update`：受控写入当前任务的阶段交付文档（PRD / 设计方案 / 验收报告等），物理限定只能写任务目录内的标准产物，无法触碰项目源码。
 - `trellis_task_archive`：任务完成后，一键移入归档目录，自动解绑会话指针，保持看板清爽。
 - `trellis_state`：随时诊断当前项目所处的工作流阶段与健康度。
+
+### 5. 🎯 执行步骤清单、质量门禁与规划期产物写入保护
+- **步骤细化与高信噪比注入（Active Step Breadcrumb）**：在执行阶段，插件不会刷出冗长的全量步骤清单，而是动态提取当前聚焦的单个步骤及其量化验收标准（`acceptance`）注入每轮对话，同一步骤二次提醒时降为单行提示，最大化保护模型的有效注意力。
+- **步骤质量门禁（Verification Gate）**：步骤若声明 `verify: true`，在记录 `verified: true` 验证依据前，工具层物理拦截打标 `completed`，杜绝“自写自测、先斩后奏”。
+- **任务完结硬防线**：在所有步骤未全部打卡完成并通过验证前，硬阻止主任务标记为 `completed` 或归档。
+- **规划期只读保护（Readonly Planning，可选）**：开启 `enforceReadonlyPlanning: true` 时，在规划阶段自动从工具面屏蔽 `write` / `edit`，仅保留读分析工具与 `trellis_artifact_update`，强制模型先完成调研与方案设计再进入编码。
 
 ---
 
@@ -139,6 +146,7 @@ AI 将会自动识别意图，引导你创建 Trellis 任务（如 `feat-08-20-w
 | `injectStep` | `number` | `1` | 面包屑注入步数（默认 1，即每个新提问的首步注入） |
 | `skipKeywords` | `string[]` | `['no-trellis']` | 只要消息中包含这些单词，该轮对话不注入工作流面包屑 |
 | `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析 |
+| `enforceReadonlyPlanning` | `boolean` | `false` | **规划期只读保护**：在 planning 阶段自动裁剪通用写入工具（`write` / `edit`），仅保留读工具与 `trellis_artifact_update` |
 
 ### 方式一：Web 设置界面（免重启、即时生效）
 
@@ -158,6 +166,7 @@ trellis-workflow:
   skipKeywords:
     - no-trellis
   inline: false
+  enforceReadonlyPlanning: false
 ```
 
 <details>

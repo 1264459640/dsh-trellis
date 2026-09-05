@@ -1,3 +1,9 @@
 node_modules/
+.pnpm-store/
 *.log
 .DS_Store
+
+# Runtime-provisioned & transient artifacts (reproduced from the package on session start)
+.agents/
+.trellis/templates/
+.trellis/.runtime/sessions/session-*.json

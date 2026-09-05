@@ -1,0 +1,11 @@
+{
+  "title": "原生融合执行步骤清单、验收门禁与规划期产物写入保护",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "原生融合执行步骤清单（steps）、验收门禁（verification gate）、受控产物更新工具（trellis_artifact_update）与规划期只读保护（readonly planning enforcement）。"
+}

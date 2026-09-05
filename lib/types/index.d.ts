@@ -17,6 +17,36 @@ export type TrellisPhase =
   | 'in_progress-inline'
   | 'completed'
 
+export type TaskStepStatus = 'pending' | 'in_progress' | 'completed'
+
+export interface TaskStep {
+  id: string
+  title: string
+  spec?: string
+  acceptance?: string[]
+  status: TaskStepStatus
+  verify?: boolean
+  verified?: boolean
+  verificationNotes?: string
+}
+
+export interface TaskStepUpdateInput {
+  id: string
+  status?: TaskStepStatus
+  verified?: boolean
+  verificationNotes?: string
+}
+
+/** Shape returned by the `trellis_artifact_update` tool. */
+export interface TrellisArtifactUpdateResult {
+  ok: boolean
+  error: string | null
+  slug: string | null
+  artifact: string | null
+  filePath: string | null
+  bytesWritten: number | null
+}
+
 /** Shape returned by the `trellis_state` diagnostic tool. */
 export interface TrellisState {
   project: string
@@ -103,6 +133,8 @@ export interface TrellisWorkflowConfig {
   skipKeywords: string[]
   /** Assume codex-inline dispatch mode when resolving phase names. */
   inline: boolean
+  /** Prune generic write/edit tools during the planning phase; only read tools and trellis_artifact_update remain. */
+  enforceReadonlyPlanning?: boolean
 }
 
 declare const plugin: import('@deepseek-ai/cordis').Plugin<any, TrellisWorkflowConfig>
