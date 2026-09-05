@@ -1,6 +1,6 @@
 {
   "title": "面包屑 source 含 undefined 值导致 user/message 会话事件序列化失败",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "standard",
