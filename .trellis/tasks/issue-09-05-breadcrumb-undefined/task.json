@@ -1,0 +1,11 @@
+{
+  "title": "面包屑 source 含 undefined 值导致 user/message 会话事件序列化失败",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "0.3.0-rc.x 在 buildBreadcrumbMessage 的 message.source 写入 stepId: undefined（无活动步骤时），该消息经 agent/pre-step 注入、由 dsh-agent-loop 写入会话 user/message 事件，被 dsh-session 的 lossless-JSON 校验拒绝，报 \"session event 'user/message' carries non-JSON-serializable data\"。修复：条件展开省略 undefined 字段 + 回归测试。"
+}

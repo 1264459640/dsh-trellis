@@ -187,6 +187,94 @@ test('buildBreadcrumbMessage embeds stepInfo', () => {
   assert.match(msg.content[0].text, /Original text/)
 })
 
+test('buildBreadcrumbMessage omits absent source fields (lossless-JSON safe)', () => {
+  // Regression for issue-09-05-breadcrumb-undefined: the injected breadcrumb is
+  // appended to the session as a `user/message` event, and dsh-session rejects
+  // ANY `undefined` value in the payload (snapshotJsonValue). Missing fields
+  // must be ABSENT keys, never keys holding `undefined`.
+  const fake = (msg) => msg
+
+  // No active step -> stepId must not exist as a key.
+  const noStep = buildBreadcrumbMessage(
+    {
+      sourceKind: 'trellis',
+      text: 'Plain text',
+      source: 'project',
+      projectRoot: '/proj',
+      activeTask: '.trellis/tasks/feat-01-01-demo',
+      phase: 'no_task',
+    },
+    fake,
+  )
+  assert.equal(Object.hasOwn(noStep.source, 'stepId'), false)
+  assert.equal(Object.hasOwn(noStep.source, 'project'), true)
+  assert.equal(noStep.source.project, '/proj')
+  assert.ok(isLosslessJson(noStep))
+
+  // Missing projectRoot -> project is omitted too, never `undefined`.
+  const noProject = buildBreadcrumbMessage(
+    {
+      sourceKind: 'trellis',
+      text: 'Plain text',
+      source: 'builtin',
+      phase: 'no_task',
+    },
+    fake,
+  )
+  assert.equal(Object.hasOwn(noProject.source, 'project'), false)
+  assert.equal(Object.hasOwn(noProject.source, 'stepId'), false)
+  assert.ok(isLosslessJson(noProject))
+
+  // Active step -> stepId present, message still lossless.
+  const withStep = buildBreadcrumbMessage(
+    {
+      sourceKind: 'trellis',
+      text: 'Text',
+      source: 'project',
+      projectRoot: '/proj',
+      activeTask: '.trellis/tasks/feat-01-01-demo',
+      phase: 'in_progress',
+      stepInfo: { step: { id: 's1', title: 't' }, index: 0, total: 1 },
+    },
+    fake,
+  )
+  assert.equal(withStep.source.stepId, 's1')
+  assert.ok(isLosslessJson(withStep))
+})
+
+/**
+ * Mirror the harness lossless-JSON contract (@deepseek-ai/dsh-session
+ * snapshotJsonValue in @deepseek-ai/dsh-util-values): reject undefined,
+ * function, symbol, bigint, non-finite / -0 numbers, sparse arrays, and
+ * circular references nested anywhere in the value.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isLosslessJson(value) {
+  const ancestors = new Set()
+  const walk = (node) => {
+    if (node === null) return true
+    const t = typeof node
+    if (t === 'boolean' || t === 'string') return true
+    if (t === 'number') return Number.isFinite(node) && !Object.is(node, -0)
+    if (t !== 'object') return false // undefined | function | symbol | bigint
+    if (ancestors.has(node)) return false
+    ancestors.add(node)
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        if (!Object.hasOwn(node, i) || !walk(node[i])) return false
+      }
+    } else {
+      for (const key of Object.keys(node)) {
+        if (!walk(node[key])) return false
+      }
+    }
+    ancestors.delete(node)
+    return true
+  }
+  return walk(value)
+}
+
 // ---------------------------------------------------------------------------
 // 3. Artifact update tool sandbox safety
 // ---------------------------------------------------------------------------

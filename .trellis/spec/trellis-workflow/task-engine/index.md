@@ -2,6 +2,7 @@
 
 > 本文件由 `feat` 任务 `feat-09-05-native-steps-guard`（原生执行步骤、验证门禁与规划期产物写入保护）沉淀。
 > 证据：任务规划产物（prd/design/design-review/implement/review）与本包 `lib/` 源码（task.js / artifact.js / breadcrumb.js / index.js）。
+> 补充：`issue-09-05-breadcrumb-undefined` 沉淀"注入消息 source 不得含 undefined"反模式（见已知坑 3）。
 
 ## 任务执行引擎约定
 
@@ -37,4 +38,10 @@
 
 - 工具 `output.schema` 必须声明 `additionalProperties: false`，否则 `defineTool` 抛
   `UNSUPPORTED_SCHEMA`（见 web-ui 约定 2 的 lossless JSON 配对要求）。
+- 注入消息的 `source` 可选字段必须**条件展开省略**（`...(x ? { key: x } : {})`），**禁止写 `undefined` 值**：
+  `createUserMessage` 经 `structuredClone`/`deepFreeze` 会保留 `undefined` 键值（只有 `JSON.stringify` 丢键）；
+  `agent/pre-step` 注入的面包屑会被 `dsh-agent-loop` 整体 append 为 `user/message` 会话事件，
+  而 `dsh-session` 的 lossless-JSON 校验（`snapshotJsonValue`）拒绝任何 `undefined`，
+  直接抛 `session event "user/message" carries non-JSON-serializable data` 使本轮运行失败
+  （证据：issue-09-05-breadcrumb-undefined；参考实现 `dsh-agent-instructions` 即用条件展开）。
 - 安全边界别只信"文件名/字符集"校验：路径穿越要结合 `path.relative` 强约束为直接子段。
