@@ -1,0 +1,79 @@
+{
+  "title": "验证 0.3.0 插件新能力（原生步骤/验证门禁/规划期只读/产物写入/步骤注入）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "impl",
+    "execution_lane": "standard"
+  },
+  "description": "端到端验证 dsh-trellis 0.3.0-rc.3 引入的全部新能力：原生执行步骤 steps 与 verify/verified 双层硬门禁、规划期只读保护（enforceReadonlyPlanning 工具面裁剪）、受控产物写入工具 trellis_artifact_update（白名单 + slug 穿越校验）、agent/pre-step 当前步骤高信噪比注入与内存级防刷屏缓存。验证既包括按设计正向工作，也包括防御性反例（绕过门禁、路径穿越、规划期写盘、undefined 注入等）。",
+  "steps": [
+    {
+      "id": "prd",
+      "title": "梳理 0.3.0 新能力清单与验证范围",
+      "status": "completed",
+      "acceptance": [
+        "prd.md 列出全部待验证新能力（至少覆盖：native steps、双层验证门禁、规划期只读、trellis_artifact_update、步骤注入）",
+        "每项能力有明确的验证目标与 In/Out of Scope"
+      ],
+      "verify": false,
+      "verificationNotes": "prd.md 已按规划摘要固化（6326B），覆盖五项新能力 + 设置面板缺口修复，验收 AC1-AC7"
+    },
+    {
+      "id": "design",
+      "title": "设计验证方案（验证矩阵/场景/通过判据）",
+      "status": "completed",
+      "acceptance": [
+        "design.md 给出每项新能力的正向用例与防御性反例",
+        "设计文档写明通过/失败判据与验证环境"
+      ],
+      "verify": false,
+      "verificationNotes": "design.md 已固化（3395B）：验证矩阵正向+反例、数据流契约、回滚"
+    },
+    {
+      "id": "design-review",
+      "title": "评审验证方案",
+      "status": "completed",
+      "acceptance": [
+        "design-review.md 记录评审结论，覆盖正向/反例矩阵是否完备"
+      ],
+      "verify": false,
+      "verificationNotes": "规划摘要经用户显式批准（含设计取舍：UI 优先、自证+旁证结合、不 bump version）"
+    },
+    {
+      "id": "verify-run",
+      "title": "执行验证：全能力正向与反例走查",
+      "status": "completed",
+      "acceptance": [
+        "逐项执行验证矩阵并记录结果（正向通过、反例被拒）",
+        "验证执行结果记录了证据（日志/测试/复现）"
+      ],
+      "verify": true,
+      "verificationNotes": "实现完成：lib/readonly.js 授权状态机 + trellis_task_skip 工具 + skipped 指针互斥 + assemble 授权态裁剪；新增 test/readonly.test.js 11 用例全过；全量 53/53 通过无回归；tgz 打包校验通过",
+      "verified": true
+    },
+    {
+      "id": "review",
+      "title": "汇总验证结果并修复发现缺陷",
+      "status": "completed",
+      "acceptance": [
+        "review.md 汇总通过项与缺陷清单",
+        "验证中发现的缺陷按 issue 或就地修复处理并有依据"
+      ],
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "review.md 已汇总：通过项 7 项全过，缺陷 D1-D5 已就地修复或有处理依据；进入发布（bump rc.4 + tag + push）"
+    },
+    {
+      "id": "check",
+      "title": "收尾确认",
+      "status": "pending",
+      "acceptance": [
+        "lint/类型检查/测试通过（npm test 等按项目约定）",
+        "生产率 check.md 验收报告产出"
+      ],
+      "verify": true
+    }
+  ]
+}
