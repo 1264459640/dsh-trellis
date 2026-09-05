@@ -1,6 +1,6 @@
 {
   "name": "@banana-peeljj12/dsh-trellis",
-  "version": "0.3.0-rc.1",
+  "version": "0.3.0-rc.2",
   "description": "Self-contained Trellis workflow trigger for DeepSeek Harness: per-turn breadcrumb injection via agent/pre-step, a bundled skill provider, and DSH-native task/phase state resolution. No Trellis AGPL code is vendored; workflow semantics are rewritten and licensed MIT.",
   "type": "module",
   "main": "lib/index.js",
