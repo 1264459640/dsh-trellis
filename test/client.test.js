@@ -30,9 +30,13 @@ test('task chip occupies header utilities AND input dock hero seats', () => {
   assert.match(source, /ctx\.slots\.inject\('conversation\.input\.dock'/)
   assert.match(source, /id: 'trellis-workflow:task-chip-hero'/)
 
-  // The hero seat self-hides with the SAME predicate the harness header uses
-  // to hide its chrome (blank && composerPhase === 'blank'), so the two seats
-  // are mutually exclusive and the chip never duplicates.
+  // The hero seat self-hides with `session.blank === true`, the same effective
+  // predicate the harness header uses to hide its chrome (for a blank session
+  // activeTargets is empty, running is false, and promptAttempted is false, so
+  // conversationPhase always returns "blank"), so the two seats are mutually
+  // exclusive and the chip never duplicates.
   assert.match(source, /session\.blank === true/)
-  assert.match(source, /session\.composerPhase === 'blank'/)
+  // conversatio.input.dock owner props (InputZone) expose only SessionSnapshot,
+  // which does NOT carry composerPhase — the old predicate was a bug.
+  assert.doesNotMatch(source, /session\.composerPhase/)
 })

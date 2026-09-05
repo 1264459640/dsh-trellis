@@ -62,6 +62,10 @@
   完全不可达——必须补 `conversation.input.dock` hero 座位（见约定 1）。blank 会话在
   host 端真实存在（`connectWorkspace` 经 `session.create` 创建，cwd=workspace 路径），
   task-state/board/bind API 在首条消息前即可正常解析。
+- **HeroTaskChip 谓词曾引用不存在的 `composerPhase`**：`conversation.input.dock` 的 owner
+  props（`InputZone`）只暴露 `session: SessionSnapshot`，不含 `composerPhase`。曾用
+  `session.composerPhase === 'blank'` 导致 `headerHidden` 恒为 `false`、chip 从不渲染；
+  正确谓词为 `session.blank === true`（空白会话下与 `hideChrome` 等价）。
 
 ## Mini 任务看板约定（feat-08-17-trellis-kanban 沉淀）
 
