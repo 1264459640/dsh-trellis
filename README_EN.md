@@ -16,8 +16,11 @@
 <br />
 
 <p align="center">
-  <img src="./docs/images/web-phase-chip.png" width="49%" alt="Web phase chip and stage track popover" />
-  <img src="./docs/images/web-kanban.png" width="49%" alt="Mini task kanban board and monthly archive grouping" />
+  <img src="./docs/images/web-kanban-list.png" width="49%" alt="Compact task list with details inspector" />
+  <img src="./docs/images/web-kanban-lanes.png" width="49%" alt="Kanban lanes with collapsed empty lanes" />
+</p>
+<p align="center">
+  <img src="./docs/images/web-kanban-refactor.png" width="49%" alt="Refactor lane view with task details" />
 </p>
 
 ---
@@ -42,6 +45,7 @@ In complex, multi-turn AI coding workflows, typical pain points include:
 - **Verification Gates**: Standard step states (`pending`, `in_progress`, `verifying`, `blocked`, `completed`) with explicit support for automated AI testing and human sign-off gates before marking steps complete.
 - **Optional Read-Only Planning**: When enabled via settings, code-writing tools (`write` / `edit`) are filtered out during planning phases, leaving only a sandboxed artifact channel for design documentation.
 - **Session-Level Isolation**: Session pointers are stored independently under `.trellis/.runtime/sessions/`, preventing multi-session or subagent race conditions.
+- **Dual-Mode Task Board**: A dense compact task list by default (type badge + title + stage + step summary), expanding into a full-screen kanban with workflow-stage lanes, auto-collapsed empty lanes, live search, type filters, and an archive lane. The UI is fully iconized (self-contained inline SVG icon set), and the details inspector provides a Step Tracker pipeline, an artifact file tree, and capsule-style property tags. The board stays deliberately restrained — it never mutates task state directly; the only advance path is the **Advance Task** button injecting an instruction into the composer for the Agent to execute, and artifact clicks produce native `@.trellis/tasks/...` file references handled by DSH.
 - **Git Cleanliness Check**: Automatically verifies that the Git working tree is clean and committed before closing or archiving a task.
 
 ---

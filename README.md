@@ -16,8 +16,11 @@
 <br />
 
 <p align="center">
-  <img src="./docs/images/web-phase-chip.png" width="49%" alt="Web 阶段徽标与阶段轨道" />
-  <img src="./docs/images/web-kanban.png" width="49%" alt="Mini 任务看板与归档折叠" />
+  <img src="./docs/images/web-kanban-list.png" width="49%" alt="紧凑任务列表与详情面板" />
+  <img src="./docs/images/web-kanban-lanes.png" width="49%" alt="泳道看板与空泳道折叠" />
+</p>
+<p align="center">
+  <img src="./docs/images/web-kanban-refactor.png" width="49%" alt="重构泳道与任务详情" />
 </p>
 
 ---
@@ -42,7 +45,7 @@
 - **质量验收门禁**：细化步骤流转状态（`pending`、`in_progress`、`verifying`、`blocked`、`completed`），支持区分自动化测试（AI 验证）与人工审批卡点，并在任务完结时严格检查验收状态。
 - **可选规划期只读保护**：开启配置项后，可在方案获批前于运行时过滤掉代码写工具（`write` / `edit`），仅开放文档受控修改通道，确保方案敲定后再动代码。
 - **会话级状态隔离**：各会话的任务绑定关系独立存储在 `.trellis/.runtime/sessions/` 中，多会话与并发子代理并行工作时互不串扰。
-- **双模态任务看板**：常态为极简紧凑列表（类型徽章 + 标题 + 阶段 + 步骤简标），可一键展开为全屏大看板（按工作类型细分阶段泳道、实时搜索与类型筛选、归档泳道）；看板保持**克制交互**——不直接改任务状态，只提供「💬 推进任务」将指令注入输入框由 Agent 执行，产物点击生成 `@.trellis/tasks/...` 原生文件引用交给 DSH 原生查看。
+- **双模态任务看板**：常态为高密度紧凑任务列表（类型徽章 + 标题 + 阶段 + 步骤简标），可一键展开为全屏泳道看板（按工作流阶段细分泳道、空泳道自动折叠、实时搜索与类型筛选、归档泳道）；操作全面图标化（自包含内联 SVG 图标体系），右侧详情面板内置 **Step Tracker 步骤流水线**、产物文件树与胶囊属性标签。看板保持**克制交互**——不直接改任务状态，只提供「▶ 推进任务」将指令注入输入框由 Agent 执行，产物点击生成 `@.trellis/tasks/...` 原生文件引用交给 DSH 原生查看。
 - **Git 干净度校验**：任务完成和归档时自动检查 Git 工作区状态，防止遗留未提交的脏代码。
 
 ---
