@@ -2,7 +2,8 @@
 
 > 本文件由 `feat` 任务 `feat-09-05-native-steps-guard`（原生执行步骤、验证门禁与规划期产物写入保护）沉淀。
 > 证据：任务规划产物（prd/design/design-review/implement/review）与本包 `lib/` 源码（task.js / artifact.js / breadcrumb.js / index.js）。
-> 补充：`issue-09-05-breadcrumb-undefined` 沉淀"注入消息 source 不得含 undefined"反模式（见已知坑 3）。
+> 补充：`issue-09-05-breadcrumb-undefined` 沉淀"注入消息 source 不得含 undefined"反模式（见已知坑 3）；
+> `feat-09-06-unified-steps-engine` 沉淀步骤 5 态状态机、多主体验证门禁与废弃模板自愈修剪（见约定 1/2/6 与白名单兼容条款）。
 
 ## 任务执行引擎约定
 
@@ -29,6 +30,9 @@
 3. **产物写入走专属受控工具 `trellis_artifact_update`**：
    - 只允许写入当前任务目录 `.trellis/tasks/<slug>/` 下的标准交付文档（全工种白名单，见
      `lib/artifact.js` `ALLOWED_ARTIFACTS`），禁止触碰项目源码；
+   - **白名单保留已废弃模板名（兼容历史任务）**：`implement.md` / `checklist.yaml` 虽已从模板体系
+     废弃并被自愈修剪，但**必须继续留在 `ALLOWED_ARTIFACTS`**——历史任务的读/归档仍按这些名字访问，
+     移除条目会破坏存量任务产物（feat-09-06 边界条款：绝不触碰 `tasks/` 历史产物；清理模板时严禁连带移除）；
    - **slug 必须做穿越校验**：`SLUG_CHARSET` 之外还要 `path.relative(tasksDir, taskDir) === safeSlug`
      强制 slug 是 `tasks/` 的直接子段（拒绝 `.`、`..`、含分隔符）——仅靠文件名字符集校验
      会放过 `..`（点号在合法字符集内）。
