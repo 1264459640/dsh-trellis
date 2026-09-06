@@ -1,10 +1,10 @@
 {
   "title": "重构任务看板UI（列表与看板解耦及图标化）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "refactor",
     "mode": "standard",
-    "stage": "apply",
+    "stage": "done",
     "execution_lane": "standard"
   },
   "description": "看板UI重构：解耦小窗垂直列表与展开态泳道看板，全面图标化替换冗余汉字按钮，降噪视觉系统与优化横向滚动体验。",
