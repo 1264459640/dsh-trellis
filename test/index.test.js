@@ -44,6 +44,7 @@ import {
   WORK_TYPES,
   TASK_STATUSES,
   artifactTemplateNames,
+  validateCreateArgs,
   createTaskRecord,
   validateUpdateArgs,
   updateTaskRecord,
@@ -341,6 +342,8 @@ test('readTask parses task metadata and artifacts correctly', async () => {
     assert.equal(res.status, 'in_progress')
     assert.equal(res.workType, 'feat')
     assert.equal(res.stage, 'impl')
+    // resolved phase is stage-aware: impl is a writable stage → in_progress
+    assert.equal(res.phase, 'in_progress')
     assert.equal(res.month, '2025-08')
     assert.equal(res.archived, false)
     assert.ok(res.artifacts.includes('prd.md'))
@@ -398,11 +401,13 @@ test('buildBoard resolves active tasks, archive buckets, and session pointers wi
     const activeItem = board.tasks.find((t) => t.slug === 'feat-08-18-active')
     assert.ok(activeItem)
     assert.equal(activeItem.status, 'planning')
+    assert.equal(activeItem.phase, 'planning')
     assert.equal(activeItem.archived, false)
 
     const archivedItem = board.tasks.find((t) => t.slug === 'feat-07-10-archived')
     assert.ok(archivedItem)
     assert.equal(archivedItem.status, 'completed')
+    assert.equal(archivedItem.phase, 'completed')
     assert.equal(archivedItem.archived, true)
     assert.equal(archivedItem.month, '2025-07')
 
@@ -515,6 +520,74 @@ test('validateUpdateArgs validates status, mode, title and rejects empty updates
   const emptyTitle = validateUpdateArgs({ title: '   ' })
   assert.equal(emptyTitle.ok, false)
   assert.match(emptyTitle.error, /title 不能为空字符串/)
+})
+
+test('validateCreateArgs rejects planning-stage + in_progress status (write-path hardening)', () => {
+  const base = { workType: 'refactor', title: 'T' }
+  // the reported defect combination: scan/design are read-only windows
+  const resScan = validateCreateArgs({ ...base, status: 'in_progress', stage: 'scan' })
+  assert.equal(resScan.ok, false)
+  assert.match(resScan.error, /规划型阶段 "scan" 冲突/)
+  const resDesign = validateCreateArgs({ ...base, status: 'in_progress', stage: 'design' })
+  assert.equal(resDesign.ok, false)
+  assert.match(resDesign.error, /规划型阶段 "design" 冲突/)
+  // other work types: issue report, feat prd are planning too
+  assert.equal(validateCreateArgs({ workType: 'issue', title: 'T', status: 'in_progress', stage: 'report' }).ok, false)
+  assert.equal(validateCreateArgs({ workType: 'feat', title: 'T', status: 'in_progress', stage: 'prd' }).ok, false)
+  // writable-stage combos stay valid
+  assert.equal(validateCreateArgs({ ...base, status: 'in_progress', stage: 'apply' }).ok, true)
+  assert.equal(validateCreateArgs({ ...base, status: 'in_progress' }).ok, true)
+  assert.equal(validateCreateArgs({ ...base, status: 'planning', stage: 'scan' }).ok, true)
+})
+
+test('updateTaskRecord rejects a merged planning-stage + in_progress status', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-update-readonly-'))
+  try {
+    const fs = mockFs(root)
+
+    // 1. Flipping ONLY status to in_progress while at scan → rejected
+    const scanDir = path.join(root, '.trellis', 'tasks', 'refactor-08-19-scan')
+    mkdirSync(scanDir, { recursive: true })
+    writeFileSync(
+      path.join(scanDir, 'task.json'),
+      JSON.stringify({
+        title: 'Refactor Scan',
+        status: 'planning',
+        work: { type: 'refactor', mode: 'standard', stage: 'scan' },
+      }),
+    )
+    const resStatusFlip = await updateTaskRecord(fs, root, { slug: 'refactor-08-19-scan', status: 'in_progress' }, {})
+    assert.equal(resStatusFlip.ok, false)
+    assert.match(resStatusFlip.error, /规划型阶段 "scan" 冲突/)
+
+    // 2. Flipping ONLY stage back to scan while in_progress → rejected
+    const applyDir = path.join(root, '.trellis', 'tasks', 'refactor-08-19-apply')
+    mkdirSync(applyDir, { recursive: true })
+    writeFileSync(
+      path.join(applyDir, 'task.json'),
+      JSON.stringify({
+        title: 'Refactor Apply',
+        status: 'in_progress',
+        work: { type: 'refactor', mode: 'standard', stage: 'apply' },
+      }),
+    )
+    const resStageFlip = await updateTaskRecord(fs, root, { slug: 'refactor-08-19-apply', stage: 'scan' }, {})
+    assert.equal(resStageFlip.ok, false)
+    assert.match(resStageFlip.error, /规划型阶段 "scan" 冲突/)
+
+    // 3. Advancing to apply + in_progress together → accepted
+    const resAdvance = await updateTaskRecord(
+      fs,
+      root,
+      { slug: 'refactor-08-19-scan', status: 'in_progress', stage: 'apply' },
+      {},
+    )
+    assert.equal(resAdvance.ok, true)
+    assert.equal(resAdvance.taskJson.status, 'in_progress')
+    assert.equal(resAdvance.taskJson.work.stage, 'apply')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })
 
 test('updateTaskRecord updates fields, validates stage on track, and handles session active task resolution', async () => {

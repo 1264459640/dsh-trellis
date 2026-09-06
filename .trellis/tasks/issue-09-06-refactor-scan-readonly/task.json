@@ -1,0 +1,63 @@
+{
+  "title": "重构模式 scan 阶段被视为执行中（只读授权阶段感知缺陷）",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "只读设计（enforceReadonlyPlanning）的授权与展示相位仅由 task.status 派生，忽略 work.stage，导致 refactor 的 scan（规划型阶段）在 status=in_progress 时被当作执行中（授权放开、徽标/看板显示执行中）。修复：读路径阶段感知相位解析 + 写路径 status↔stage 一致性校验 + 看板/徽标按解析相位展示。",
+  "steps": [
+    {
+      "id": "report",
+      "title": "撰写 issue 报告（现象/根因/证据）",
+      "status": "completed",
+      "acceptance": [
+        "report.md 记录现象、根因（status↔stage 解耦）与证据链（代码位置）",
+        "说明跳过 analyze 的理由：根因在调研阶段已确认"
+      ],
+      "verificationNotes": "report.md 已写入；跳过 analyze 理由已记录"
+    },
+    {
+      "id": "fix-read-path",
+      "title": "读路径：阶段感知相位解析",
+      "status": "completed",
+      "acceptance": [
+        "lib/state.js 新增 phaseForTask 按 TRACKS 解析规划型/写码型阶段",
+        "resolveProjectState、create/update 工具返回与徽标缓存统一使用 phaseForTask",
+        "refactor scan→planning、apply→in_progress 有测试断言"
+      ],
+      "verificationNotes": "单进程断言：scan+in_progress→planning、apply→in_progress、inline 变体、completed 恒胜均通过"
+    },
+    {
+      "id": "fix-write-path",
+      "title": "写路径：status↔stage 一致性校验",
+      "status": "completed",
+      "acceptance": [
+        "trellis_task_create / trellis_task_update 拒绝规划阶段 + status=in_progress 组合并返回明确错误"
+      ],
+      "verificationNotes": "create 拒绝 scan+in_progress；update 仅翻 status/仅翻 stage 均拒绝；scan→apply 推进放行"
+    },
+    {
+      "id": "fix-board-chip",
+      "title": "看板与徽标按解析相位展示",
+      "status": "completed",
+      "acceptance": [
+        "board 记录含解析后的 phase 字段",
+        "client.js 看板分列/标色与状态标签改用 phase，不再直接读裸 status"
+      ],
+      "verificationNotes": "readTask/buildBoard 断言 phase=planning；client.js 分列/标签改用 phaseLabelOf"
+    },
+    {
+      "id": "verify-note",
+      "title": "验证与 fix-note",
+      "status": "completed",
+      "acceptance": [
+        "新增/更新单元测试通过（沙箱受限时用单进程断言说明）",
+        "fix-note.md 记录改动、验证与债务"
+      ],
+      "verificationNotes": "29 项 + 最终 17 项单进程断言通过；node --check 全部通过；fix-note.md 与 spec 已更新"
+    }
+  ]
+}
