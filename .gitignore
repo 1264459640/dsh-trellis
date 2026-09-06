@@ -10,6 +10,7 @@ node_modules/
 
 # Local build output (pnpm pack) — never committed
 dist/
+*.tgz
 
 # Transient clipboard screenshots (Snipaste) — not part of the deliverable
 Snipaste_*
