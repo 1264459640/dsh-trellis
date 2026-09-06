@@ -1,6 +1,6 @@
 {
   "title": "修复规划期只读保护下 System Prompt 工具文本未同步修剪问题",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "standard",
