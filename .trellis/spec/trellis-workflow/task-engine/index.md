@@ -7,15 +7,23 @@
 ## 任务执行引擎约定
 
 1. **执行步骤清单用 `steps`，不用外来术语**：`task.json` 的步骤分解统一为
-   `steps: TaskStep[]`（`id/title/acceptance/status/verify/verified/verificationNotes`）。
-   不引入 `subtask`/`needsVerification`/`L1/L2`/`RedTeam` 等旁路词表——单一原生词表，
+   `steps: TaskStep[]`（`id/title/spec/acceptance/status/verification/verify/verified/verifiedBy/verificationNotes/blockedReason`）。
+   不引入 `subtask`/`needsVerification`/`L1/L2`/`RedTeam` 等旁路词表——单一原生词表；
+   也不保留 `checklist.yaml` / `implement.md` 平行清单（feat-09-06 收编：验证计划与风险/回滚归
+   `design.md`，执行推进 100% 走 `steps`；旧项目残留模板由 `ensureProjectSkills` 每轮自动修剪）。
    向下兼容（无 `steps` 的旧任务仍按原有阶段推进）。
-2. **步骤双层硬门禁（先验证后完结，先校验后写盘）**：
-   - **步骤验证门禁**：`applyStepUpdate` 只在 `current.verified === true`（已持久化的状态）时
-     放行 `status: 'completed'`，强制**两阶段提交**，杜绝单次调用自证自测；
+2. **步骤 5 态状态机与多主体验证（先验证后完结，先校验后写盘）**：
+   - **状态机**：`pending` → `in_progress` → `verifying` → `completed`（可中途 `blocked`，
+     `blocked` 必须携带 `blockedReason`）；`verifying` 是"代码写完、等待验证"的显式缓冲态；
+   - **验证主体**：`verification: 'none' | 'ai' | 'human'`（`verify: true` 是 `'ai'` 的遗留别名）；
+     `'ai'` = 模型/自动化验证，`'human'` = 人工验收卡点；
+   - **步骤验证门禁**：`applyStepUpdate` 只在验证条件已持久化时放行 `status: 'completed'`——
+     `'ai'` 要求 `current.verified === true`；`'human'` 要求 `current.verified === true &&
+     current.verifiedBy === 'human'`（模型自证自签被物理拒绝），强制**两阶段提交**；
    - **任务完结门禁**：`updateTaskRecord` 置 `status: 'completed'` 与 `archiveTaskRecord`
-     归档前都必须过 `checkStepsCompletion`——任一步骤 `status !== 'completed'` 或
-     `verify===true && verified!==true` 均拒绝；
+     归档前都必须过 `checkStepsCompletion`——任一步骤处于 `blocked`（`[trellis/steps_blocked]`）、
+     `status !== 'completed'`（`[trellis/steps_incomplete]`）或验证未通过
+     （`[trellis/steps_unverified]`，含 `'human'` 未确认）均拒绝；
    - 布尔字段必须严格类型校验（`typeof === 'boolean'`），`Boolean()` 会把字符串 `"false"`
      强制转成 `true`，是历史旁路点。
 3. **产物写入走专属受控工具 `trellis_artifact_update`**：
@@ -44,6 +52,13 @@
    （`findActiveStep` + `formatStepPrompt`），并用**内存级** `stepInjectedCache`（`Map<sessionId, key>`，
    key = `stepId:status:verified`）防刷屏——同一步骤未变化时降级为 `formatStepReminder` 单行提示；
    **禁止在 pre-step 内写盘**；`session/disposed` 时清理该缓存。
+   `findActiveStep` 优先级：`blocked` > `in_progress` > `verifying` > `pending`（阻塞最先暴露）；
+   `formatStepPrompt` 分级渲染：`blocked`（阻塞原因）、`verifying + human`（👤 人工验收等待卡点，
+   严禁模型擅自推进）、`verifying + ai`（执行 design.md 验证命令并记录证据）。
+6. **废弃模板自动修剪（self-healing）**：`ensureProjectSkills` 每轮运行时会清理项目级残留的
+   废弃模板（`DEPRECATED_PROJECT_TEMPLATES`：`.agents/skills/_templates/` 与 `.trellis/templates/`
+   下的 `feat/implement.md`、`refactor/checklist.yaml`）——仅硬编码相对路径、`assertPolicyAllowsWrite`
+   沙箱 fail-closed、**绝不触碰 `tasks/` 下任何历史产物**；修剪失败静默跳过，不影响面包屑注入。
 
 ## 已知坑（防复发）
 
@@ -59,3 +74,5 @@
   直接抛 `session event "user/message" carries non-JSON-serializable data` 使本轮运行失败
   （证据：issue-09-05-breadcrumb-undefined；参考实现 `dsh-agent-instructions` 即用条件展开）。
 - 安全边界别只信"文件名/字符集"校验：路径穿越要结合 `path.relative` 强约束为直接子段。
+- 删除类操作（模板修剪、归档移动）用 `node:fs` 时必须以**硬编码相对路径 + 沙箱策略 fail-closed**
+  双保险，绝不允许"扫描并删除用户内容"的宽松实现；`dsh-fs` 无 delete/move 原语是已知边界。

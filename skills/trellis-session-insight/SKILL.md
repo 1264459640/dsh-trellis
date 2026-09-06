@@ -13,9 +13,10 @@ runtime artifacts before acting.
 - **Runtime session files** — `.trellis/.runtime/sessions/*.json`; each has a
   `current_task` pointer (the active task dir).
 - **Task JSON** — `.trellis/tasks/<task>/task.json` with `status` (
-  `planning` / `in_progress` / `completed`).
-- **Artifacts** — `prd.md`, `design.md` if present, `implement.md` if present,
-  `research/` files.
+  `planning` / `in_progress` / `completed`) and the execution step list `steps`
+  (5-state: `pending` / `in_progress` / `verifying` / `blocked` / `completed`;
+  per-step `verification: 'none' | 'ai' | 'human'`).
+- **Artifacts** — `prd.md`, `design.md` if present, `research/` files.
 - **Workflow breadcrumb** — the matching `[workflow-state:STATUS]` block in
   `.trellis/workflow.md`.
 
@@ -29,8 +30,8 @@ runtime artifacts before acting.
 | task archived | `completed` |
 
 Combine presence checks: a complex task that is `planning` but lacks `design.md` /
-`implement.md` is not planning-ready; an `in_progress` task with a dirty tree still
-needs the commit step.
+a planned `steps` list is not planning-ready; an `in_progress` task with a dirty
+tree still needs the commit step.
 
 ## Guardrails
 

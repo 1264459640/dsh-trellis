@@ -13,7 +13,8 @@ reviewed artifacts.
 
 1. **Compare against artifacts.** Review all changes against:
    - the relevant `.trellis/spec/<package>/<layer>/index.md` Quality Check + guidelines
-   - `prd.md` (acceptance criteria), `design.md` if present, `implement.md` if present
+   - `prd.md` (acceptance criteria), `design.md` if present, and the task's
+     `task.json.steps` acceptance criteria (read the active task state)
 2. **Run tooling.** Lint, type-check, and tests relevant to the changed packages.
 3. **Auto-fix findings directly.** Do not just report; fix what you can and re-run.
 4. **Cross-layer consistency.** When changes span layers or packages, check each

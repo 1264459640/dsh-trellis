@@ -59,10 +59,10 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 | 无/空 `prd.md` | prd | 写 prd（可 `trellis-brainstorm`） |
 | 有 prd；standard 且无 design 或 design.status≠approved | design | 写/改 `design.md`，**等人确认** |
 | design approved；standard 且 design-review 非 passed | design-review | **派独立子代理**写 `design-review.md`（独立审查；主会话不自审自批） |
-| planning 产物齐 + 人卡通过 | 写 `task.json.status=in_progress` | 进入 impl |
-| in_progress；代码未完成 | impl | `trellis-before-dev` → 实现（可派实现子代理）；可维护 `implement.md` |
+| planning 产物齐 + 人卡通过 | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `task.json.status=in_progress` | 进入 impl |
+| in_progress；代码未完成 | impl | `trellis-before-dev` → 按 `task.json.steps` 逐步实现（可派实现子代理） |
 | 实现完成；review 非 passed | review | **派独立子代理**写 `review.md`；机械自修可另用 `trellis-check` |
-| review 过；check 未通过 | check | 派 `trellis-check`，按项目 `.trellis/spec/` 质量门验证；将结果写入 `review.md` 或 `implement.md` |
+| review 过；check 未通过 | check | 派 `trellis-check`，按项目 `.trellis/spec/` 质量门验证；将结果写入 `review.md` |
 | check 通过 | finish | `trellis-update-spec`（如有）→ commit → `trellis-finish-work` / archive |
 
 **Quick 路径**：prd（可轻）→（可选极简 design）→ 写 `status=in_progress` → impl → check/review 精简 → finish。
@@ -84,9 +84,10 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 prd.md
 design.md
 design-review.md
-implement.md
 review.md
 ```
+
+> 执行步骤清单不设独立文件：一律由 `task.json.steps` 承载（规划期录入、执行期单步推进）。
 
 ## 子代理调度
 

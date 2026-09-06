@@ -1,6 +1,6 @@
 ---
 name: trellis-brainstorm
-description: "Guides collaborative requirements discovery before implementation: clarify scope one question at a time, research the codebase first, and converge on planning artifacts (prd.md, plus design.md/implement.md for complex tasks)."
+description: "Guides collaborative requirements discovery before implementation: clarify scope one question at a time, research the codebase first, and converge on planning artifacts (prd.md, plus design.md for complex tasks)."
 ---
 
 # Trellis Brainstorm
@@ -29,8 +29,10 @@ ambiguous after inspection.
 4. If a user-owned decision remains: ask the single highest-value question with a
    recommendation and the trade-off; then **stop**. Do no implementation this turn.
 5. After each answer, update `prd.md`, recompute the decision inventory, repeat.
-6. When no user-owned decision remains, write `design.md` + `implement.md` for
-   complex tasks (lightweight tasks may be PRD-only).
+6. When no user-owned decision remains, write `design.md` (with verification plan
+   and risks/rollback) for complex tasks (lightweight tasks may be PRD-only);
+   draft the execution step list (`task.json.steps` via `trellis_task_update`) with
+   acceptance criteria and `verification: 'ai' | 'human'`.
 7. Run the requirement-convergence gate, then the PRD convergence pass.
 8. Present the final planning summary and **stop**. Do not run `start`.
 9. Only a subsequent user message explicitly approving the latest summary
@@ -51,11 +53,12 @@ ambiguous after inspection.
 - `prd.md`: goal + user value, confirmed facts, requirements, acceptance criteria,
   out of scope, blocking open questions.
 - `design.md`: architecture/boundaries, data flow + contracts, compatibility, key
-  trade-offs, rollback. Complex tasks only.
-- `implement.md`: ordered checklist, validation commands, risky files/rollback
-  points, follow-up before `start`. Complex tasks only.
-- Complex tasks must have `prd.md`, `design.md`, `implement.md` before `start`.
-  Lightweight tasks may be PRD-only.
+  trade-offs, verification plan (executable commands), rollback. Complex tasks only.
+- Execution step list lives in `task.json.steps` (planned here, advanced during
+  implementation) — each step has acceptance criteria and a verification mode
+  (`ai` automated / `human` approval gate).
+- Complex tasks must have `prd.md`, `design.md` and a planned `task.json.steps`
+  before `start`. Lightweight tasks may be PRD-only.
 
 ## Requirement Convergence Gate
 

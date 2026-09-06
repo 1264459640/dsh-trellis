@@ -16,8 +16,11 @@ project's spec and the active task's reviewed artifacts.
    notes live.
 2. **Read task artifacts**, in this order:
    - `prd.md` — requirements and acceptance criteria.
-   - `design.md` if present — boundaries, data flow, contracts.
-   - `implement.md` if present — ordered checklist and validation commands.
+   - `design.md` if present — boundaries, data flow, contracts, verification plan,
+     risks/rollback.
+   - The task's execution step list from `task.json` (read via `trellis_state` or
+     the task dir) — active step and its acceptance criteria, verification mode
+     (`ai` / `human`).
 3. **Read research** under `<task>/research/` for material the task gathered.
 4. Implement the reviewed artifacts, not remembered habits.
 

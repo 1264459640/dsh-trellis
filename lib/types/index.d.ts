@@ -17,7 +17,9 @@ export type TrellisPhase =
   | 'in_progress-inline'
   | 'completed'
 
-export type TaskStepStatus = 'pending' | 'in_progress' | 'completed'
+export type TaskStepStatus = 'pending' | 'in_progress' | 'verifying' | 'blocked' | 'completed'
+
+export type StepVerificationType = 'none' | 'ai' | 'human'
 
 export interface TaskStep {
   id: string
@@ -25,16 +27,22 @@ export interface TaskStep {
   spec?: string
   acceptance?: string[]
   status: TaskStepStatus
+  verification?: StepVerificationType
   verify?: boolean
   verified?: boolean
+  verifiedBy?: 'ai' | 'human'
   verificationNotes?: string
+  blockedReason?: string
 }
 
 export interface TaskStepUpdateInput {
   id: string
   status?: TaskStepStatus
+  verification?: StepVerificationType
   verified?: boolean
+  verifiedBy?: 'ai' | 'human'
   verificationNotes?: string
+  blockedReason?: string
 }
 
 /** Shape returned by the `trellis_artifact_update` tool. */

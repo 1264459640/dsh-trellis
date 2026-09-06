@@ -1,0 +1,75 @@
+{
+  "title": "统一执行步骤清单与多主体验证状态机（收编 checklist 并收拢 implement 模板）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "在 task.json steps 原生模型中扩展 5 态步骤状态机（pending/in_progress/verifying/blocked/completed）与 AI/Human 验证主体区分；收编 refactor 的 checklist.yaml，废弃 feat 的 implement.md 模板并将验证计划与风险回滚收拢至 design.md；实现步骤级人卡点与高信噪比注入。",
+  "steps": [
+    {
+      "id": "types-and-schema",
+      "title": "扩展 TaskStep 类型定义与工具 Schema",
+      "status": "completed",
+      "acceptance": [
+        "lib/types/index.d.ts 导出 5 态 TaskStepStatus、StepVerificationType 与扩展后的 TaskStep 契约",
+        "lib/index.js 中的工具 schema 完整描述新状态与字段"
+      ],
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "lib/types/index.d.ts 扩展导出 TaskStepStatus（5 态）、StepVerificationType（none|ai|human）及 TaskStep 新字段；lib/index.js 工具 schema 完整声明新字段；node --check 语法校验通过。"
+    },
+    {
+      "id": "task-engine-gates",
+      "title": "实现 5 态状态机、多主体验证与硬门禁逻辑",
+      "status": "completed",
+      "acceptance": [
+        "validateSteps 与 validateStepUpdate 支持 verifying, blocked, verification, verifiedBy, blockedReason 等字段校验",
+        "applyStepUpdate 严格校验 AI 验证自测门禁与 Human 人工验收硬卡点，阻止自证自签",
+        "checkStepsCompletion 拦截包含未完成、blocked 或未通过验证的步骤完结主任务"
+      ],
+      "verify": true,
+      "verificationNotes": "lib/task.js: STEP_STATUSES 扩展为 5 态，新增 STEP_VERIFICATION_TYPES；validateSteps/validateStepUpdate 支持 verification/verifiedBy/blockedReason；applyStepUpdate 实现 AI 验证门禁（verified:true 前置）与 Human 硬卡点（verifiedBy:human 前置 + 自证拦截）；checkStepsCompletion 拦截 blocked/未完成/未验证；node --check 通过。",
+      "verified": true
+    },
+    {
+      "id": "breadcrumb-injection",
+      "title": "升级活跃步骤算法与多状态分级注入",
+      "status": "completed",
+      "acceptance": [
+        "findActiveStep 适配优先级：blocked 优先 -> in_progress -> verifying -> pending",
+        "formatStepPrompt 分级格式化：AI 验证提示 vs 👤 人工验收等待卡点 vs ⚠️ 阻塞提示"
+      ],
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "findActiveStep 优先级重构为 blocked > in_progress > verifying > pending；formatStepPrompt 分级渲染 blocked/verifying(ai)/verifying(human)；node --check 通过；测试 findActiveStep priority 与 formatStepPrompt renders verifying/blocked 用例通过。"
+    },
+    {
+      "id": "template-pruning-and-cleanup",
+      "title": "实现废弃模板自动修剪并清理模板与技能文件",
+      "status": "completed",
+      "acceptance": [
+        "lib/skills.js 在 ensureProjectSkills 中接入 DEPRECATED_PROJECT_TEMPLATES 安全修剪通道",
+        "物理移除 skills/_templates/feat/implement.md 与 skills/_templates/refactor/checklist.yaml",
+        "更新 skills/_templates/feat/design.md 及相关技能说明，消除双写依赖"
+      ],
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "lib/skills.js 新增 DEPRECATED_PROJECT_TEMPLATES 与 pruneDeprecatedProjectTemplates（assertPolicyAllowsWrite 沙箱 fail-closed，node:fs unlink 真实路径）；ensureProjectSkills 第 3 步接入修剪；物理移除 skills/_templates/feat/implement.md 与 refactor/checklist.yaml（含 .trellis/templates 与 .agents/skills 副本）；更新 feat/design.md、refactor/refactor-design.md 模板与 trellis-feat/refactor/before-dev/brainstorm/check/session-insight 技能、work-types.md、README 双版本；测试 prune/provision 用例通过。"
+    },
+    {
+      "id": "testing-and-regression",
+      "title": "编写测试用例并执行全量回归验证",
+      "status": "completed",
+      "acceptance": [
+        "编写完整的单元测试覆盖 5 态状态机、AI/Human 门禁拦截、向下兼容与模板修剪",
+        "运行测试套件，测试用例全部通过，保证 0 回归"
+      ],
+      "verify": true,
+      "verified": true,
+      "verificationNotes": "test/native-steps.test.js 新增 12 个用例覆盖 5 态状态机、AI/Human 门禁拦截、blocked 联动、findActiveStep 优先级、formatStepPrompt 分级渲染与模板修剪；全量回归 72/72 通过（client 2 + git 6 + index 26 + native-steps 20 + readonly 11 + state 7），0 失败；node --check 全部 lib 文件通过。注：沙箱内 node --test runner 受 spawn EPERM 限制，采用直接执行测试文件方式验证（与历史 journal 一致）。"
+    }
+  ]
+}

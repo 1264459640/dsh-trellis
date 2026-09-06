@@ -125,10 +125,13 @@ The AI will automatically guide you through creating a Trellis task (e.g., `feat
 - `trellis_task_archive`: Atomically move finished tasks to archive directories and unbind sessions.
 - `trellis_state`: Inspect workflow diagnostics anytime.
 
-### 5. 🎯 Native Steps, Quality Gates & Read-only Planning
-- **Active Step Breadcrumb (SNR First)**: In the implementation phase, the plugin injects only the currently focused step along with its quantitative acceptance criteria (`acceptance`), and degrades to a one-line reminder on repeat — instead of dumping the full checklist on every turn.
-- **Step Verification Gate**: Steps declared with `verify: true` cannot be marked `completed` until an explicit conclusion (`verified: true` with notes) is recorded by the tool layer.
-- **Task Completion Guardrail**: Refuses to mark the overall task as `completed` or archive it if any steps remain pending or unverified.
+### 5. 🎯 Unified Step List, Multi-owner Verification Gates & Read-only Planning
+- **Single Source of Truth**: `task.json.steps` is the only execution step list across all work types (feat/issue/refactor); the parallel `implement.md` / `checklist.yaml` lists are removed, with verification plans and risks/rollback carried by `design.md`. Deprecated templates lingering in existing projects are auto-pruned each turn.
+- **5-State Step Machine**: `pending` → `in_progress` → `verifying` → `completed` (may go `blocked` anytime; `blocked` requires a `blockedReason`).
+- **Multi-owner Verification (AI vs Human)**: a step may declare `verification: 'ai'` (model-run automated verification) or `verification: 'human'` (manual approval gate); the legacy `verify: true` maps to `verification: 'ai'`.
+- **Active Step Breadcrumb (SNR First)**: In the implementation phase, the plugin injects only the currently focused step — priority `blocked` → `in_progress` → `verifying` → `pending` — along with its quantitative acceptance criteria (`acceptance`), and degrades to a one-line reminder on repeat — instead of dumping the full checklist on every turn.
+- **Step Verification Gate**: `verification: 'ai'` steps cannot be marked `completed` until `verified: true` with notes is recorded; `verification: 'human'` steps cannot close until the user explicitly confirms (`verifiedBy: 'human'`).
+- **Task Completion Guardrail**: Refuses to mark the overall task as `completed` or archive it if any steps remain pending, blocked, or unverified.
 - **Read-only Planning (Optional)**: When `enforceReadonlyPlanning: true` is enabled, generic write tools (`write`, `edit`) are pruned during the planning phase; only read/analysis tools and `trellis_artifact_update` remain, enforcing thorough research and specification before code writing begins.
 
 ---

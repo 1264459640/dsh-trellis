@@ -9,12 +9,16 @@ mode: standard   # standard | fastforward
 ## 方案
 -
 
-## 步骤与验证 owner
-| Step | 内容 | 验证 | Owner(AI/HUMAN) |
-|------|------|------|-----------------|
-| 1 | | | AI |
+## 执行步骤
+- 重构执行步骤清单由 `task.json.steps` 唯一承载（规划期通过 `trellis_task_update` 的 `steps` 参数录入），
+  每步标注 `acceptance`（量化验收标准）与 `verification`：
+  - `verification: 'ai'` → 该步由模型/自动化验证（`verified: true` + `verifiedBy: 'ai'`）；
+  - `verification: 'human'` → 该步必须经用户明确确认（`verifiedBy: 'human'`）才能完成，是人卡点。
+- 验证命令按项目 `.trellis/spec/` 质量门记录；纯文档改动注明无需运行验证。
 
-> 验证列：按项目 `.trellis/spec/` 质量门记录；纯文档改动注明无需运行验证。
+## 验证计划
+- 可执行验证命令（行为等价断言 / 测试入口）：
+  1.
 
 ## 风险与回滚
 -

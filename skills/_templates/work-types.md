@@ -57,11 +57,11 @@
 | stage | 产物 | 人卡点 |
 |-------|------|--------|
 | prd | `prd.md` | Quick 可较轻 |
-| design | `design.md` | Standard：用户 approve |
+| design | `design.md`（含验证计划与风险/回滚） | Standard：用户 approve |
 | design-review | `design-review.md`（独立子代理） | Standard：reviewer passed |
-| impl | 代码 + 可选 `implement.md` | 需先写 `status=in_progress` |
+| impl | 代码；步骤清单以 `task.json.steps` 为准 | 需先写 `status=in_progress`；`verification: human` 步骤须用户确认 |
 | review | `review.md`（独立子代理） | blocking 需修复；可选 `trellis-check` 自修 |
-| check | `trellis-check` 结果与验证证据（写入 `review.md` 或 `implement.md`） | 必须通过后 archive |
+| check | `trellis-check` 结果与验证证据（写入 `review.md`） | 必须通过后 archive |
 
 Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review；仍建议最小 prd + 实现后 check。
 
@@ -81,8 +81,8 @@ Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review�
 | stage | 产物 | 人卡点 |
 |-------|------|--------|
 | scan | `scan.md` | 用户勾选纳入项 |
-| design | `refactor-design.md` | 用户 approve |
-| apply | 代码 + `checklist.yaml` + `apply-notes.md` | human 验证步需确认 |
+| design | `refactor-design.md`（步骤清单在规划期录入 `task.json.steps`） | 用户 approve |
+| apply | 代码 + `apply-notes.md`；步骤推进以 `task.json.steps` 为准 | `verification: human` 验证步需确认 |
 | done | 全量验证 | 用户最终确认后 archive |
 
 `mode: fastforward`：范围极小、可回滚、行为等价；可压缩 scan/design，但仍需 apply-notes + check。

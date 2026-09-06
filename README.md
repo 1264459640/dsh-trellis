@@ -126,9 +126,12 @@ AI 将会自动识别意图，引导你创建 Trellis 任务（如 `feat-08-20-w
 - `trellis_task_archive`：任务完成后，一键移入归档目录，自动解绑会话指针，保持看板清爽。
 - `trellis_state`：随时诊断当前项目所处的工作流阶段与健康度。
 
-### 5. 🎯 执行步骤清单、质量门禁与规划期产物写入保护
-- **步骤细化与高信噪比注入（Active Step Breadcrumb）**：在执行阶段，插件不会刷出冗长的全量步骤清单，而是动态提取当前聚焦的单个步骤及其量化验收标准（`acceptance`）注入每轮对话，同一步骤二次提醒时降为单行提示，最大化保护模型的有效注意力。
-- **步骤质量门禁（Verification Gate）**：步骤若声明 `verify: true`，在记录 `verified: true` 验证依据前，工具层物理拦截打标 `completed`，杜绝“自写自测、先斩后奏”。
+### 5. 🎯 统一执行步骤清单、多主体验证门禁与规划期产物写入保护
+- **统一执行清单（Single Source of Truth）**：`task.json.steps` 是全工种唯一的执行步骤清单（feat/issue/refactor 通用），不再维护 `implement.md` / `checklist.yaml` 平行清单；验证计划与风险/回滚由 `design.md` 承载。旧项目残留的废弃模板由插件每轮自动修剪。
+- **步骤 5 态状态机（5-State）**：`pending` → `in_progress` → `verifying` → `completed`（可中途 `blocked`）；`blocked` 须记录 `blockedReason`。
+- **多主体验证（AI vs Human）**：步骤可声明 `verification: 'ai'`（模型/自动化验证）或 `verification: 'human'`（人工验收卡点）；旧字段 `verify: true` 等价于 `verification: 'ai'`。
+- **步骤细化与高信噪比注入（Active Step Breadcrumb）**：在执行阶段，插件不会刷出冗长的全量步骤清单，而是按优先级（`blocked` → `in_progress` → `verifying` → `pending`）动态提取当前聚焦的单个步骤及其验收标准注入每轮对话；同一步骤二次提醒时降为单行提示，最大化保护模型的有效注意力。
+- **步骤质量门禁（Verification Gate）**：`verification: 'ai'` 步骤在记录 `verified: true` 验证依据前，工具层物理拦截打标 `completed`；`verification: 'human'` 步骤必须由用户明确确认（`verifiedBy: 'human'`）才能闭环，杜绝“自写自测、先斩后奏”。
 - **任务完结硬防线**：在所有步骤未全部打卡完成并通过验证前，硬阻止主任务标记为 `completed` 或归档。
 - **规划期只读保护（Readonly Planning，可选）**：开启 `enforceReadonlyPlanning: true` 时，在规划阶段自动从工具面屏蔽 `write` / `edit`，仅保留读分析工具与 `trellis_artifact_update`，强制模型先完成调研与方案设计再进入编码。
 

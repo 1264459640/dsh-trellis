@@ -46,9 +46,9 @@ description: "Refactor workflow for behavior-preserving optimization, splitting,
 | 条件 | stage | 下一步 |
 |------|-------|--------|
 | 无 `scan.md` 或用户未勾选纳入项 | scan | 写 `scan.md`，**等人勾选** |
-| 已勾选；无 design 或 status≠approved | design | 写 `refactor-design.md` + `checklist.yaml`，**等人 approve** |
-| design approved | 写 `status=in_progress` | apply |
-| in_progress | apply | 按 checklist 逐步改；写 `apply-notes.md` |
+| 已勾选；无 design 或 status≠approved | design | 写 `refactor-design.md`，**等人 approve** |
+| design approved | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `status=in_progress` | apply |
+| in_progress | apply | 按 `task.json.steps` 逐步改（`verification: human` 步骤须用户确认）；写 `apply-notes.md` |
 | 步骤 verification=human 且未确认 | 暂停 | 等人确认该步 |
 | 全部步骤验证完 | final | `trellis-check` + 全量验证记录 |
 | 用户最终确认 | finish | `trellis-update-spec` → commit → `trellis-finish-work` / archive |
@@ -76,11 +76,10 @@ ff：可压缩 scan/design 为短说明，但仍需 apply-notes + check；不确
 ```text
 scan.md
 refactor-design.md
-checklist.yaml
 apply-notes.md
 ```
 
-（从 `_templates/refactor/` 复制。）
+（从 `_templates/refactor/` 复制。执行步骤清单不设独立文件，一律由 `task.json.steps` 承载。）
 
 ## Apply 规则
 
@@ -100,5 +99,5 @@ apply-notes.md
 ## 反模式
 
 - 借重构改产品行为
-- 无 checklist 的大爆炸改动
+- 无 `task.json.steps` 清单的大爆炸改动
 - 未批准就写 `status=in_progress`

@@ -18,6 +18,7 @@ import {
   buildBreadcrumbMessage,
 } from '../lib/breadcrumb.js'
 import { assertSafeArtifactPath, ALLOWED_ARTIFACTS, updateTaskArtifact } from '../lib/artifact.js'
+import { ensureProjectSkills, pruneDeprecatedProjectTemplates, DEPRECATED_PROJECT_TEMPLATES } from '../lib/skills.js'
 
 function mockFs(root) {
   const target = (p) => ({ targetKey: path.resolve(p), displayPath: p })
@@ -160,7 +161,7 @@ test('formatStepPrompt and formatStepReminder produce concise, native guidance',
   })
   assert.match(prompt, /\[当前执行步骤\] \[#step-2\] 3D 场景数据绑定 \(步骤进度: 2\/5\)/)
   assert.match(prompt, /帧率 60FPS/)
-  assert.match(prompt, /verify: true/)
+  assert.match(prompt, /verification: ai/)
   assert.match(prompt, /\[执行规约\]/)
 
   const reminder = formatStepReminder({ id: 'step-2', title: '3D 场景数据绑定' })
@@ -369,6 +370,215 @@ test('createTaskRecord and updateTaskRecord drive native steps with gates', asyn
     const done = await updateTaskRecord(fs, root, { slug: 'feat-08-20-native', status: 'completed' })
     assert.equal(done.ok, true)
     assert.equal(done.taskJson.status, 'completed')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// 5. Unified 5-state machine, AI/Human verification gates, blocked linkage
+// ---------------------------------------------------------------------------
+
+test('validateSteps accepts 5-state statuses and verification modes', () => {
+  const res = validateSteps([
+    { id: 's1', title: 'a', status: 'verifying', verification: 'ai' },
+    { id: 's2', title: 'b', status: 'blocked', blockedReason: '依赖缺失' },
+    { id: 's3', title: 'c', status: 'completed', verification: 'human', verified: true, verifiedBy: 'human' },
+  ])
+  assert.equal(res.ok, true)
+  assert.equal(res.steps[0].status, 'verifying')
+  assert.equal(res.steps[0].verification, 'ai')
+  assert.equal(res.steps[1].blockedReason, '依赖缺失')
+  assert.equal(res.steps[2].verifiedBy, 'human')
+
+  assert.equal(validateSteps([{ id: 's1', title: 'a', status: 'bogus' }]).ok, false)
+  assert.equal(validateSteps([{ id: 's1', title: 'a', verification: 'robot' }]).ok, false)
+})
+
+test('validateStepUpdate accepts new fields and rejects unknown verification', () => {
+  const ok = validateStepUpdate({ id: 's1', status: 'verifying', verification: 'human', blockedReason: 'x' })
+  assert.equal(ok.ok, true)
+  assert.equal(ok.update.status, 'verifying')
+  assert.equal(ok.update.verification, 'human')
+
+  const bad = validateStepUpdate({ id: 's1', verification: 'robot' })
+  assert.equal(bad.ok, false)
+  assert.match(bad.error, /verification 必须是/)
+})
+
+test('applyStepUpdate enforces AI gate and Human self-certification guard', () => {
+  // AI: completed requires verified: true already persisted (two-phase commit).
+  const aiSteps = [
+    { id: 's1', title: 'ai step', status: 'in_progress', verification: 'ai', verified: false },
+  ]
+  const aiFail = applyStepUpdate(aiSteps, { id: 's1', status: 'completed' })
+  assert.equal(aiFail.ok, false)
+  assert.match(aiFail.error, /verification_gate/)
+
+  const aiVerified = applyStepUpdate(aiSteps, { id: 's1', verified: true, verificationNotes: 'tests pass' })
+  assert.equal(aiVerified.ok, true)
+  assert.equal(aiVerified.steps[0].verifiedBy, 'ai')
+
+  const aiDone = applyStepUpdate(aiVerified.steps, { id: 's1', status: 'completed' })
+  assert.equal(aiDone.ok, true)
+  assert.equal(aiDone.steps[0].status, 'completed')
+
+  // Human: model cannot self-certify; verified: true requires verifiedBy: 'human'.
+  const humanSteps = [
+    { id: 's2', title: 'human step', status: 'verifying', verification: 'human', verified: false },
+  ]
+  const humanSelfCert = applyStepUpdate(humanSteps, { id: 's2', verified: true })
+  assert.equal(humanSelfCert.ok, false)
+  assert.match(humanSelfCert.error, /human_gate/)
+  assert.match(humanSelfCert.error, /verifiedBy/)
+
+  const humanVerified = applyStepUpdate(humanSteps, { id: 's2', verified: true, verifiedBy: 'human', verificationNotes: 'user approved' })
+  assert.equal(humanVerified.ok, true)
+
+  const humanDone = applyStepUpdate(humanVerified.steps, { id: 's2', status: 'completed' })
+  assert.equal(humanDone.ok, true)
+  assert.equal(humanDone.steps[0].status, 'completed')
+
+  // Human completion without persisted human verification still fails.
+  const humanPremature = applyStepUpdate(
+    [{ id: 's3', title: 'h', status: 'verifying', verification: 'human', verified: true, verifiedBy: 'ai' }],
+    { id: 's3', status: 'completed' },
+  )
+  assert.equal(humanPremature.ok, false)
+  assert.match(humanPremature.error, /human_gate/)
+})
+
+test('applyStepUpdate requires blockedReason when moving to blocked', () => {
+  const steps = [{ id: 's1', title: 'a', status: 'in_progress' }]
+  const noReason = applyStepUpdate(steps, { id: 's1', status: 'blocked' })
+  assert.equal(noReason.ok, false)
+  assert.match(noReason.error, /blockedReason/)
+
+  const ok = applyStepUpdate(steps, { id: 's1', status: 'blocked', blockedReason: '外部接口未就绪' })
+  assert.equal(ok.ok, true)
+  assert.equal(ok.steps[0].status, 'blocked')
+  assert.equal(ok.steps[0].blockedReason, '外部接口未就绪')
+})
+
+test('checkStepsCompletion rejects blocked steps and human-unverified completion', () => {
+  const blocked = checkStepsCompletion([
+    { id: 's1', title: 'a', status: 'blocked', blockedReason: 'x' },
+  ])
+  assert.equal(blocked.ok, false)
+  assert.match(blocked.error, /steps_blocked/)
+
+  const humanUnconfirmed = checkStepsCompletion([
+    { id: 's1', title: 'a', status: 'completed', verification: 'human', verified: true, verifiedBy: 'ai' },
+  ])
+  assert.equal(humanUnconfirmed.ok, false)
+  assert.match(humanUnconfirmed.error, /steps_unverified/)
+
+  const clean = checkStepsCompletion([
+    { id: 's1', title: 'a', status: 'completed', verification: 'human', verified: true, verifiedBy: 'human' },
+    { id: 's2', title: 'b', status: 'completed', verification: 'ai', verified: true },
+    { id: 's3', title: 'c', status: 'completed' },
+  ])
+  assert.equal(clean.ok, true)
+})
+
+test('findActiveStep priority: blocked > in_progress > verifying > pending', () => {
+  const mixed = [
+    { id: 's1', title: 'a', status: 'pending' },
+    { id: 's2', title: 'b', status: 'verifying', verification: 'ai' },
+    { id: 's3', title: 'c', status: 'in_progress' },
+    { id: 's4', title: 'd', status: 'blocked', blockedReason: 'x' },
+  ]
+  assert.equal(findActiveStep(mixed).step.id, 's4')
+
+  const verifyingOnly = [
+    { id: 's1', title: 'a', status: 'pending' },
+    { id: 's2', title: 'b', status: 'verifying' },
+  ]
+  assert.equal(findActiveStep(verifyingOnly).step.id, 's2')
+
+  const inProgressFirst = [
+    { id: 's1', title: 'a', status: 'in_progress' },
+    { id: 's2', title: 'b', status: 'verifying' },
+  ]
+  assert.equal(findActiveStep(inProgressFirst).step.id, 's1')
+})
+
+test('formatStepPrompt renders verifying and blocked states distinctly', () => {
+  const aiVerifying = formatStepPrompt({
+    step: { id: 's1', title: '引擎重构', status: 'verifying', verification: 'ai', acceptance: ['x'] },
+    index: 0,
+    total: 2,
+  })
+  assert.match(aiVerifying, /验证阶段 - 自动化测试/)
+  assert.match(aiVerifying, /design\.md 中声明的验证命令/)
+
+  const humanVerifying = formatStepPrompt({
+    step: { id: 's2', title: '数据迁移', status: 'verifying', verification: 'human', acceptance: ['x'] },
+    index: 1,
+    total: 2,
+  })
+  assert.match(humanVerifying, /人工验收卡点/)
+  assert.match(humanVerifying, /严禁自作主张推进至完成/)
+
+  const blocked = formatStepPrompt({
+    step: { id: 's3', title: '接口联调', status: 'blocked', blockedReason: '网关未开' },
+    index: 0,
+    total: 3,
+  })
+  assert.match(blocked, /⚠️ 步骤已阻塞/)
+  assert.match(blocked, /网关未开/)
+})
+
+// ---------------------------------------------------------------------------
+// 6. Deprecated template pruning (self-healing migration)
+// ---------------------------------------------------------------------------
+
+test('DEPRECATED_PROJECT_TEMPLATES covers both legacy template locations', () => {
+  const rels = DEPRECATED_PROJECT_TEMPLATES.map((p) => p.replace(/\\/g, '/'))
+  assert.ok(rels.includes('.agents/skills/_templates/feat/implement.md'))
+  assert.ok(rels.includes('.agents/skills/_templates/refactor/checklist.yaml'))
+  assert.ok(rels.includes('.trellis/templates/feat/implement.md'))
+  assert.ok(rels.includes('.trellis/templates/refactor/checklist.yaml'))
+})
+
+test('pruneDeprecatedProjectTemplates removes legacy templates and keeps other files', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-prune-'))
+  try {
+    for (const rel of DEPRECATED_PROJECT_TEMPLATES) {
+      const abs = path.join(root, rel)
+      mkdirSync(path.dirname(abs), { recursive: true })
+      writeFileSync(abs, '# legacy\n')
+    }
+    // A non-deprecated template must survive.
+    const keep = path.join(root, '.agents', 'skills', '_templates', 'feat', 'design.md')
+    mkdirSync(path.dirname(keep), { recursive: true })
+    writeFileSync(keep, '# design\n')
+
+    const fs = mockFs(root)
+    const { pruned, skipped } = await pruneDeprecatedProjectTemplates(fs, root)
+    assert.equal(pruned.length, DEPRECATED_PROJECT_TEMPLATES.length)
+    assert.equal(skipped.length, 0)
+    for (const rel of DEPRECATED_PROJECT_TEMPLATES) {
+      assert.throws(() => statSync(path.join(root, rel)))
+    }
+    assert.equal(readFileSync(keep, 'utf8'), '# design\n')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('ensureProjectSkills prunes deprecated templates after provisioning', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-provision-'))
+  try {
+    const fs = mockFs(root)
+    // Simulate a stale project copy of the deprecated skill template.
+    const stale = path.join(root, '.agents', 'skills', '_templates', 'refactor', 'checklist.yaml')
+    mkdirSync(path.dirname(stale), { recursive: true })
+    writeFileSync(stale, 'steps:\n')
+
+    const res = await ensureProjectSkills(fs, root)
+    assert.ok(Array.isArray(res.copied))
+    assert.throws(() => statSync(stale))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
