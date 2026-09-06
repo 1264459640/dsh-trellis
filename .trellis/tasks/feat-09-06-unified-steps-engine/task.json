@@ -1,6 +1,6 @@
 {
   "title": "统一执行步骤清单与多主体验证状态机（收编 checklist 并收拢 implement 模板）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",

@@ -2,16 +2,16 @@
 
 <!-- Hero -->
 <div align="center">
-  <b style="font-size: 1.25em;">Trellis 工作流适配进 DeepSeek Harness</b><br />
-  <sub>让 AI 编程先规划后动手 · 步骤清晰 · 阶段可视 · 告别失控</sub><br /><br />
+  <b style="font-size: 1.35em;">Trellis 工作流深度集成 · DeepSeek Harness 官方扩展</b><br />
+  <sub>先规划后动手 · 单一真理源 · 原生 5 态步骤状态机 · AI/Human 多主体验证门禁 · 阶段可视可控</sub><br /><br />
   <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
   <img alt="Node Version" src="https://img.shields.io/badge/Node.js-≥20-green.svg" />
-  <img alt="每步提醒" src="https://img.shields.io/badge/-每步提醒-4d6bfe" />
-  <img alt="技能自供给" src="https://img.shields.io/badge/-技能自供给-4d6bfe" />
-  <img alt="Web 看板" src="https://img.shields.io/badge/-Web%20看板-4d6bfe" />
+  <img alt="5-State Machine" src="https://img.shields.io/badge/Steps-5--State%20Machine-blue.svg" />
+  <img alt="Two-Phase Gates" src="https://img.shields.io/badge/Gate-Two--Phase%20Commit-success.svg" />
+  <img alt="Readonly Planning" src="https://img.shields.io/badge/Security-Readonly%20Planning-red.svg" />
   <br /><br />
-  <b>每轮对话自动注入任务状态面包屑</b>，把 15+ <code>trellis-*</code> 工作流技能随项目自动补齐，<br />
-  并提供开箱即用的任务管理工具与 Web 端可视化阶段徽标 / Mini 任务看板。
+  <b>为复杂大模型工程编码而生的确定性约束引擎。</b><br />
+  无缝接入 DSH 运行时，提供按轮次状态注入、物理工具面裁剪、步骤级两阶段验证门禁、会话级物理隔离与全生命周期 Web 监控看板。
 </div>
 
 <div align="center">
@@ -27,241 +27,304 @@
 
 ---
 
-## 💡 为什么需要 dsh-trellis？
+## 💡 为什么需要 dsh-trellis？大模型工程化困境与解法
 
-在日常使用 AI Agent 写代码时，你是否经常遇到这些痛点：
-- 🤯 **聊着聊着就跑偏**：多轮对话后，AI 忘了原本的目标是什么，开始乱改不相干的代码。
-- 🏃 **不假思索直接瞎写**：提一个新需求，AI 连架构和影响面都没搞清楚就直接写代码，产生大量回归 Bug。
-- ❓ **进度完全黑盒**：不知道 AI 到底在做需求设计、写代码还是在做测试，卡住了也难以排查。
+在驱动大语言模型（LLM）进行长程、复杂的现实工程开发时，传统的自由对话式编程会迅速遭遇三大**结构性失控**：
 
-**`dsh-trellis` 把成熟的 [Trellis](https://github.com/mindfold-ai/trellis) 结构化工程工作流带到了 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness)。**
+```text
+┌───────────────────────────┐    传统模式弊端     ┌───────────────────────────┐
+│     注意力衰减与迷航      │ ──────────────────► │  多轮对话后脱离主线、跳步  │
+│ Context Signal Decay      │                     │  擅自修改无关业务代码      │
+├───────────────────────────┤                     ├───────────────────────────┤
+│     方案未定、盲目写码    │ ──────────────────► │  无调研无设计直接动用写工具 │
+│ Premature Implementation  │                     │  破坏架构契约、制造大量 Bug│
+├───────────────────────────┤                     ├───────────────────────────┤
+│     缺乏硬性质量防线      │ ──────────────────► │  模型自言自语“已测试通过”  │
+│ Absence of Hard Gates     │                     │  单方面宣布任务完成并关单  │
+└───────────────────────────┘                     └───────────────────────────┘
+```
 
-它让 AI 像资深工程师一样工作：
-1. 🧠 **有记忆、不迷路**：每轮对话开始时，插件会自动将当前任务进度和阶段目标提醒给 AI。
-2. 📐 **先规划、后动手**：遵循规范的工作流——做功能先写 PRD/方案，修 Bug 先分析定位，通过审查验收后再归档。
-3. 📊 **直观可视化**：Web 界面右上角常驻当前任务徽标，点击一键展开任务看板与阶段进度，随时切换与回顾。
-4. 🪶 **轻量零负担**：纯 Node.js ESM 实现，零外部依赖，不需要 Python，不侵入项目源码。
+**`dsh-trellis` 把成熟的 [Trellis](https://github.com/mindfold-ai/trellis) 结构化工程范式与工业级状态机机制完整带入 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness)。**
+
+它不仅是一个提示词集合，而是一套**具有强制约束力的工程运行环境**：
+- 🛡️ **物理级权限受控**：在方案获批前，工具层直接剔除写代码能力，杜绝“提前盲改”；
+- 🎯 **单一真理源（Single Source of Truth）**：彻底消灭多重待办清单的双写地狱，以原生 `steps` 唯一调度执行；
+- 🚦 **两阶段硬门禁**：步骤级与任务级双重阻断，严防模型自证自签，强制人类介入卡点；
+- 🧠 **高信噪比注意力聚焦**：动态计算当前最紧迫步骤，过滤海量上下文冗余，保持模型最高推理水准。
 
 ---
 
-## ⚡ 30 秒极速上手
+## 🏗️ 系统工程架构（System Engineering Architecture）
+
+`dsh-trellis` 深度挂载于 DSH 插件生命周期，基于事件瀑布流（Waterfall Hooks）与底层文件沙箱构建：
+
+```text
+                               DeepSeek Harness Host
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                                                                             │
+  │  [system-prompt/assemble]                     [agent/pre-step]              │
+  │            │                                         │                      │
+  │            ▼                                         ▼                      │
+  │  ┌────────────────────┐                     ┌─────────────────────┐         │
+  │  │ 规划期物理只读裁剪 │                     │ 活跃步骤精准提取器  │         │
+  │  │ Readonly Policy    │                     │ Active Step Locator │         │
+  │  └─────────┬──────────┘                     └──────────┬──────────┘         │
+  │            │ (剔除 write/edit)                         │ (按优先级决策)     │
+  │            ▼                                           ▼                    │
+  │   Model Tool Surface Payload                Breadcrumb Context Block        │
+  │   - read / glob / grep                      [trellis/in_progress]           │
+  │   - trellis_artifact_update                 [当前执行步骤] [#step-2] ...    │
+  │   - trellis_task_update                     - 验收断言 / 验证指令 / 阻塞说明│
+  │                                                                             │
+  │  ─────────────────────────────────────────────────────────────────────────  │
+  │  [Tool Execution Layer]                                                     │
+  │   ├── trellis_task_create  ──► 任务创建、自动播种产物、同步 Session 独占指针│
+  │   ├── trellis_task_update  ──► 状态流转、5 态推进、AI/Human 双层验证门禁拦截│
+  │   ├── trellis_artifact_update► 受控产物通道（严格白名单 + 路径穿越硬拦截）  │
+  │   └── trellis_task_archive ──► 归档移库、Git 干净度校验、解除会话指针       │
+  │                                                                             │
+  │  ─────────────────────────────────────────────────────────────────────────  │
+  │  [Storage & File Boundary]                                                  │
+  │   ├── ctx.fs (DSH Sandboxed FS) ──► 遵循 workspace-write / read-only 策略   │
+  │   ├── node:fs (Tightly-Bounded) ──► 归档原子迁移、废弃模板自愈清理(fail-closed)│
+  │   └── .trellis/tasks/<slug>/    ──► 机器状态 (task.json) + 人类产物 (*.md) │
+  │                                                                             │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔬 核心工程机制深度解析
+
+### 1. 原生 5 态步骤状态机与多主体验证（5-State Engine & Multi-Party Gates）
+
+任务步骤数据契约（`TaskStep`）放弃了简陋的“未做/已做”二元模型，扩展为反映真实工程周期的完整 5 态状态机：
+
+```text
+               ┌──────────────┐
+               │   pending    │ ◄── 步骤已规划，等待前序依赖就绪
+               └──────┬───────┘
+                      │ (认领开工)
+                      ▼
+               ┌──────────────┐      (遇到阻塞/依赖缺失)     ┌──────────────┐
+               │ in_progress  │ ──────────────────────────► │   blocked    │ (强制记录 blockedReason,
+               └──────┬───────┘ ◄────────────────────────── └──────────────┘  面包屑置顶暴露排查)
+                      │                                        (依赖解决)
+           ┌──────────┴──────────┐
+(无需验证) │                      │ (声明了验证要求: verification in ['ai', 'human'])
+           ▼                      ▼
+┌──────────────────┐    ┌──────────────────┐
+│    completed     │    │    verifying     │ ◄── 代码已实施完成，处于验证中
+└──────────────────┘    └────────┬─────────┘     (AI: 运行自测; Human: 等待人审)
+           ▲                     │
+           │ (verified === true) │
+           └─────────────────────┘
+```
+
+#### ① AI 自动化验证门禁（`verification: 'ai'`，兼容历史 `verify: true`）
+- **两阶段提交（Two-Phase Commit）**：大模型**严禁**在单次工具调用中同时将状态改为 `verified: true` 且 `status: 'completed'`；
+- 实施完成后必须先切入 `verifying`，执行在 `design.md` 中指定的自动化测试命令，调用 `trellis_task_update` 固化 `verified: true` 与 `verificationNotes`（测试输出/日志证据），下一轮才允许置为 `completed`。
+
+#### ② Human 步骤级人工验收卡点（`verification: 'human'`）
+- **物理防御自证自签**：针对高风险重构、外部行为变更、涉及金额/权限的核心步骤，声明 `verification: 'human'`；
+- 工具层底层死锁拦截：模型若试图将该步骤标记 `completed`，系统严格校验必须满足 `current.verified === true && current.verifiedBy === 'human'`。
+- 模型无法单方面假冒人工签名，必须在对话中向人类清晰汇报改动要点，等待用户明确批准后方能闭环。
+
+#### ③ 任务完结与归档硬防线
+当任务试图置为主状态 `status: 'completed'` 或调用 `trellis_task_archive` 时，底层触发全量闭环审计：
+- 任一步骤处于 `blocked`：物理拒绝（`[trellis/steps_blocked]`）；
+- 任一步骤未完成：物理拒绝（`[trellis/steps_incomplete]`）；
+- 任一步骤未通过质量验证（含 Human 卡点未放行）：物理拒绝（`[trellis/steps_unverified]`）；
+- Git 工作区存在未提交的业务代码修改：物理拒绝（`[trellis/git_dirty]`）。
+
+---
+
+### 2. 单一真理源与架构双写彻底消除（Single Source of Truth）
+
+在过去的工作流演进中，普遍存在“双写地狱（The Two Lists Problem）”：
+- `feat` 任务在 `implement.md` 中写了一份 `## 有序步骤`；
+- `refactor` 任务在 `checklist.yaml` 中维护了一份私有步骤（携带平行的 `done/blocked` 状态）；
+- 根目录 `task.json.steps` 又有一套步骤清单。
+三个清单字段不一、状态脱节，大模型往往不知道该更新谁，最终退化为无序修改。
+
+#### 方案 C 架构收敛（Architecture Convergence）
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                        单一真理源职责划分                              │
+├──────────────────┬──────────────────┬──────────────────────────────────┤
+│ 文件载体         │ 承载内容性质     │ 核心职责与消费方                 │
+├──────────────────┼──────────────────┼──────────────────────────────────┤
+│ task.json.steps  │ 结构化机器状态契约│ 唯一执行清单，由 task 工具驱动， │
+│                  │ (Machine State)  │ 承载 5 态状态流转与两阶段硬门禁  │
+├──────────────────┼──────────────────┼──────────────────────────────────┤
+│ design.md        │ 非结构化工程思考 │ 方案全貌、数据流、边界契约、     │
+│                  │ (Architecture)   │ 验证计划（命令集）、全局风险回滚 │
+├──────────────────┼──────────────────┼──────────────────────────────────┤
+│ prd.md           │ 业务需求与基准   │ 业务背景、用户价值、需求范围、   │
+│                  │ (Requirements)   │ 任务级宏观验收准则（AC）         │
+└──────────────────┴──────────────────┴──────────────────────────────────┘
+```
+
+- **全面物理废弃**：彻底移除 `implement.md` 与 `checklist.yaml` 模板；
+- **自愈式存量修剪（Self-Healing Pruning）**：
+  在 `ensureProjectSkills` 中内置安全修剪机制。无论旧项目何时由新版插件加载，引擎会在每轮 pre-step 静默、安全地清除历史项目中的 4 处废弃模板残余（严格限定在硬编码相对路径内，采用 fail-closed 沙箱保护，**绝对不触碰任何 tasks/ 历史任务数据**）。
+
+---
+
+### 3. 规划期只读保护机理（Read-only Planning Enforcement）
+
+为什么仅在 System Prompt 中告诫大模型“方案批准前不要写代码”是注定脆弱的？
+因为在长上下文或复杂目标刺激下，大模型的自回归倾向会强行猜测实现细节，动用 `write`/`edit` 工具破坏源码。
+
+`dsh-trellis` 实现了三态授权状态机（Authorization State Machine）：
+
+```text
+                    ┌────────────────────────┐
+                    │       undecided        │ (无活跃任务且未跳过)
+                    │  工具面：只读 + 建任务 │
+                    └───────────┬────────────┘
+                                │ (trellis_task_create)
+                                ▼
+                    ┌────────────────────────┐
+                    │        planning        │ (阶段处于 prd/design/review/scan 等规划期)
+                    │  工具面：只读 + 方案产物更新 (trellis_artifact_update)
+                    │  ❌ 通用写工具 (write/edit) 被物理剔除
+                    └───────────┬────────────┘
+                                │ (方案批准，切入 impl/fix/apply)
+                                ▼
+                    ┌────────────────────────┐
+                    │       authorized       │ (执行期或已明确跳过)
+                    │  工具面：恢复全量写入  │
+                    └────────────────────────┘
+```
+
+- **物理裁剪机制**：在 DSH 调度 `system-prompt/assemble` 时，直接从发往大模型 API 请求体中将 `write` 与 `edit` 的 Schema 抹除；模型在心理认知上根本“看不见”写代码工具，全部计算预算（Reasoning Budget）被强制锁定在调研、设计与严密步骤拆解上；
+- **受控产物通道（`trellis_artifact_update`）**：作为规划期唯一合法写通道，它内置全工种白名单（`prd.md`、`design.md` 等），并结合 `path.relative` 执行直接子路径穿越断言，严防模型借写文档之名修改项目业务代码。
+
+---
+
+### 4. 上下文注意力管理与高信噪比注入（High-SNR Attention Management）
+
+随着对话轮次增加，大模型有效注意力会以指数级衰减。如果每轮都向模型灌入全量步骤清单与庞大产物，会直接引发上下文污染与注意力分散。
+
+#### ① 活跃步骤优先队列决策算法（`findActiveStep`）
+执行阶段，引擎根据状态优先级提取出**唯一的关键聚焦步骤**：
+$$\text{Priority: } \mathbf{blocked} \succ \mathbf{in\_progress} \succ \mathbf{verifying} \succ \mathbf{pending}$$
+- 若某一步阻塞（`blocked`），全系统立即置顶暴露阻断原因，引导模型排查依赖；
+- 若无阻塞，优先暴露正在实施或等待验证的步骤，过滤全部已完成或远期步骤。
+
+#### ② 分级表现层注入（Tiered Breadcrumbs）
+- **`in_progress`**：注入交付规格与量化验收断言（Acceptance Criteria）；
+- **`verifying (AI)`**：提示执行 `design.md` 验证命令并补充测试凭证；
+- **`verifying (Human)`**：高亮抛出 `[人工验收卡点 - 👤 等待用户确认]`，明确声明严禁擅自推进；
+- **`blocked`**：高亮抛出 `[⚠️ 步骤已阻塞]` 与阻塞原因。
+
+#### ③ 内存级去重与防刷屏（In-Memory Deduplication）
+维护每会话内存快照键 `Map<sessionId, 'stepId:status:verified'>`。同一步骤在状态未发生变化时，后续轮次降级为极简单行提醒，**零磁盘 I/O 损耗**，保证模型上下文窗口的高信噪比。
+
+#### ④ Lossless-JSON 规约兼容
+注入消息的 `source` 结构严格执行条件展开（`...(x ? { k: x } : {})`），杜绝在会话事件载荷中写入任何 `undefined` 值，根治了 DSH 底层 `snapshotJsonValue` 校验崩溃风险。
+
+---
+
+### 5. 多会话并发与严格物理隔离（Per-Session Pointer Isolation）
+
+在现代 AI IDE 与 Web 客户端中，用户通常会打开多个窗口或并行派生子代理。
+
+- **弃用全局单例绑定**：彻底抛弃全局单一当前任务指针的设计；
+- **会话级指针绑定**：会话与任务的绑定关系持久化在 `.trellis/.runtime/sessions/<session-safe-id>.json` 中；
+- **零交叉污染**：会话 A 推进 `feat-A`，会话 B 处理 `issue-B`，两者的阶段徽标、注入面包屑与状态推进完全物理隔离，互不干扰。
+
+---
+
+## ⚡ 极速上手指南
 
 ### 1. 安装插件
 
-确保环境满足 Node.js ≥ 20 且 DSH 正常运行，在终端执行：
+确保 Node.js ≥ 20 且 DSH 正常运行，执行：
 
 ```sh
-# 安装插件
+# 安装稳定版本
 dsh plugin --profile web add @banana-peeljj12/dsh-trellis
 
-# 更新插件到最新版本
+# 更新到最新版本
 dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
-# 本地源码开发安装
+# 本地源码开发接入
 dsh plugin --profile web add link:/abs/path/to/dsh-trellis
 ```
 
 安装完成后，**重启一次 DSH 服务**。
 
-### 2. 添加项目到白名单
+### 2. 配置项目白名单 (Allowlist)
 
-插件默认不拦截未授权的项目。重启后，只需在 Web 界面完成一次配置：
+插件秉持安全最小化原则，默认不拦截未授权的项目。只需在 Web 界面配置一次：
+1. 打开 DSH Web 客户端，进入左下角 **设置 → 插件 → Trellis 工作流**；
+2. 在 **白名单项目 (allowlist)** 中添加项目根目录绝对路径（如 `D:/code/my-project` 或 `/home/user/project`），点击保存**即刻热生效**。
 
-1. 刷新 DSH 浏览器页面。
-2. 点击左下角 **设置 → 插件 → Trellis 工作流**。
-3. 在 **白名单项目 (allowlist)** 中填入你的项目绝对路径（如 `/home/user/my-project` 或 `D:/projects/my-project`），点击保存即可**即时生效**。
+> 💡 亦可直接写入 `~/.dsh/settings.yaml` 中的 `trellis-workflow.allowlist`。
 
-> 💡 也可以直接在 `~/.dsh/settings.yaml` 中配置 `trellis-workflow.allowlist`，详见下方配置章节。
+### 3. 开工体验
 
-### 3. 开始使用！
+像平时一样向 AI 描述需求：
+> *“帮我设计并实现用户权限系统，增加基于角色的访问控制（RBAC）”*
 
-在会话中直接像平时一样提需求即可，例如：
-> *“帮我在用户系统里加一个微信扫码登录功能”*
-
-AI 将会自动识别意图，引导你创建 Trellis 任务（如 `feat-08-20-wechat-login`），生成 PRD 需求规划，一步一步稳健推进！
+AI 将启动标准工程生命周期：
+1. 识别意图并征询同意创建 `feat-09-06-rbac-auth` 任务；
+2. 开启规划期只读保护，研读仓库既有架构，产出 `prd.md` 与 `design.md`；
+3. 将执行方案拆解为包含 AI 自测与 Human 验收卡点的 `steps` 步骤清单；
+4. 获得人类明确批准后推进至 `impl` 阶段，逐步编写代码、执行自动化测试、呈报人审卡点，最终安全归档！
 
 ---
 
-## 🧭 三大内置工作流
+## 🧭 三大内置标准工程流
 
-`dsh-trellis` 内置了三套经过实战检验的标准工程流，由路由表自动分发：
-
-| 工作类型 | 入口技能 | 标准推进流程 | 适用场景 |
+| 工作类型 | 推荐入口技能 | 标准推进全阶段 | 适用场景与约束 |
 |---|---|---|---|
-| **新功能开发** | `trellis-feat` | `需求规划 (prd)` → `方案设计 (design)` → `方案评审 (review)` → `代码实现 (impl)` → `代码审查 (review)` → `质量验收 (check)` | 新增功能、重构改版。支持快速通道 (quick) 与标准通道 (standard) |
-| **缺陷修复** | `trellis-issue` | `问题报告 (report)` → `根因分析 (analyze)` → `精准修复 (fix)` → `修复记录 (fix-note)` | Bug 修复、异常排查、性能回归。遇死循环可自动调用 `trellis-break-loop` |
-| **行为重构** | `trellis-refactor` | `代码扫描 (scan)` → `重构方案 (design)` → `实施改造 (apply)` | 保持外部行为不变的代码优化、结构拆分、技术债清理 |
-
-### 🚀 快速通道 vs 🛡️ 标准通道
-- **快速通道 (`quick`)**：适用于局部小改动、挂载点明确的轻量任务，跳过繁重评审直接进入实现与验证。
-- **标准通道 (`standard`)**：关键节点设置**人工卡点**（如设计方案必须经由用户确认、代码必须通过独立 review 与测试验收后方可归档），适合中大型复杂特性。
+| **新功能特性** (`feat`) | `trellis-feat` | `prd` → `design` → `design-review` → `impl` → `review` → `check` | 新特性或大幅改动。支持 `quick`（轻量速通）与 `standard`（含独立审查与双层人卡） |
+| **缺陷修复** (`issue`) | `trellis-issue` | `report` → `analyze` → `fix` → `fix-note` | 缺陷定位与修复。根因明显可跳过 `analyze`；遇复杂震荡可调用 `trellis-break-loop` 斩断死循环 |
+| **行为等价重构** (`refactor`) | `trellis-refactor` | `scan` → `design` → `apply` → `done` | **绝对保证外部行为等价**。清单由 `steps` 驱动；任何涉及业务变更立即转出至 feat/issue |
 
 ---
 
-## ✨ 核心特性一览
+## ⚙️ 核心配置项参考
 
-### 1. 🧭 静默且聪明的状态提醒（面包屑注入）
-- 每当用户发送一条新消息时，插件会自动在首步为 AI 注入当前任务状态（包含当前处于哪个阶段、下一步该做什么）。
-- **不刷屏**：仅在每轮新消息的首步提醒，中间工具调用步骤保持干净。
-- **随时逃生**：只要用户消息中包含 `no-trellis` 关键字，该轮对话即完全跳过工作流拦截。
-
-### 2. 🧩 15+ 工作流技能随项目自动供给
-- 随包内置 15 个经过精细调优的 `trellis-*` 技能及模板（位于包内 `skills/`）。
-- 打开会话时，插件会自动检查项目根目录的 `.agents/skills/`，**缺什么补什么**，无需手动复制或修改 Profile。
-- 项目自身可以自由修改已生成的技能副本；如果不小心删除了，下一轮会自动补齐。
-
-### 3. 🏷️ Web 阶段徽标 & Mini 任务看板
-- 会话标题右侧优雅嵌入当前阶段徽标（如 `功能 · design`）。
-- **新建对话也可用**：发送首条消息前，徽标显示在输入框上方右侧，可在开工前直接激活/切换任务。
-- 点击/悬停可展开当前工作类型的完整阶段轨道。
-- 点击可呼出 **Mini 任务看板**：
-  - 🔄 **快速切换**：在多个活跃任务之间一键切换会话绑定。
-  - 🗄️ **归档折叠**：自动按月份（如 `2025-08`）折叠已完成的历史任务，清晰易查。
-- 极致性能：全部基于 Host 端只读缓存摘要，浏览器端纯展示，绝不触发额外耗时扫描。
-
-### 4. 🛠️ 规范化的任务全生命周期工具
-- `trellis_task_create`：一键创建任务目录、初始化产物模板（prd/design）、支持传入细粒度 `steps` 执行步骤清单、规范命名格式（`<type>-<mm-dd>-<name>`），并同步绑定到当前会话。
-- `trellis_task_update`：原子化更新任务阶段（`stage`）、状态（`status`）、批量重置步骤清单（`steps`）或推进单个步骤（`step`），自动校验步骤质量门禁并刷新界面徽标。
-- `trellis_artifact_update`：受控写入当前任务的阶段交付文档（PRD / 设计方案 / 验收报告等），物理限定只能写任务目录内的标准产物，无法触碰项目源码。
-- `trellis_task_archive`：任务完成后，一键移入归档目录，自动解绑会话指针，保持看板清爽。
-- `trellis_state`：随时诊断当前项目所处的工作流阶段与健康度。
-
-### 5. 🎯 统一执行步骤清单、多主体验证门禁与规划期产物写入保护
-- **统一执行清单（Single Source of Truth）**：`task.json.steps` 是全工种唯一的执行步骤清单（feat/issue/refactor 通用），不再维护 `implement.md` / `checklist.yaml` 平行清单；验证计划与风险/回滚由 `design.md` 承载。旧项目残留的废弃模板由插件每轮自动修剪。
-- **步骤 5 态状态机（5-State）**：`pending` → `in_progress` → `verifying` → `completed`（可中途 `blocked`）；`blocked` 须记录 `blockedReason`。
-- **多主体验证（AI vs Human）**：步骤可声明 `verification: 'ai'`（模型/自动化验证）或 `verification: 'human'`（人工验收卡点）；旧字段 `verify: true` 等价于 `verification: 'ai'`。
-- **步骤细化与高信噪比注入（Active Step Breadcrumb）**：在执行阶段，插件不会刷出冗长的全量步骤清单，而是按优先级（`blocked` → `in_progress` → `verifying` → `pending`）动态提取当前聚焦的单个步骤及其验收标准注入每轮对话；同一步骤二次提醒时降为单行提示，最大化保护模型的有效注意力。
-- **步骤质量门禁（Verification Gate）**：`verification: 'ai'` 步骤在记录 `verified: true` 验证依据前，工具层物理拦截打标 `completed`；`verification: 'human'` 步骤必须由用户明确确认（`verifiedBy: 'human'`）才能闭环，杜绝“自写自测、先斩后奏”。
-- **任务完结硬防线**：在所有步骤未全部打卡完成并通过验证前，硬阻止主任务标记为 `completed` 或归档。
-- **规划期只读保护（Readonly Planning，可选）**：开启 `enforceReadonlyPlanning: true` 时，在规划阶段自动从工具面屏蔽 `write` / `edit`，仅保留读分析工具与 `trellis_artifact_update`，强制模型先完成调研与方案设计再进入编码。
-
----
-
-## ⚙️ 详细配置
-
-插件支持通过 **Web 界面**（推荐）、**用户全局配置** 或 **Profile 补丁** 进行配置：
-
-### 配置项说明
-
-| 配置字段 | 类型 | 默认值 | 说明 |
+| 配置字段 | 类型 | 默认值 | 作用说明 |
 |---|---|---|---|
-| `allowlist` | `string[]` | `[]` | **核心白名单**：生效的项目根绝对路径列表。为空时不拦截任何项目 |
-| `injectStep` | `number` | `1` | 面包屑注入步数（默认 1，即每个新提问的首步注入） |
-| `skipKeywords` | `string[]` | `['no-trellis']` | 只要消息中包含这些单词，该轮对话不注入工作流面包屑 |
-| `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析 |
-| `enforceReadonlyPlanning` | `boolean` | `false` | **规划期只读保护**：在 planning 阶段自动裁剪通用写入工具（`write` / `edit`），仅保留读工具与 `trellis_artifact_update` |
-
-### 方式一：Web 设置界面（免重启、即时生效）
-
-1. 重启 DSH 后，访问左下角 **设置 → 插件 → Trellis 工作流**。
-2. 增删白名单路径或调整参数，点击保存即刻写入生效。
-
-### 方式二：用户配置文件（`settings.yaml`，热重载）
-
-编辑 `~/.dsh/settings.yaml`（Windows 为 `%USERPROFILE%\.dsh\settings.yaml`）：
-
-```yaml
-trellis-workflow:
-  allowlist:
-    - /home/bananapeel/my-awesome-project
-    - /mnt/d/code/another-project
-  injectStep: 1
-  skipKeywords:
-    - no-trellis
-  inline: false
-  enforceReadonlyPlanning: false
-```
-
-<details>
-<summary><b>方式三：Profile 配置文件（cordis.patch.yml）</b></summary>
-
-在当前使用的 profile 的 `cordis.patch.yml` 中直接声明：
-
-```yaml
-- id: trellis-workflow
-  name: '@banana-peeljj12/dsh-trellis'
-  config:
-    allowlist:
-      - /path/to/your/project
-    injectStep: 1
-    skipKeywords: ['no-trellis']
-    inline: false
-```
-</details>
+| `allowlist` | `string[]` | `[]` | **核心安全白名单**：生效的项目根目录绝对路径列表。为空时不拦截任何项目 |
+| `enforceReadonlyPlanning` | `boolean` | `false` | **规划期只读保护主开关**：开启后，在 planning 阶段物理裁剪通用写工具面，仅放行只读工具与方案更新通道 |
+| `injectStep` | `number` | `1` | 面包屑注入步数（默认 1，即在新提问的首步注入指引） |
+| `skipKeywords` | `string[]` | `['no-trellis']` | **逃生短语**：用户消息中只要包含该关键字，该轮对话彻底绕过任何工作流拦截与注入 |
+| `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析模式 |
 
 ---
 
-## 🛠️ 二次开发与架构说明
-
-### 目录结构
+## 🛠️ 模块职责划分与源码导读
 
 ```text
 dsh-trellis/
-├── package.json            # npm 插件包元数据（@banana-peeljj12/dsh-trellis, MIT）
-├── cordis.patch.yml        # dsh.bundle 自动挂载层声明
 ├── lib/
-│   ├── index.js            # 插件总入口：注册 pre-step 拦截器、生命周期、RPC 路由与工具集
-│   ├── task.js             # 任务创建与更新：slug 规范校验、模板初始化、session 指针同步
-│   ├── archive.js          # 任务归档：原子迁移至 archive/<yyyy-mm>/、解绑指针
-│   ├── resolve.js          # 路径解析：基于 cwd 识别项目根与 .trellis 资产
-│   ├── state.js            # 状态机：解析会话绑定、读取当前 stage、组装摘要与阶段轨道
-│   ├── breadcrumb.js       # 构造每轮向 AI 注入的提示词与逃生词过滤
-│   ├── trust.js            # 本地回环同源安全校验（防御 DNS-rebinding）
-│   ├── skills.js           # 技能供给：按需向项目 .agents/skills/ 补齐权威副本
-│   ├── settings.js         # Web 设置页命名空间注册与存储交互
-│   └── meta.js             # 配置项 Schema 与默认值
-├── skills/                 # 15 个随包权威技能副本
-│   ├── trellis-*/SKILL.md  # 技能正文定义
-│   └── _templates/         # 任务产物模板 (prd/design/review 等) 与路由表
-└── scripts/
-    └── install.mjs         # 独立辅助安装脚本
+│   ├── index.js            # 核心注册器：挂载 pre-step 拦截、assemble 权限裁剪、生命周期及 RPC Remote
+│   ├── task.js             # 任务执行引擎：5 态流转契约、AI/Human 双层验证门禁、checkStepsCompletion 审计
+│   ├── skills.js           # 技能供给与自愈：ensureProjectSkills 按需补齐技能、pruneDeprecatedProjectTemplates 安全修剪
+│   ├── breadcrumb.js       # 提示词构建器：findActiveStep 优先队列决断、formatStepPrompt 分级渲染、内存去重
+│   ├── readonly.js         # 权限判定机：根据任务阶段派生三态授权（undecided / planning / authorized）
+│   ├── state.js            # 状态机解析：阶段感知相位转换（phaseForTask）、跨会话指针解析、月度归档槽推导
+│   ├── artifact.js         # 交付物通道：trellis_artifact_update 受控写入、白名单与路径穿越防御
+│   ├── archive.js          # 归档机：任务完成态校验、node:fs 原子迁移受控例外、Git 干净度校验
+│   ├── board.js            # 看板数据聚合：轻量汇总活动任务与月度归档树，零额外 I/O 开销
+│   ├── client.js           # 前端 Web 扩展：阶段微标展示、Mini 看板组件、可视化设置面板
+│   └── types/index.d.ts    # 完整 TypeScript 接口契约定义
+├── skills/                 # 15 个经过精细工程调优的随包权威工作流技能与产物模板
+└── test/                   # 72+ 项纯原生自动化测试套件（覆盖状态机、门禁拦截、路径沙箱与自愈修剪）
 ```
 
-### 技术要点
-- **零构建、纯标准 ESM**：无 TypeScript 编译负担，改动即生效。
-- **只读缓存隔离**：Web 端的查询请求只命中内存只读缓存，杜绝频繁读取磁盘。
-- **沙箱与安全隔离**：文件操作全部遵循 DSH 的 `ctx.fs` 沙箱安全规范，避免越权访问。
-
 ---
 
-## ❓ 常见问题（FAQ）
+## 📄 开源许可证与致谢
 
-<details>
-<summary><b>Q1: 安装后对话没有出现 Trellis 提醒？</b></summary>
-
-- **检查白名单**：默认情况下 `allowlist` 为空。请在 Web 设置或 `settings.yaml` 中将当前项目的根目录绝对路径加入 `allowlist`。
-- **检查服务重启**：插件刚安装后需要重启一次 DSH 服务，并硬刷新浏览器（`Ctrl+F5` 或 `Cmd+Shift+R`）。
-- **检查逃生词**：确认提问中没有触发 `no-trellis` 关键字。
-</details>
-
-<details>
-<summary><b>Q2: Web 设置页没有看到「Trellis 工作流」选项？</b></summary>
-
-- 若当前 DSH 版本未对第三方插件暴露设置页，可运行 `node scripts/install.mjs --patch-harness` 一键补丁；或者直接编辑 `~/.dsh/settings.yaml` 中的 `trellis-workflow:` 段落（同样支持热重载，无需重启）。
-</details>
-
-<details>
-<summary><b>Q3: 如何彻底卸载？</b></summary>
-
-```sh
-dsh plugin --profile web remove @banana-peeljj12/dsh-trellis
-```
-如果需要清理本地 link 缓存残留，可执行 `node scripts/install.mjs --uninstall --profile web`。
-</details>
-
----
-
-## 🙏 致谢
-
-- **[Trellis](https://github.com/mindfold-ai/trellis)**（作者 [Mindfold](https://mindfold.ai)，AGPL-3.0-only）：
-  感谢 Mindfold 团队开源了出色的 Trellis 工作流思路。本项目仅移植了其**流程语义**（阶段轨道、任务产物规范与面包屑机制），代码与技能内容均为独立重写，不包含任何 AGPL 源码，以 MIT 许可证发布。
-- **[CodeStable](https://github.com/codestable/CodeStable)**：
-  感谢 CodeStable 团队，内置的三大工作流（feat / issue / refactor）结构通用化改编自其优秀的工程化设计思路。
-- **[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)**：
-  强大的大模型 Agent 运行时底座。
-
----
-
-## 📄 开源许可证
-
-本项目基于 [MIT 许可证](./LICENSE) 开源发布。
+- 本项目基于 [MIT 许可证](./LICENSE) 开源发布。
+- 致谢 [Trellis](https://github.com/mindfold-ai/trellis)（Mindfold）：感谢其开创性的工程工作流思路；本项目对其工作流语义进行了基于 DSH 原生机制的完全自主重构（纯 ESM 实现，无 AGPL 代码）。
+- 致谢 [CodeStable](https://github.com/codestable/CodeStable)：优秀的三大工作流设计哲学启发。
+- 致谢 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)：卓越且强大的现代 Agent 底座。
