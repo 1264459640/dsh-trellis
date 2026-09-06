@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Trellis-Architecture" id="trellis-arch-1">
+    <mxGraphModel dx="1420" dy="880" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= LAYER 1: DeepSeek Harness Host & Interceptors ================= -->
+        <mxCell id="layer_host" value="DeepSeek Harness 宿主运行时 &amp; 钩子拦截层 (Host Runtime &amp; Hooks)" style="swimlane;startSize=28;rounded=1;arcSize=6;fillColor=#f0f4ff;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;fontColor=#1e3d59;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1120" height="210" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hook_assemble" value="[system-prompt/assemble]&#xa;物理工具面裁剪钩子&#xa;(Read-only Tool Pruner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;fontColor=#7a1c18;" vertex="1" parent="layer_host">
+          <mxGeometry x="30" y="50" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hook_prestep" value="[agent/pre-step]&#xa;按轮次面包屑注入钩子&#xa;(Breadcrumb &amp; Step Injector)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;fontColor=#1b365d;" vertex="1" parent="layer_host">
+          <mxGeometry x="300" y="50" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rpc_routes" value="RPC Remote API 服务&#xa;状态摘要 / 看板数据 / 会话绑定&#xa;(/api/board, /api/bind)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;fontColor=#3b1e54;" vertex="1" parent="layer_host">
+          <mxGeometry x="590" y="50" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llm_agent" value="大语言模型 Agent 核心&#xa;(LLM Reasoning &amp; Execution)&#xa;受约束的注意力与工具调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;fontColor=#5c3d00;" vertex="1" parent="layer_host">
+          <mxGeometry x="880" y="50" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="desc_prune" value="方案定稿前：物理剔除 write/edit，杜绝提前盲改代码&#xa;定稿后：放行全量写工具" style="text;html=1;fontSize=11;fontColor=#666666;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="layer_host">
+          <mxGeometry x="30" y="130" width="220" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="desc_inject" value="单步聚焦：blocked &gt; in_progress &gt; verifying&#xa;内存级去重：同状态降级为单行提醒，防刷屏" style="text;html=1;fontSize=11;fontColor=#666666;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="layer_host">
+          <mxGeometry x="300" y="130" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="desc_rpc" value="轻量只读内存缓存，前端按需拉取&#xa;零额外文件 I/O 开销" style="text;html=1;fontSize=11;fontColor=#666666;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="layer_host">
+          <mxGeometry x="590" y="130" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="desc_agent" value="单轮注意力聚焦于当前步骤&#xa;无杂音、不迷航、遵守门禁" style="text;html=1;fontSize=11;fontColor=#666666;align=center;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="layer_host">
+          <mxGeometry x="880" y="130" width="210" height="50" as="geometry" />
+        </mxCell>
+
+
+        <!-- ================= LAYER 2: Trellis Core Engine ================= -->
+        <mxCell id="layer_engine" value="Trellis 确定性约束引擎核心 (Deterministic Workflow &amp; Gating Engine)" style="swimlane;startSize=28;rounded=1;arcSize=6;fillColor=#f5fff5;strokeColor=#82b366;fontStyle=1;fontSize=14;fontColor=#1b431e;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="290" width="1120" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- 5-State Machine Sub-Box -->
+        <mxCell id="box_statemachine" value="原生 5 态步骤状态机 (TaskStep 5-State Machine)" style="swimlane;startSize=24;rounded=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;fontSize=12;fontColor=#1b431e;collapsible=0;" vertex="1" parent="layer_engine">
+          <mxGeometry x="30" y="45" width="510" height="215" as="geometry" />
+        </mxCell>
+
+        <mxCell id="st_pending" value="pending&#xa;待开始" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1;fontColor=#333333;" vertex="1" parent="box_statemachine">
+          <mxGeometry x="20" y="40" width="90" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="st_inprog" value="in_progress&#xa;实施编码中" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;fontColor=#1b365d;" vertex="1" parent="box_statemachine">
+          <mxGeometry x="150" y="40" width="95" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="st_verifying" value="verifying&#xa;待验证阶段" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;fontColor=#5c3d00;" vertex="1" parent="box_statemachine">
+          <mxGeometry x="285" y="40" width="95" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="st_completed" value="completed&#xa;已通过并完结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;fontColor=#1e4620;" vertex="1" parent="box_statemachine">
+          <mxGeometry x="410" y="40" width="85" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="st_blocked" value="blocked (阻塞态)&#xa;必须携带 blockedReason&#xa;置顶暴露，排查解除后恢复" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;fontColor=#7a1c18;" vertex="1" parent="box_statemachine">
+          <mxGeometry x="150" y="130" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Edges in state machine -->
+        <mxCell id="e_p_to_i" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="box_statemachine" source="st_pending" target="st_inprog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_i_to_v" value="有验证要求" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;fontSize=10;fontColor=#666666;" edge="1" parent="box_statemachine" source="st_inprog" target="st_verifying">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_v_to_c" value="verified:true" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=10;fontColor=#1b431e;" edge="1" parent="box_statemachine" source="st_verifying" target="st_completed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_i_to_b" value="阻塞" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=1;fontSize=10;fontColor=#b85450;" edge="1" parent="box_statemachine" source="st_inprog" target="st_blocked">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_b_to_i" value="恢复" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1;fontSize=10;fontColor=#6c8ebf;exitX=0.2;exitY=0;entryX=0.2;entryY=1;" edge="1" parent="box_statemachine" source="st_blocked" target="st_inprog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Dual Verification Gates Sub-Box -->
+        <mxCell id="box_gates" value="双层质量验证硬门禁 (Dual Quality Gates)" style="swimlane;startSize=24;rounded=1;fillColor=#ffffff;strokeColor=#d6b656;fontStyle=1;fontSize=12;fontColor=#5c3d00;collapsible=0;" vertex="1" parent="layer_engine">
+          <mxGeometry x="570" y="45" width="520" height="215" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gate_ai" value="AI 自动化自测门禁 (verification: 'ai')&#xa;两阶段提交 (Two-Phase Commit)：&#xa;1. 跑测试命令，写入 verificationNotes 证据&#xa;2. 单独调用工具置 verified: true；方可 completed&#xa;❌ 物理拦截单次调用内自证自完结" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#6c8ebf;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="box_gates">
+          <mxGeometry x="20" y="35" width="480" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gate_human" value="Human 人工验收硬卡点 (verification: 'human')&#xa;步骤级人卡防线：&#xa;1. 面包屑高亮挂起 [👤 需用户确认]，严禁模型私自推进&#xa;2. 工具层严格校验 verifiedBy === 'human'&#xa;❌ 物理拦截模型伪造人工签名，未获批准禁止标记 completed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#b85450;fontSize=11;align=left;spacingLeft=10;fontColor=#7a1c18;" vertex="1" parent="box_gates">
+          <mxGeometry x="20" y="125" width="480" height="75" as="geometry" />
+        </mxCell>
+
+
+        <!-- ================= LAYER 3: Storage & Single Source of Truth ================= -->
+        <mxCell id="layer_storage" value="单一真理源存储边界 &amp; 自愈修剪机制 (Single Source of Truth &amp; Self-Healing)" style="swimlane;startSize=28;rounded=1;arcSize=6;fillColor=#fcfcfc;strokeColor=#666666;fontStyle=1;fontSize=14;fontColor=#333333;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="610" width="1120" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="card_taskjson" value="task.json.steps&#xa;(唯一结构化机器状态契约)&#xa;──────────────────&#xa;• 5 态流转 (status)&#xa;• 验收准则 (acceptance)&#xa;• 验证主体 (ai | human)&#xa;• 证据链 (verificationNotes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="layer_storage">
+          <mxGeometry x="30" y="45" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="card_designmd" value="design.md&#xa;(富文本非结构化工程思考)&#xa;──────────────────&#xa;• 架构边界与数据流&#xa;• 契约变更与权衡取舍&#xa;• 验证计划 (可执行命令集)&#xa;• 全局风险分析与回滚预案" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="layer_storage">
+          <mxGeometry x="300" y="45" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="card_prdmd" value="prd.md&#xa;(业务需求基线与范围)&#xa;──────────────────&#xa;• 业务背景与用户价值&#xa;• In/Out of Scope 范围&#xa;• 任务级宏观验收标准 (AC)&#xa;• 方案定稿前只读保护锁定" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="layer_storage">
+          <mxGeometry x="570" y="45" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="card_pruning" value="自愈式废弃模板修剪&#xa;(Self-Healing Pruning)&#xa;──────────────────&#xa;• 彻底删除 implement.md&#xa;• 彻底删除 checklist.yaml&#xa;• 每轮安全物理清理老模板&#xa;• 消除清单双写，零冗余" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;align=left;spacingLeft=12;fontColor=#7a1c18;" vertex="1" parent="layer_storage">
+          <mxGeometry x="840" y="45" width="250" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="storage_bottom_note" value="关注点分离 (SoC)：机器状态归 task.json，工程思考归 design.md，业务目标归 prd.md ｜ 绝不跨层双写，绝不自相矛盾" style="text;html=1;fontSize=12;fontColor=#555555;align=center;fontStyle=2;" vertex="1" parent="layer_storage">
+          <mxGeometry x="30" y="190" width="1060" height="25" as="geometry" />
+        </mxCell>
+
+
+        <!-- ================= CROSS-LAYER CONNECTORS ================= -->
+        <mxCell id="edge_ctl_prune" value="方案定稿拦截" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;fontSize=11;fontColor=#b85450;exitX=0.5;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="hook_assemble" target="box_statemachine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_ctl_inject" value="提取活跃步骤注入" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=11;fontColor=#1b365d;exitX=0.5;exitY=1;entryX=0.75;entryY=0;" edge="1" parent="1" source="hook_prestep" target="box_statemachine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_ctl_agent" value="工具调用推进 / 人卡阻断" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;strokeWidth=2;fontSize=11;fontColor=#5c3d00;exitX=0.5;exitY=1;entryX=0.75;entryY=0;" edge="1" parent="1" source="llm_agent" target="box_gates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_sync_steps" value="持久化唯一清单" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=11;fontColor=#1b431e;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="box_statemachine" target="card_taskjson">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_sync_gates" value="验证命令来源" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=11;fontColor=#1b365d;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="box_gates" target="card_designmd">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
