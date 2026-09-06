@@ -1,6 +1,6 @@
 {
   "title": "重构模式 scan 阶段被视为执行中（只读授权阶段感知缺陷）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "standard",
