@@ -1,6 +1,6 @@
 {
   "title": "Trellis 看板双模态重构与 DSH 体验对齐（极简列表 + 阶段泳道大看板 + 对话联动）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
