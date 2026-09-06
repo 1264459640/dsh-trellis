@@ -41,6 +41,7 @@
     "lib",
     "skills",
     "scripts",
+    "docs/images/architecture.drawio.png",
     "cordis.patch.yml",
     "README_EN.md"
   ],
