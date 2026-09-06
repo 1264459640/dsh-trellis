@@ -1,0 +1,41 @@
+# Refactor Checklist: 看板UI重构（列表与看板解耦及图标化）
+
+steps:
+  - id: step-1
+    title: 封装自包含内联 SVG 图标集并替换纯文本/Emoji 按钮
+    acceptance:
+      - 封装通用 SVG 辅助函数（Refresh, Maximize, Close, Search, File, ExternalLink, Folder, Send, Check, Alert, Clock 等）
+      - 替换右上角刷新/展开/收起按钮为矢量图标
+      - 替换搜索框内文本占位与图标
+      - 替换产物列表、归档折叠、卡片状态中的 Emoji 字符
+    verification: ai
+    status: completed
+
+  - id: step-2
+    title: 小窗视图解耦为高密度垂直任务列表
+    acceptance:
+      - 移除小窗内硬切两半的横向列排布
+      - 实现垂直单列流动布局 KanbanTaskList
+      - 每项卡片完整展示标题、slug、工作流指示色条、阶段 Badge 与步骤进度环
+      - 归档列表采用带 Folder 图标的折叠面板
+    verification: ai
+    status: completed
+
+  - id: step-3
+    title: 大看板泳道容器与工作流联动重构
+    acceptance:
+      - 工作流类型 Tab 支持显示各类型任务计数
+      - 选中具体类型时沉浸式展现该工作流的阶段看板，统一滚动容器
+      - 消除原先功能/缺陷/重构三整行同时挂载 3 根横向滚动条的脏乱体验
+      - 卡片增加微阴影、圆角与左侧工作流色条，优化 Hover 与选中态
+    verification: ai
+    status: completed
+
+  - id: step-4
+    title: 详情面板专业工作台化与主次层级升级
+    acceptance:
+      - 阶段流转指示器升级为横向连接线步骤条（Step Tracker）
+      - 产物文件列表改造为带文件图标与外链悬浮的卡片行
+      - 底部按钮明确主次：推进任务为主色实心高亮按钮，激活为次级边框按钮
+    verification: human
+    status: completed
