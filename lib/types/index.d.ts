@@ -45,6 +45,61 @@ export interface TaskStepUpdateInput {
   blockedReason?: string
 }
 
+/**
+ * Host-formatted active step carried on board records: the Web client inserts
+ * this verbatim when composing a "send to chat" prompt — it never re-derives
+ * step semantics (verification gates / attention priority) on its own.
+ */
+export interface BoardActiveStep {
+  id: string
+  title: string
+  status: TaskStepStatus
+  /** 0-based position within the steps array. */
+  index: number
+  total: number
+  blockedReason: string | null
+}
+
+/**
+ * A path-free task record the Web kanban consumes. Optional fields are `null`
+ * (never `undefined`) so the payload survives lossless-JSON snapshotting.
+ */
+export interface BoardTaskRecord {
+  slug: string
+  title: string
+  status: string
+  workType: string | null
+  stage: string | null
+  phase: TrellisPhase
+  /** `yyyy-mm` archive bucket (or `other`), null for active tasks. */
+  month: string | null
+  archived: boolean
+  artifacts: string[]
+  /** Steps aggregation — zero/empty for legacy tasks without `steps`. */
+  totalSteps: number
+  completedSteps: number
+  hasBlocked: boolean
+  blockedReason: string | null
+  hasPendingVerification: boolean
+  activeStep: BoardActiveStep | null
+}
+
+/** Stage-lane track definition shipped with the board (from lib/state.js TRACKS). */
+export interface BoardTrack {
+  stages: string[]
+  completed: string
+}
+
+/** Shape of the `/trellis-workflow/api/board` payload. */
+export interface TrellisBoard {
+  kind: 'board'
+  /** Slug of the task bound to the requesting session, or null. */
+  currentTask: string | null
+  tasks: BoardTaskRecord[]
+  /** Single source of truth for stage lanes keyed by work type. */
+  tracks: Record<'feat' | 'issue' | 'refactor', BoardTrack>
+}
+
 /** Shape returned by the `trellis_artifact_update` tool. */
 export interface TrellisArtifactUpdateResult {
   ok: boolean

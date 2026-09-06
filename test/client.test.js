@@ -40,3 +40,27 @@ test('task chip occupies header utilities AND input dock hero seats', () => {
   // which does NOT carry composerPhase — the old predicate was a bug.
   assert.doesNotMatch(source, /session\.composerPhase/)
 })
+
+test('push-to-chat and artifact token contracts are present (Subtask 4)', () => {
+  const source = readFileSync(clientPath, 'utf8')
+
+  // Artifact token must branch on the archive path (design review P1): archived
+  // tasks live under .trellis/tasks/archive/<month>/<slug>/ — a flat template
+  // would produce dead references for archived tasks.
+  assert.match(source, /task\.archived && task\.month/)
+  assert.match(source, /\.trellis\/tasks\/archive\/' \+ task\.month/)
+
+  // Push prompt must be built from the HOST-computed activeStep (never
+  // re-derived on the client) and reference the task slug.
+  assert.match(source, /function pushPromptFor\(task\)/)
+  assert.match(source, /task\.activeStep/)
+  assert.match(source, /'请继续推进 Trellis 任务 ' \+ task\.slug/)
+
+  // Composer injection: React-controlled textarea via native value setter +
+  // input event (plain .value= does not update React state), contenteditable
+  // execCommand fallback, and clipboard fallback.
+  assert.match(source, /getOwnPropertyDescriptor\(proto, 'value'\)/)
+  assert.match(source, /new Event\('input', \{ bubbles: true \}\)/)
+  assert.match(source, /execCommand\('insertText'/)
+  assert.match(source, /navigator\.clipboard && navigator\.clipboard\.writeText/)
+})

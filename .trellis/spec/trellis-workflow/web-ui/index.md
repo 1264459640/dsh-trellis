@@ -85,3 +85,32 @@
 10. **Cordis `ctx.inject(services, cb)` 回调收到的是子 Context**：`cb` 内
     `web.fs`/`web.sessions`/`web.get('sandboxPolicy')` 均可直接使用（`web` = 子 ctx，
     非首个服务对象）；依赖该形态写路由，勿假设参数是单个服务。
+
+## 看板双模态与对话联动约定（feat-04-18-kanban-overhaul 沉淀）
+
+11. **阶段泳道单一事实源 = `lib/state.js` TRACKS，随 board 下发**：`buildBoard` 在 payload
+    中携带 `tracks`（feat 含 `design-review` 共 6 阶段 + `finish` 显示终端；issue/refactor
+    同理）；客户端**禁止维护第三份轨道常量**（曾删除 `CHIP_TRACKS`），泳道/阶段流一律从
+    `board.tracks` 读取。`phase === 'completed'`（含 `archived: true`）一律归 Archive 泳道。
+12. **看板 steps 聚合字段（lossless-JSON，可选字段 null 非 undefined）**：
+    `totalSteps/completedSteps/hasBlocked/blockedReason（取数组顺序第一个 blocked 步骤，
+    无则 null）/hasPendingVerification/activeStep`。`activeStep` 必须由宿主端 `findActiveStep`
+    计算下发（blocked > in_progress > verifying > pending 优先级），客户端**只负责插入**，
+    不得自行拼装推进 Prompt——否则丢失验证门禁（verification: human 人卡点）与 attention 优先级。
+    畸形 steps（非对象元素）在 readTask 先过滤再聚合。
+13. **克制交互（No Direct State Mutation）**：看板 UI 不提供任何修改任务状态的交互（不拖拽、
+    不直接推进 stage）；唯一"推进"方式是「💬 推进任务」把指令**注入 Composer 输入框**，由
+    Agent 遵循契约执行。产物预览不内置 Markdown 渲染器——点击产物生成 `@.trellis/tasks/...`
+    原生文件 Token（**归档任务必须走 `@.trellis/tasks/archive/<month>/<slug>/<name>` 分支**，
+    否则生成死引用），交 DSH 原生文件系统承载。
+14. **Composer 注入手法（React 受控输入）**：直接赋 `.value` 不更新 React 受控状态——必须
+    `Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, text)` + 派发 `input`/`change`
+    事件；contenteditable 用 `execCommand('insertText')`；全部失败降级剪贴板复制 + 提示。
+    定位优先级：`textarea[data-testid]` → `textarea[placeholder]` → contenteditable。
+15. **新增 UI 入口必须对异步数据做空值守卫**（P1 踩坑）：展开大看板时 board 可能尚未加载
+    （fetch 进行中/失败），`board.tasks` 对 null 取值直接抛 TypeError 使渲染中断——组件在
+    取值前检查 `!board` 并渲染加载占位；「展开」动作**恒触发 `loadBoard()`**（而非
+    `if (!board)`），避免展示陈旧快照（设计契约：展开即重拉）。
+16. **看板记录 `phase` 由宿主端 `phaseForTask` 解析并透传 inline**：`buildBoard(..., inline)`
+    将 inline 传至 `readTask → phaseForTask(parsed, inline)`，看板与徽标 phase 一致
+    （planning-inline / in_progress-inline）。

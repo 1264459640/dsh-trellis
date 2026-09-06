@@ -1,0 +1,68 @@
+{
+  "title": "Trellis 看板双模态重构与 DSH 体验对齐（极简列表 + 阶段泳道大看板 + 对话联动）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "Trellis 看板双模态重构与 DSH 体验对齐：确立交互克制、能力委托、双模态切换三大原则，包含 4 个子阶段：后端数据与步骤契约升级、常态轻量紧凑列表重构、全屏大看板与阶段细分泳道、非侵入式对话联动与产物对接。",
+  "steps": [
+    {
+      "id": "subtask-1-backend-steps",
+      "title": "Subtask 1: 后端数据契约与步骤统计扩展 (feat-04-18-kanban-backend-steps)",
+      "status": "completed",
+      "acceptance": [
+        "lib/board.js 中的 readTask 正确解析 task.json 中的 steps 数组并聚合 totalSteps, completedSteps, hasBlocked 等指标",
+        "/trellis-workflow/api/board 接口返回包含 steps 统计的 payload，并保持归档缓存无损与向后兼容",
+        "相关解析单元测试全部通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/board.js readTask 新增 steps 聚合（totalSteps/completedSteps/hasBlocked/blockedReason 取第一个 blocked 步骤/hasPendingVerification/activeStep 复用 findActiveStep），buildBoard 透传 inline 至 readTask→phaseForTask；lib/types/index.d.ts 新增 BoardTaskRecord/BoardActiveStep；test/board.test.js 新建 5 用例（5 态聚合、first-blocked-reason 锁定、legacy 零值、inline 后缀、归档缓存复用），node --check 通过，全量回归 77/77 通过。"
+    },
+    {
+      "id": "subtask-2-compact-list",
+      "title": "Subtask 2: 常态轻量紧凑列表重构 (feat-04-18-kanban-compact-list)",
+      "status": "completed",
+      "acceptance": [
+        "重构 KanbanTaskCard 与 KanbanColumn 为单列/双列极简紧凑列表，仅展示工单徽章、标题、阶段与步骤简标",
+        "看板 Popover 尺寸精简，顶部右上角提供展开大看板图标与轻量过滤条",
+        "在 DSH Web 界面下交互渲染正常，无多余滚动条与样式冲突"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/client.js KanbanTaskCard 重构为单行紧凑列表（类型色点 feat蓝/issue红/refactor橙 + 标题省略 + 步骤简标 完成/总数，blocked 显示 ⚠ 阻塞、verifying 显示 ⏳ + 阶段徽章）；KanbanColumn 使用新卡片；KanbanBoard 增加轻量类型过滤条（全部/功能/缺陷/重构，filter 状态提升至 TaskChip）；popover header 增加「⛶ 展开大看板」按钮（展开时关闭 popover 并刷新 board）。locale zh/en 新增 expandBoard/filter*/boardHint 等词条。node --check 通过，client.test.js 2/2 通过。"
+    },
+    {
+      "id": "subtask-3-expanded-lanes",
+      "title": "Subtask 3: 全屏大看板与阶段细分泳道 (feat-04-18-kanban-expanded-lanes)",
+      "status": "completed",
+      "acceptance": [
+        "实现全局模态/全屏大看板组件 KanbanExpandedModal",
+        "支持根据工单生命周期（feat/issue/refactor）细分阶段泳道（Stage Lanes）平铺展示卡片",
+        "顶部提供标题/Slug 实时搜索与工作类型快速 Filter 过滤"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/board.js buildBoard 下发 tracks（源自 lib/state.js TRACKS 单一事实源：feat 含 design-review 6 阶段 + finish 终端）；lib/client.js 删除 CHIP_TRACKS 双份副本（P1 收敛），KanbanDetails 改从 board.tracks 读取；新增 KanbanExpandedModal（Esc/遮罩关闭、展开时刷新、搜索标题/slug、类型筛选、按 track 细分泳道 + Archive 泳道，completed/archived 一律归 Archive）与 KanbanLaneCard；lib/types/index.d.ts 新增 BoardTrack/TrellisBoard。board.test.js 增加 tracks 下发断言（feat 含 design-review）。node --check 通过，全量回归 77/77。"
+    },
+    {
+      "id": "subtask-4-chat-composer",
+      "title": "Subtask 4: 非侵入式对话联动与产物原生对接 (feat-04-18-kanban-chat-composer)",
+      "status": "completed",
+      "acceptance": [
+        "任务详情面板增加“发送到对话”推进按钮，点击后向 DSH 输入框注入结构化推进指令",
+        "产物列表项点击后以 @.trellis/tasks/... 原生文件 Token 格式插入或联动，完全委托 DSH 原生处理，不造预览轮子"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/client.js 新增 injectToComposer（React 受控 textarea 原生 value setter + input/change 事件，contenteditable execCommand insertText 降级，剪贴板兜底；data-testid→textarea[placeholder]→contenteditable 多策略定位）；pushPromptFor 基于宿主端 activeStep 渲染推进 Prompt（客户端不自行拼装）；artifactToken 归档分支（@.trellis/tasks/archive/<month>/<slug>/<name>，P1 修复）；KanbanDetails 增加「💬 推进任务」按钮（非 archived）与可点击产物 Token（✔ name → 注入 @ 引用），注入结果提示 ok/fail 自动消失。test/client.test.js 新增 1 用例结构断言（归档分支/activeStep/pushPrompt 契约/native setter）。node --check 通过，client.test.js 3/3。"
+    }
+  ]
+}
