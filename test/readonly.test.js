@@ -1,4 +1,4 @@
-﻿import test from 'node:test'
+import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   READ_TOOLS,
@@ -8,6 +8,7 @@ import {
   authorizationOf,
   allowedToolsFor,
   applyReadonlyPolicy,
+  applyReadonlySections,
 } from '../lib/readonly.js'
 
 const FULL = [
@@ -123,3 +124,60 @@ test('tool sets are the expected export surfaces', () => {
   assert.ok(!PLANNING_TOOLS.has('trellis_task_create'))
   assert.ok(!PLANNING_TOOLS.has('trellis_task_skip'))
 })
+
+const FULL_SECTIONS = [
+  { name: 'persona', text: 'You are an AI assistant.' },
+  { name: 'workspace:policy', text: 'Current policy...' },
+  { name: 'tool:read', text: 'Use the read tool...' },
+  { name: 'tool:write', text: 'Use the write tool...' },
+  { name: 'tool:edit', text: 'Use the edit tool...' },
+  { name: 'tool:glob', text: 'Use the glob tool...' },
+  { name: 'tool:grep', text: 'Use the grep tool...' },
+  { name: 'tool:trellis_task_create', text: 'Create task...' },
+  { name: 'tool:trellis_task_skip', text: 'Skip task...' },
+  { name: 'tool:trellis_artifact_update', text: 'Update artifact...' },
+]
+
+test('applyReadonlySections prunes tool:write and tool:edit in undecided phase', () => {
+  const pruned = applyReadonlySections(FULL_SECTIONS, 'no_task', false)
+  assert.ok(pruned)
+  const names = pruned.map((s) => s.name)
+  assert.ok(names.includes('persona'))
+  assert.ok(names.includes('workspace:policy'))
+  assert.ok(names.includes('tool:read'))
+  assert.ok(names.includes('tool:glob'))
+  assert.ok(names.includes('tool:grep'))
+  assert.ok(names.includes('tool:trellis_task_create'))
+  assert.ok(names.includes('tool:trellis_task_skip'))
+  assert.ok(!names.includes('tool:write'), 'tool:write section must be pruned')
+  assert.ok(!names.includes('tool:edit'), 'tool:edit section must be pruned')
+  assert.ok(!names.includes('tool:trellis_artifact_update'), 'artifact update must not be allowed in undecided')
+})
+
+test('applyReadonlySections preserves artifact channel and prunes write/edit in planning phase', () => {
+  const pruned = applyReadonlySections(FULL_SECTIONS, 'planning', false)
+  assert.ok(pruned)
+  const names = pruned.map((s) => s.name)
+  assert.ok(names.includes('persona'))
+  assert.ok(names.includes('tool:read'))
+  assert.ok(names.includes('tool:trellis_artifact_update'))
+  assert.ok(!names.includes('tool:write'), 'tool:write must be pruned in planning')
+  assert.ok(!names.includes('tool:edit'), 'tool:edit must be pruned in planning')
+  assert.ok(!names.includes('tool:trellis_task_create'))
+  assert.ok(!names.includes('tool:trellis_task_skip'))
+})
+
+test('applyReadonlySections returns null (no pruning) for authorized / skipped sessions', () => {
+  assert.equal(applyReadonlySections(FULL_SECTIONS, 'no_task', true), null)
+  assert.equal(applyReadonlySections(FULL_SECTIONS, 'in_progress', false), null)
+  assert.equal(applyReadonlySections(FULL_SECTIONS, 'completed', false), null)
+})
+
+test('applyReadonlySections tolerates non-array and malformed entries', () => {
+  assert.equal(applyReadonlySections(null, 'planning'), null)
+  assert.equal(applyReadonlySections(undefined, 'planning'), null)
+  assert.equal(applyReadonlySections('not-an-array', 'planning'), null)
+  const pruned = applyReadonlySections([null, { name: 'tool:write' }, { name: 'tool:read' }, {}], 'planning')
+  assert.deepEqual(pruned.map((s) => s.name), ['tool:read'])
+})
+

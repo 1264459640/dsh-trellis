@@ -1,0 +1,11 @@
+{
+  "title": "修复规划期只读保护下 System Prompt 工具文本未同步修剪问题",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "当 enforceReadonlyPlanning 启用且处于未规划/规划期状态时，Tool Declarations 虽已成功从工具列表中剔除，但系统提示词（System Prompt instructions）中仍残留 edit/write 等工具说明文本，导致模型误认为写工具依然可用。修复 prompt assembly 逻辑，确保文本与裁剪后的工具列表严格同步。"
+}
