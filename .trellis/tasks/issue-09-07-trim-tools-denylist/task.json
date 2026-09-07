@@ -1,0 +1,11 @@
+{
+  "title": "裁剪工具列表应按指定工具裁剪而非白名单保留",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "enforceReadonlyPlanning 下 applyReadonlyPolicy/applyReadonlySections 使用白名单保留语义，会把其他插件（web_search、generate_image、subagent 等）的工具也裁剪掉。应改为仅裁剪指定的写工具与 trellis 工具（denylist），其余工具原样保留。"
+}

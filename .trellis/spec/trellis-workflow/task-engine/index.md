@@ -41,10 +41,16 @@
      status↔stage 耦合（`skills/_templates/work-types.md`）：planning ↔ feat prd/design/design-review；
      issue report/analyze；refactor scan/design；in_progress ↔ feat impl/review/check；issue fix/fix-note；
      refactor apply。`completed` 状态恒胜（展示终态）。未知/遗留 stage 回退到基于 status 的粗粒度相位。
-   - 三态授权（`lib/readonly.js` `authorizationOf`）：`undecided`（无任务且未跳过）→ 读工具 +
-     `trellis_state` + `trellis_task_create` + `trellis_task_skip`；`planning`（规划型阶段）→ 读工具 +
-     `trellis_state` + `trellis_task_update` + `trellis_artifact_update`；`authorized`（写码阶段 /
-     completed / 已跳过）→ 完整工具面（不裁剪）。经 `system-prompt/assemble` 按会话 cwd 命中 allowlist
+   - 三态授权（`lib/readonly.js` `authorizationOf`）：`undecided`（无任务且未跳过）→
+     仅裁剪 `write`/`edit` + 任务写工具（`trellis_task_update` / `trellis_artifact_update` /
+     `trellis_task_archive` / `trellis_ui_update`），`trellis_state` / `trellis_task_create` /
+     `trellis_task_skip` 与其余工具（含其他插件工具）保留；`planning`（规划型阶段）→
+     仅裁剪 `write`/`edit` + 任务生命周期工具（`trellis_task_create` / `trellis_task_skip` /
+     `trellis_task_archive` / `trellis_ui_update`），`trellis_state` / `trellis_task_update` /
+     `trellis_artifact_update` 与其余工具保留；`authorized`（写码阶段 / completed / 已跳过）→
+     完整工具面（不裁剪）。裁剪是 **denylist**（只移除指定工具），不是 allowlist——
+     其他插件注册的工具（web_search、generate_image、subagent、skill 等）绝不能被连带裁剪
+     （issue-09-07-trim-tools-denylist）。经 `system-prompt/assemble` 按会话 cwd 命中 allowlist
      后物理裁剪工具 Schema。
    - **写路径必须拒绝状态漂移**：`trellis_task_create` / `trellis_task_update` 校验合并后的
      status↔stage，拒绝「规划型阶段 + `status=in_progress`」（`lib/task.js`），保证只读窗口不被

@@ -2,11 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   READ_TOOLS,
-  UNDECIDED_TOOLS,
-  PLANNING_TOOLS,
+  UNDECIDED_TRIM,
+  PLANNING_TRIM,
   AUTHORIZATIONS,
   authorizationOf,
-  allowedToolsFor,
+  trimToolsFor,
   applyReadonlyPolicy,
   applyReadonlySections,
 } from '../lib/readonly.js'
@@ -22,6 +22,8 @@ const FULL = [
   { name: 'trellis_task_update' },
   { name: 'trellis_artifact_update' },
   { name: 'skill' },
+  { name: 'web_search' },
+  { name: 'generate_image' },
 ]
 
 function names(list) {
@@ -44,35 +46,42 @@ test('authorizationOf maps phases + skip flag to authorization states', () => {
   assert.equal(authorizationOf(null, false), 'authorized')
 })
 
-test('undecided allows investigate + create + skip, prunes write/edit and artifacts', () => {
-  const allowed = allowedToolsFor('undecided')
-  assert.ok(allowed)
-  assert.ok(allowed.has('read'))
-  assert.ok(allowed.has('trellis_state'))
-  assert.ok(allowed.has('trellis_task_create'))
-  assert.ok(allowed.has('trellis_task_skip'))
-  assert.ok(!allowed.has('write'))
-  assert.ok(!allowed.has('edit'))
-  assert.ok(!allowed.has('trellis_artifact_update'))
-  assert.ok(!allowed.has('trellis_task_update'))
+test('undecided trims write/edit and task-write trellis tools, keeps everything else', () => {
+  const trimmed = trimToolsFor('undecided')
+  assert.ok(trimmed)
+  assert.ok(trimmed.has('write'))
+  assert.ok(trimmed.has('edit'))
+  assert.ok(trimmed.has('trellis_artifact_update'))
+  assert.ok(trimmed.has('trellis_task_update'))
+  assert.ok(trimmed.has('trellis_task_archive'))
+  assert.ok(!trimmed.has('read'))
+  assert.ok(!trimmed.has('trellis_state'))
+  assert.ok(!trimmed.has('trellis_task_create'))
+  assert.ok(!trimmed.has('trellis_task_skip'))
+  assert.ok(!trimmed.has('skill'))
+  assert.ok(!trimmed.has('web_search'))
 })
 
-test('planning allows artifacts channel, still prunes write/edit and skip/create', () => {
-  const allowed = allowedToolsFor('planning')
-  assert.ok(allowed)
-  assert.ok(allowed.has('trellis_artifact_update'))
-  assert.ok(allowed.has('trellis_task_update'))
-  assert.ok(!allowed.has('trellis_task_create'))
-  assert.ok(!allowed.has('trellis_task_skip'))
-  assert.ok(!allowed.has('write'))
-  assert.ok(!allowed.has('edit'))
+test('planning trims write/edit and lifecycle trellis tools, keeps artifact channel', () => {
+  const trimmed = trimToolsFor('planning')
+  assert.ok(trimmed)
+  assert.ok(trimmed.has('write'))
+  assert.ok(trimmed.has('edit'))
+  assert.ok(trimmed.has('trellis_task_create'))
+  assert.ok(trimmed.has('trellis_task_skip'))
+  assert.ok(trimmed.has('trellis_task_archive'))
+  assert.ok(!trimmed.has('trellis_artifact_update'))
+  assert.ok(!trimmed.has('trellis_task_update'))
+  assert.ok(!trimmed.has('read'))
+  assert.ok(!trimmed.has('skill'))
+  assert.ok(!trimmed.has('web_search'))
 })
 
 test('authorized is freely writable (no pruning)', () => {
-  assert.equal(allowedToolsFor('authorized'), null)
+  assert.equal(trimToolsFor('authorized'), null)
 })
 
-test('applyReadonlyPolicy prunes a full tool list for undecided (no skip)', () => {
+test('applyReadonlyPolicy trims only the denylist tools for undecided, keeps other plugins tools', () => {
   const pruned = applyReadonlyPolicy(FULL, 'no_task', false)
   assert.ok(pruned)
   const kept = names(pruned)
@@ -80,22 +89,28 @@ test('applyReadonlyPolicy prunes a full tool list for undecided (no skip)', () =
   assert.ok(kept.includes('trellis_task_create'))
   assert.ok(kept.includes('trellis_task_skip'))
   assert.ok(kept.includes('trellis_state'))
+  // other plugins' tools must survive the trim
+  assert.ok(kept.includes('skill'), 'skill from another plugin must be kept')
+  assert.ok(kept.includes('web_search'), 'web_search from another plugin must be kept')
+  assert.ok(kept.includes('generate_image'), 'generate_image from another plugin must be kept')
   assert.ok(!kept.includes('write'))
   assert.ok(!kept.includes('edit'))
   assert.ok(!kept.includes('trellis_artifact_update'))
-  assert.ok(!kept.includes('skill'))
+  assert.ok(!kept.includes('trellis_task_update'))
 })
 
-test('applyReadonlyPolicy keeps write/edit for a skipped no_task session', () => {
+test('applyReadonlyPolicy keeps everything for a skipped no_task session', () => {
   assert.equal(applyReadonlyPolicy(FULL, 'no_task', true), null)
 })
 
-test('applyReadonlyPolicy prunes write/edit but keeps artifact channel in planning', () => {
+test('applyReadonlyPolicy trims write/edit and lifecycle tools, keeps artifact channel in planning', () => {
   const pruned = applyReadonlyPolicy(FULL, 'planning', false)
   assert.ok(pruned)
   const kept = names(pruned)
   assert.ok(kept.includes('trellis_artifact_update'))
   assert.ok(kept.includes('trellis_task_update'))
+  assert.ok(kept.includes('skill'), 'skill from another plugin must be kept in planning')
+  assert.ok(kept.includes('web_search'), 'web_search from another plugin must be kept in planning')
   assert.ok(!kept.includes('write'))
   assert.ok(!kept.includes('trellis_task_create'))
   assert.ok(!kept.includes('trellis_task_skip'))
@@ -110,19 +125,22 @@ test('applyReadonlyPolicy tolerates non-array / nullish tool lists', () => {
   assert.equal(applyReadonlyPolicy(null, 'undecided'), null)
   assert.equal(applyReadonlyPolicy(undefined, 'planning'), null)
   assert.equal(applyReadonlyPolicy('not-an-array', 'planning'), null)
-  const pruned = applyReadonlyPolicy([null, { name: 'write' }, { name: 'read' }, {}], 'planning')
+  const pruned = applyReadonlyPolicy([null, { name: 'write' }, { name: 'read' },], 'planning')
   assert.deepEqual(names(pruned), ['read'])
 })
 
-test('tool sets are the expected export surfaces', () => {
-  assert.ok(UNDECIDED_TOOLS instanceof Set)
-  assert.ok(PLANNING_TOOLS instanceof Set)
+test('trim sets are the expected export surfaces', () => {
+  assert.ok(UNDECIDED_TRIM instanceof Set)
+  assert.ok(PLANNING_TRIM instanceof Set)
   assert.deepEqual(AUTHORIZATIONS, ['undecided', 'planning', 'authorized'])
-  assert.ok(UNDECIDED_TOOLS.has('trellis_task_create'))
-  assert.ok(UNDECIDED_TOOLS.has('trellis_task_skip'))
-  assert.ok(PLANNING_TOOLS.has('trellis_artifact_update'))
-  assert.ok(!PLANNING_TOOLS.has('trellis_task_create'))
-  assert.ok(!PLANNING_TOOLS.has('trellis_task_skip'))
+  assert.ok(UNDECIDED_TRIM.has('write'))
+  assert.ok(UNDECIDED_TRIM.has('trellis_task_update'))
+  assert.ok(!UNDECIDED_TRIM.has('trellis_task_create'))
+  assert.ok(!UNDECIDED_TRIM.has('trellis_task_skip'))
+  assert.ok(PLANNING_TRIM.has('write'))
+  assert.ok(PLANNING_TRIM.has('trellis_task_create'))
+  assert.ok(PLANNING_TRIM.has('trellis_task_skip'))
+  assert.ok(!PLANNING_TRIM.has('trellis_artifact_update'))
 })
 
 const FULL_SECTIONS = [
@@ -136,9 +154,10 @@ const FULL_SECTIONS = [
   { name: 'tool:trellis_task_create', text: 'Create task...' },
   { name: 'tool:trellis_task_skip', text: 'Skip task...' },
   { name: 'tool:trellis_artifact_update', text: 'Update artifact...' },
+  { name: 'tool:web_search', text: 'Search the web...' },
 ]
 
-test('applyReadonlySections prunes tool:write and tool:edit in undecided phase', () => {
+test('applyReadonlySections trims only denylist tool sections in undecided phase, keeps others', () => {
   const pruned = applyReadonlySections(FULL_SECTIONS, 'no_task', false)
   assert.ok(pruned)
   const names = pruned.map((s) => s.name)
@@ -149,18 +168,20 @@ test('applyReadonlySections prunes tool:write and tool:edit in undecided phase',
   assert.ok(names.includes('tool:grep'))
   assert.ok(names.includes('tool:trellis_task_create'))
   assert.ok(names.includes('tool:trellis_task_skip'))
+  assert.ok(names.includes('tool:web_search'), 'tool:web_search section from another plugin must be kept')
   assert.ok(!names.includes('tool:write'), 'tool:write section must be pruned')
   assert.ok(!names.includes('tool:edit'), 'tool:edit section must be pruned')
   assert.ok(!names.includes('tool:trellis_artifact_update'), 'artifact update must not be allowed in undecided')
 })
 
-test('applyReadonlySections preserves artifact channel and prunes write/edit in planning phase', () => {
+test('applyReadonlySections preserves artifact channel and trims denylist sections in planning phase', () => {
   const pruned = applyReadonlySections(FULL_SECTIONS, 'planning', false)
   assert.ok(pruned)
   const names = pruned.map((s) => s.name)
   assert.ok(names.includes('persona'))
   assert.ok(names.includes('tool:read'))
   assert.ok(names.includes('tool:trellis_artifact_update'))
+  assert.ok(names.includes('tool:web_search'), 'tool:web_search section from another plugin must be kept')
   assert.ok(!names.includes('tool:write'), 'tool:write must be pruned in planning')
   assert.ok(!names.includes('tool:edit'), 'tool:edit must be pruned in planning')
   assert.ok(!names.includes('tool:trellis_task_create'))
@@ -177,7 +198,6 @@ test('applyReadonlySections tolerates non-array and malformed entries', () => {
   assert.equal(applyReadonlySections(null, 'planning'), null)
   assert.equal(applyReadonlySections(undefined, 'planning'), null)
   assert.equal(applyReadonlySections('not-an-array', 'planning'), null)
-  const pruned = applyReadonlySections([null, { name: 'tool:write' }, { name: 'tool:read' }, {}], 'planning')
+  const pruned = applyReadonlySections([null, { name: 'tool:write' }, { name: 'tool:read' },], 'planning')
   assert.deepEqual(pruned.map((s) => s.name), ['tool:read'])
 })
-

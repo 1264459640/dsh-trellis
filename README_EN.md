@@ -114,13 +114,13 @@ The `steps` array in `task.json` serves as the execution list and supports 5 sta
 
 ### 2. Read-Only Planning (Optional Enforcement)
 
-When `enforceReadonlyPlanning: true` is configured, the plugin filters available tools based on the current workflow state:
+When `enforceReadonlyPlanning: true` is configured, the plugin TRIMS ONLY the specified tools based on the current workflow state (denylist semantics — every other tool, including tools registered by other plugins, is kept):
 
-| Authorization State | Condition | Available Tools | Description |
+| Authorization State | Condition | Trimmed Tools | Description |
 |---|---|---|---|
-| `undecided` | In allowlist, no active task, not skipped | Read tools + `trellis_task_create` + `trellis_task_skip` | Guides task creation or explicit skip before modifying code |
-| `planning` | Task is in planning stages (`prd`, `design`, `scan`, `report`) | Read tools + `trellis_task_update` + `trellis_artifact_update` | Removes `write` / `edit` tools; deliverables can only be updated through the artifact tool |
-| `authorized` | Task is in implementation stages (`impl`, `fix`, `apply`) or skipped | Full tool surface | Restores generic read and write tools |
+| `undecided` | In allowlist, no active task, not skipped | `write` / `edit` + `trellis_task_update` / `trellis_artifact_update` / `trellis_task_archive` / `trellis_ui_update` | Removes code-write and task-write tools to avoid blindly rewriting source; `trellis_task_create` / `trellis_task_skip` and all other tools (including other plugins') are kept |
+| `planning` | Task is in planning stages (`prd`, `design`, `scan`, `report`) | `write` / `edit` + `trellis_task_create` / `trellis_task_skip` / `trellis_task_archive` / `trellis_ui_update` | Removes generic `write` / `edit` tools and task-lifecycle tools; deliverables can only be updated through the artifact tool; `trellis_task_update` / `trellis_artifact_update` and all other tools are kept |
+| `authorized` | Task is in implementation stages (`impl`, `fix`, `apply`) or skipped | None (no trimming) | Restores the full tool surface |
 
 > Note: `trellis_artifact_update` only permits writing whitelisted documentation inside the active task directory (`.trellis/tasks/<slug>/`), preventing path traversal.
 

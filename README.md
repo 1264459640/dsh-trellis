@@ -114,13 +114,13 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 ### 2. 规划期只读保护（可选增强）
 
-当在配置中启用 `enforceReadonlyPlanning: true` 时，插件会根据当前任务状态动态过滤工具列表：
+当在配置中启用 `enforceReadonlyPlanning: true` 时，插件会根据当前任务状态**仅裁剪指定的工具**（denylist，其余工具——包括其他插件注册的工具——原样保留）：
 
-| 授权状态 | 触发条件 | 可用工具 | 说明 |
+| 授权状态 | 触发条件 | 被裁剪的工具 | 说明 |
 |---|---|---|---|
-| `undecided` | 项目在白名单内、无活跃任务且未声明跳过 | 只读分析工具 + `trellis_task_create` + `trellis_task_skip` | 引导创建任务或明确跳过工作流，避免盲目直接改写源码 |
-| `planning` | 任务处于规划类阶段（`prd`, `design`, `scan`, `report` 等） | 只读分析工具 + `trellis_task_update` + `trellis_artifact_update` | 移除通用 `write` / `edit` 工具，仅放行受控的任务产物更新 |
-| `authorized` | 任务进入实施阶段（`impl`, `fix`, `apply`）或用户已跳过 | 全量通用工具 | 允许根据设计方案修改项目源码 |
+| `undecided` | 项目在白名单内、无活跃任务且未声明跳过 | `write` / `edit` + `trellis_task_update` / `trellis_artifact_update` / `trellis_task_archive` / `trellis_ui_update` | 移除代码写工具与任务写工具，避免盲目直接改写源码；`trellis_task_create` / `trellis_task_skip` 与所有其他工具（含其他插件工具）保留 |
+| `planning` | 任务处于规划类阶段（`prd`, `design`, `scan`, `report` 等） | `write` / `edit` + `trellis_task_create` / `trellis_task_skip` / `trellis_task_archive` / `trellis_ui_update` | 移除通用 `write` / `edit` 工具与任务生命周期工具，仅放行受控的任务产物更新；`trellis_task_update` / `trellis_artifact_update` 与所有其他工具保留 |
+| `authorized` | 任务进入实施阶段（`impl`, `fix`, `apply`）或用户已跳过 | 无（不裁剪） | 允许根据设计方案修改项目源码 |
 
 > 注：`trellis_artifact_update` 仅允许写入当前任务目录（`.trellis/tasks/<slug>/`）内的白名单文档，杜绝跨目录修改。
 
