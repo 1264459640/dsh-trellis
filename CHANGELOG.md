@@ -8,7 +8,7 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 - **分组标题**：中文 `## 功能` / `## 修复` / `## 文档`（按需补充 `## 性能` / `## 构建` / `## 兼容性` 等）；英文对应 `## Features` / `## Fixed` / `## Docs`。
 - **条目**：`- **要点**：说明`——要点加粗，说明陈述变更价值、影响范围与关键行为。
 - **代码标识**：工具名 / 函数名 / 路径等用反引号包裹。
-- **同步**：tag 推送后 GitHub Release 的 body 使用同一份内容（release.yml 自动生成时可手动覆盖）。
+- **同步**：tag 推送后 GitHub Release 的 body 由管道自动提取本文件对应条目（`scripts/extract-changelog.mjs <tag>`，见 `.github/workflows/release.yml`）；未找到条目时回退到 GitHub 自动生成。每个版本发布前，先在文件头部新增 `## <tag> — <日期>` 条目。
 
 ---
 

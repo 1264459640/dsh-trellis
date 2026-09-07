@@ -59,13 +59,24 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Extract changelog entry for tag
+        id: changelog
+        run: |
+          if node scripts/extract-changelog.mjs "${{ steps.vars.outputs.tag }}" > release-body.md 2>/dev/null; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            rm -f release-body.md
+          fi
+
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
           name: Release ${{ steps.vars.outputs.tag }}
           files: ${{ env.PACKED_FILE }}
-          generate_release_notes: true
+          body_path: ${{ steps.changelog.outputs.found == 'true' && 'release-body.md' || '' }}
+          generate_release_notes: ${{ steps.changelog.outputs.found != 'true' }}
           draft: false
           prerelease: ${{ contains(steps.vars.outputs.tag, '-rc') || contains(steps.vars.outputs.tag, '-beta') || contains(steps.vars.outputs.tag, '-alpha') }}
         env:
