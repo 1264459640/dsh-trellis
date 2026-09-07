@@ -1,0 +1,42 @@
+{
+  "title": "规划期只读保护改为注入显式系统提示词（不再只裁剪工具列表）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "在 enforceReadonlyPlanning 开启且命中 allowlist 时，除了现有的 denylist 工具裁剪与 tool section 裁剪，额外在 system-prompt/assemble 中向系统提示注入显式的只读指令文本（no_task/planning 阶段：方案获批前禁止修改源码，先输出计划供用户确认）。当前实现只做减法（readonly.js 的纯 filter），没有任何指令文本注入。",
+  "steps": [
+    {
+      "id": "1",
+      "title": "设计只读指令文本与注入点",
+      "status": "completed",
+      "acceptance": [
+        "在 lib/readonly.js 新增纯函数产出 no_task/planning 阶段的显式只读指令文本（如'当前为规划阶段，方案获批前禁止修改源码，请先输出计划供用户确认'）",
+        "在 lib/index.js 的 system-prompt/assemble 处理器中，于裁剪 tool/tool section 之后把指令文本追加进 assembled.sections",
+        "指令文本仅在 enforceReadonlyPlanning=true、命中 allowlist、且授权状态为 undecided/planning 时注入；authorized 状态不注入"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "readonly.js 新增 READONLY_SECTION/readonlyInstructionFor/appendReadonlyInstruction；lib/index.js assemble 处理器组合注入；authorized 零差异路径全链断言通过。test/readonly.test.js 23 项全过（node test/readonly.test.js），语法检查 OK。"
+    },
+    {
+      "id": "2",
+      "title": "补测试并验证行为",
+      "status": "completed",
+      "acceptance": [
+        "test/ 下新增或扩展用例，覆盖：undecided/planning 注入指令文本、authorized 不注入、allowlist 未命中不注入",
+        "node --test 全量通过"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/readonly.test.js 新增 8 组用例（readonlyInstructionFor / appendReadonlyInstruction 矩阵 / 去重 / 不可变 / 全链组合 / authorized 零差异）；23 项全过。其余套件逐一直接运行无回归：index 26、state 7、board 6、git 6、native-steps 20、client 3。沙箱内 `node --test` 子进程 spawn 受限（已知边界），以直接运行文件方式复核；全量套件待正常环境 pnpm test 复核。"
+    }
+  ]
+}

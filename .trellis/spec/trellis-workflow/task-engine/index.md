@@ -56,6 +56,15 @@
      status↔stage，拒绝「规划型阶段 + `status=in_progress`」（`lib/task.js`），保证只读窗口不被
      模型纪律失误打开；`write`/`edit` 从规划期工具面剔除，但 `trellis_artifact_update` 必须保留
      为唯一写通道，否则规划期"想写方案却无工具"会死锁。
+   - **只读语义双通道：工具面裁剪 + 显式指令文本注入**（feat-09-07-inject-readonly-prompt）：
+     除了 denylist 裁剪，`system-prompt/assemble` 处理器在 `undecided`/`planning` 时还会向
+     sections 追加 `trellis:readonly` 指令段（`lib/readonly.js` `appendReadonlyInstruction` +
+     `readonlyInstructionFor`），让模型在提示词文本里明确读到"当前只读、方案获批前禁止改码"，
+     而不只是面对裁剪后的工具面。注入条件与裁剪条件一致（`enforceReadonlyPlanning=true` +
+     命中 allowlist + `undecided`/`planning`）；`authorized` 时三函数均返回 null、装配结果与
+     现状逐字节一致。`trellis:readonly` 是**预留 section 名**：追加前先过滤同名段保证至多一份，
+     满足 harness invariant（name 非空唯一 + 字符串 text）。指令文本为中文硬编码（PRD 决策，
+     无 i18n；无 workflow.md 的项目会出现英文默认面包屑 + 唯一中文指令段的混排，属有意为之）。
    - Web 看板/徽标同样消费解析后的 `phase`（`lib/board.js` 记录携带 `phase` 字段），不直接按裸
      `status` 分列/标色。
 5. **当前步骤高信噪比注入**：`impl`/`in_progress` 阶段经 `agent/pre-step` 注入当前活跃步骤
@@ -86,3 +95,6 @@
 - 安全边界别只信"文件名/字符集"校验：路径穿越要结合 `path.relative` 强约束为直接子段。
 - 删除类操作（模板修剪、归档移动）用 `node:fs` 时必须以**硬编码相对路径 + 沙箱策略 fail-closed**
   双保险，绝不允许"扫描并删除用户内容"的宽松实现；`dsh-fs` 无 delete/move 原语是已知边界。
+- `trellis_artifact_update` 的默认 slug 跟随**会话绑定任务**，不一定是本次正在推进的任务
+  （证据：feat-09-07 曾把 design.md 误写入绑定任务 trellis-right-phase-panel，靠 `git checkout`
+  还原）。写产物时若会话绑定任务 ≠ 目标任务，必须显式传 `slug`，否则会污染其他任务目录。

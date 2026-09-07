@@ -5,10 +5,13 @@ import {
   UNDECIDED_TRIM,
   PLANNING_TRIM,
   AUTHORIZATIONS,
+  READONLY_SECTION,
   authorizationOf,
   trimToolsFor,
   applyReadonlyPolicy,
   applyReadonlySections,
+  readonlyInstructionFor,
+  appendReadonlyInstruction,
 } from '../lib/readonly.js'
 
 const FULL = [
@@ -200,4 +203,103 @@ test('applyReadonlySections tolerates non-array and malformed entries', () => {
   assert.equal(applyReadonlySections('not-an-array', 'planning'), null)
   const pruned = applyReadonlySections([null, { name: 'tool:write' }, { name: 'tool:read' },], 'planning')
   assert.deepEqual(pruned.map((s) => s.name), ['tool:read'])
+})
+
+test('readonlyInstructionFor returns explicit Chinese instruction text per state', () => {
+  const undecided = readonlyInstructionFor('undecided')
+  assert.equal(typeof undecided, 'string')
+  assert.ok(undecided.length > 0)
+  assert.ok(undecided.includes('只读'), 'undecided text must carry 只读 semantics')
+  assert.ok(undecided.includes('创建 Trellis 任务'), 'undecided text must mention task creation')
+
+  const planning = readonlyInstructionFor('planning')
+  assert.equal(typeof planning, 'string')
+  assert.ok(planning.length > 0)
+  assert.ok(planning.includes('只读'), 'planning text must carry 只读 semantics')
+  assert.ok(planning.includes('方案获批前'), 'planning text must mention approval gate')
+  assert.ok(planning.includes('trellis_artifact_update'), 'planning text must point to the artifact write channel')
+})
+
+test('readonlyInstructionFor returns null for authorized / unknown values', () => {
+  assert.equal(readonlyInstructionFor('authorized'), null)
+  assert.equal(readonlyInstructionFor('whatever'), null)
+  assert.equal(readonlyInstructionFor(undefined), null)
+  assert.equal(readonlyInstructionFor(null), null)
+})
+
+test('appendReadonlyInstruction appends trellis:readonly for undecided and planning', () => {
+  const base = [{ name: 'persona', text: 'You are an AI assistant.' }, { name: 'tool:read', text: '...' }]
+  const undecided = appendReadonlyInstruction(base, 'no_task', false)
+  assert.ok(undecided)
+  assert.equal(undecided.length, base.length + 1)
+  assert.deepEqual(undecided[undecided.length - 1].name, READONLY_SECTION)
+  assert.equal(undecided[undecided.length - 1].text, readonlyInstructionFor('undecided'))
+
+  const planning = appendReadonlyInstruction(base, 'planning', false)
+  assert.ok(planning)
+  assert.equal(planning.length, base.length + 1)
+  assert.deepEqual(planning[planning.length - 1].name, READONLY_SECTION)
+  assert.equal(planning[planning.length - 1].text, readonlyInstructionFor('planning'))
+
+  const inline = appendReadonlyInstruction(base, 'planning-inline', false)
+  assert.ok(inline)
+  assert.equal(inline[inline.length - 1].text, readonlyInstructionFor('planning'))
+
+  const planningSkipped = appendReadonlyInstruction(base, 'planning', true)
+  assert.ok(planningSkipped)
+  assert.equal(planningSkipped[planningSkipped.length - 1].text, readonlyInstructionFor('planning'))
+})
+
+test('appendReadonlyInstruction returns null for authorized / skipped / unknown phases', () => {
+  const base = [{ name: 'persona', text: '...' }]
+  assert.equal(appendReadonlyInstruction(base, 'no_task', true), null)
+  assert.equal(appendReadonlyInstruction(base, 'in_progress', false), null)
+  assert.equal(appendReadonlyInstruction(base, 'completed', false), null)
+  assert.equal(appendReadonlyInstruction(base, null, false), null)
+  assert.equal(appendReadonlyInstruction(base, 'unknown-phase', false), null)
+})
+
+test('appendReadonlyInstruction tolerates non-array input and dedupes existing same-name section', () => {
+  assert.equal(appendReadonlyInstruction(null, 'planning'), null)
+  assert.equal(appendReadonlyInstruction(undefined, 'planning'), null)
+  assert.equal(appendReadonlyInstruction('not-an-array', 'planning'), null)
+
+  const base = [
+    { name: 'persona', text: '...' },
+    { name: READONLY_SECTION, text: 'stale previous instruction' },
+  ]
+  const result = appendReadonlyInstruction(base, 'planning', false)
+  assert.ok(result)
+  const names = result.map((s) => s.name)
+  assert.equal(names.filter((n) => n === READONLY_SECTION).length, 1, 'must converge to a single trellis:readonly section')
+  assert.equal(result[result.length - 1].text, readonlyInstructionFor('planning'))
+  assert.deepEqual(result[0], base[0], 'non-instruction sections must be preserved in order')
+})
+
+test('appendReadonlyInstruction does not mutate the input array', () => {
+  const base = [{ name: 'persona', text: '...' }]
+  const snapshot = JSON.stringify(base)
+  appendReadonlyInstruction(base, 'planning', false)
+  assert.equal(JSON.stringify(base), snapshot)
+})
+
+test('full-chain: policy + sections + instruction assembly mirrors the handler composition', () => {
+  const result = appendReadonlyInstruction(applyReadonlySections(FULL_SECTIONS, 'planning', false), 'planning', false)
+  assert.ok(result)
+  const names = result.map((s) => s.name)
+  assert.ok(names.includes('persona'), 'persona must survive')
+  assert.ok(names.includes('tool:read'), 'tool:read must survive')
+  assert.ok(names.includes('tool:web_search'), 'other plugins tool sections must survive')
+  assert.ok(!names.includes('tool:write'), 'tool:write must be pruned')
+  assert.ok(!names.includes('tool:edit'), 'tool:edit must be pruned')
+  assert.equal(names[names.length - 1], READONLY_SECTION, 'instruction must be appended last')
+})
+
+test('full-chain: authorized path yields null from every stage (byte-identical assembly)', () => {
+  const tools = applyReadonlyPolicy(FULL, 'in_progress', false)
+  const sections = applyReadonlySections(FULL_SECTIONS, 'in_progress', false)
+  const instruction = appendReadonlyInstruction(FULL_SECTIONS, 'in_progress', false)
+  assert.equal(tools, null)
+  assert.equal(sections, null)
+  assert.equal(instruction, null)
 })
