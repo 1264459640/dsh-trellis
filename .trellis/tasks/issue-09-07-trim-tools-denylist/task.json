@@ -1,6 +1,6 @@
 {
   "title": "裁剪工具列表应按指定工具裁剪而非白名单保留",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "standard",
