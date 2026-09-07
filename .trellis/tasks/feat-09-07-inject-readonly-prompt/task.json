@@ -1,6 +1,6 @@
 {
   "title": "规划期只读保护改为注入显式系统提示词（不再只裁剪工具列表）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
