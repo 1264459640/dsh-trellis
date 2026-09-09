@@ -88,6 +88,11 @@ test('readTask aggregates steps for a 5-state task (blocked/verifying/completed)
     assert.equal(res.hasBlocked, true)
     assert.equal(res.blockedReason, 'design conflict')
     assert.equal(res.hasPendingVerification, true)
+    assert.equal(Array.isArray(res.steps), true)
+    assert.equal(res.steps.length, 5)
+    assert.equal(res.steps[0].id, 'a')
+    assert.equal(res.steps[0].status, 'completed')
+    assert.equal(res.steps[3].blockedReason, 'design conflict')
     // findActiveStep priority: blocked > in_progress > verifying > pending
     assert.deepEqual(res.activeStep, {
       id: 'd',

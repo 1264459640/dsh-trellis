@@ -12,5 +12,9 @@ node_modules/
 dist/
 *.tgz
 
+# Transient harness/generated dirs — design baselines & screenshots stay local
+.dsh/
+.npm-pack-cache/
+
 # Transient clipboard screenshots (Snipaste) — not part of the deliverable
 Snipaste_*

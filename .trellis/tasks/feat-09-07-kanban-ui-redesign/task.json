@@ -1,0 +1,70 @@
+{
+  "title": "任务看板面板 UI 重设计",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "impl",
+    "execution_lane": "standard"
+  },
+  "description": "重新设计 dsh-trellis 插件在 Web GUI 中的任务看板面板 UI（看板列 + 任务详情面板）。目标：保持浅色风格，但更精致现代，升级为更完善的设计系统（色彩、间距、圆角、字体层级、交互状态）。先产出设计（效果图），再评估实现方案。",
+  "steps": [
+    {
+      "id": "step-1-tokens",
+      "title": "定义设计系统 Tokens 常量",
+      "status": "pending",
+      "acceptance": [
+        "提取背景、边框、圆角、阴影、字体层级等设计常量"
+      ]
+    },
+    {
+      "id": "step-2-chip",
+      "title": "重构会话头部徽标 TaskChip 与 HeroTaskChip",
+      "status": "pending",
+      "acceptance": [
+        "徽标药丸外形精致、发丝微边框、悬停动效顺滑"
+      ]
+    },
+    {
+      "id": "step-3-board",
+      "title": "重构紧凑看板浮层 KanbanBoard 布局与样式",
+      "status": "pending",
+      "acceptance": [
+        "紧凑浮层恢复规划中与进行中双列泳道，顶栏与分类药丸精致美观"
+      ]
+    },
+    {
+      "id": "step-4-card",
+      "title": "重构任务卡片 KanbanLaneCard 与列表项",
+      "status": "pending",
+      "acceptance": [
+        "卡片采用白底、1px 发丝边框、微投影、标题与胶囊标签层次分明"
+      ]
+    },
+    {
+      "id": "step-5-details",
+      "title": "重构任务详情面板 KanbanDetails 视觉与层级",
+      "status": "pending",
+      "acceptance": [
+        "详情面板采用高对比黑色主操作按键、精细流水线、卡片化产物列表"
+      ]
+    },
+    {
+      "id": "step-6-modal",
+      "title": "重构展开大看板 KanbanExpandedModal",
+      "status": "pending",
+      "acceptance": [
+        "1120px 宽屏工作台布局、搜索框与 3 泳道对齐新设计语言"
+      ]
+    },
+    {
+      "id": "step-7-verify",
+      "title": "全面语法检查、单元测试与视觉验收",
+      "status": "pending",
+      "acceptance": [
+        "node --check lib/client.js 通过，测试全绿，设计与效果图高度一致"
+      ],
+      "verification": "ai"
+    }
+  ]
+}

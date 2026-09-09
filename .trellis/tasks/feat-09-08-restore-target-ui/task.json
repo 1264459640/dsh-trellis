@@ -1,0 +1,52 @@
+{
+  "title": "还原目标界面视觉效果",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "比对当前实现与用户提供的参考图，持续调整页面视觉布局、样式与交互表现以提升还原度。",
+  "steps": [
+    {
+      "id": "visual-layout",
+      "title": "调整工作台窗口、工具栏和三泳道布局",
+      "status": "completed",
+      "spec": "基于参考图校正桌面比例、遮罩、外壳、工具栏、泳道和详情栏布局，不改变数据或交互。",
+      "acceptance": [
+        "展开工作台的桌面总体结构、比例与参考图一致",
+        "搜索、筛选、视图切换和关闭仍可用"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "Updated modal dimensions, dark overlay, shared radii, details width/minWidth, lane minimum width, and injected narrow-screen scrollbar rules."
+    },
+    {
+      "id": "cards-inspector",
+      "title": "还原卡片和详情检查器视觉层级",
+      "status": "completed",
+      "spec": "对齐任务卡状态、进度、选中态及详情栏的分区、流水线、产物和步骤视觉。",
+      "acceptance": [
+        "规划、进行中、完成状态可视觉区分",
+        "详情面板可读且现有操作不回归"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "Updated shared visual tokens, lane card completion rendering (completed phase forces 100% visual progress while preserving truthful counts), modal shell sizing, overlay, and details panel dimensions."
+    },
+    {
+      "id": "validate-gui",
+      "title": "构建并验证现有 GUI",
+      "status": "pending",
+      "spec": "执行语法与测试，并构建受影响 client 产物，在现有 DSH GUI 刷新后人工对照参考图和行为。",
+      "acceptance": [
+        "node --check 与 npm test 通过",
+        "GUI 刷新后视觉和核心交互完成验证"
+      ],
+      "verification": "human"
+    }
+  ]
+}

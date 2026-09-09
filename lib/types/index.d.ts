@@ -82,6 +82,17 @@ export interface BoardTaskRecord {
   blockedReason: string | null
   hasPendingVerification: boolean
   activeStep: BoardActiveStep | null
+  /** Full list of normalized steps carried on board records for details checklist view. */
+  steps?: Array<{
+    id: string
+    title: string
+    status: string
+    verify?: boolean
+    verified?: boolean
+    verification?: string
+    blockedReason?: string | null
+    acceptance?: string[]
+  }>
 }
 
 /** Stage-lane track definition shipped with the board (from lib/state.js TRACKS). */
