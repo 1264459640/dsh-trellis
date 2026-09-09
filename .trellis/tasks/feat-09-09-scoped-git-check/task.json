@@ -1,6 +1,6 @@
 {
   "title": "支持基于 modified_files 的局部 Git 校验",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "quick",
