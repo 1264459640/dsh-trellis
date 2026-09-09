@@ -149,3 +149,59 @@ test('checkGitCleanliness verifies modifiedFiles against recent commit history',
     rmSync(tempDir, { recursive: true, force: true })
   }
 })
+
+test('checkGitCleanliness with scoped modifiedFiles allows uncommitted changes outside modifiedFiles', async () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'trellis-scoped-git-'))
+  try {
+    try {
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' })
+      execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, stdio: 'ignore' })
+      execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: tempDir, stdio: 'ignore' })
+    } catch (e) {
+      if (e.code === 'EPERM') return
+      throw e
+    }
+
+    writeFileSync(path.join(tempDir, 'fileA.js'), 'console.log(\"A\")')
+    writeFileSync(path.join(tempDir, 'fileB.js'), 'console.log(\"B\")')
+    execFileSync('git', ['add', '.'], { cwd: tempDir, stdio: 'ignore' })
+    execFileSync('git', ['commit', '-m', 'Commit fileA and fileB'], { cwd: tempDir, stdio: 'ignore' })
+
+    const probe = await checkGitCleanliness(tempDir)
+    if (!probe.isGitRepo) return
+
+    // Modify both fileA and fileB in working tree
+    writeFileSync(path.join(tempDir, 'fileA.js'), 'console.log(\"A2\")')
+    writeFileSync(path.join(tempDir, 'fileB.js'), 'console.log(\"B2\")')
+
+    // 1. Scoped check on fileA while fileA is still dirty -> should fail
+    const dirtyFileACheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js'] })
+    assert.equal(dirtyFileACheck.clean, false)
+    assert.ok(dirtyFileACheck.error.includes('[trellis/git_dirty]'))
+    assert.ok(dirtyFileACheck.error.includes('fileA.js'))
+
+    // 2. Commit fileA only; fileB remains dirty in working tree
+    execFileSync('git', ['add', 'fileA.js'], { cwd: tempDir, stdio: 'ignore' })
+    execFileSync('git', ['commit', '-m', 'Commit updated fileA'], { cwd: tempDir, stdio: 'ignore' })
+
+    // 3. Global check without modifiedFiles -> fails due to dirty fileB
+    const globalCheck = await checkGitCleanliness(tempDir)
+    assert.equal(globalCheck.clean, false)
+    assert.ok(globalCheck.error.includes('[trellis/git_dirty]'))
+    assert.ok(globalCheck.error.includes('fileB.js'))
+
+    // 4. Scoped check with modifiedFiles: ['fileA.js'] -> passes because fileA is clean & committed, ignoring dirty fileB
+    const scopedCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js'] })
+    assert.equal(scopedCheck.clean, true)
+    assert.equal(scopedCheck.isGitRepo, true)
+    assert.ok(scopedCheck.warning)
+    assert.ok(scopedCheck.warning.includes('未包含在 modified_files'))
+
+    // 5. Scoped check with an uncommitted file -> uncommitted error takes precedence
+    const uncommittedCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js', 'fileNonExistent.js'] })
+    assert.equal(uncommittedCheck.clean, false)
+    assert.ok(uncommittedCheck.error.includes('[trellis/git_uncommitted]'))
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true })
+  }
+})

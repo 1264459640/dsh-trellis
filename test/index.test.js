@@ -800,6 +800,24 @@ test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo
       })
       assert.equal(updateCommitted.ok, true)
       assert.equal(updateCommitted.taskJson.status, 'completed')
+
+      // 7. Scoped check during archive: other dirty file exists, but modified_files is clean and committed
+      writeFileSync(path.join(root2, 'unrelated-dirty.js'), 'console.log("unrelated")')
+      // Global archive fails because unrelated-dirty.js is dirty
+      const archiveGlobalFail = await archiveTaskRecord(fs2, root2, {
+        slug: 'feat-08-20-task2',
+      })
+      assert.equal(archiveGlobalFail.ok, false)
+      assert.match(archiveGlobalFail.error, /\[trellis\/git_dirty\]/)
+      assert.match(archiveGlobalFail.error, /unrelated-dirty\.js/)
+
+      // Scoped archive succeeds with modified_files: ['real-committed.js']
+      const archiveScopedSuccess = await archiveTaskRecord(fs2, root2, {
+        slug: 'feat-08-20-task2',
+        modified_files: ['real-committed.js'],
+      })
+      assert.equal(archiveScopedSuccess.ok, true)
+      assert.equal(archiveScopedSuccess.slug, 'feat-08-20-task2')
     } finally {
       rmSync(root2, { recursive: true, force: true })
     }

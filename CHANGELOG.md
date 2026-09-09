@@ -12,6 +12,20 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.0-rc.8 — 2026-09-09
+
+## 功能
+
+- **支持基于 `modified_files` 的局部 Git 校验**：在 `trellis_task_update`（任务完成）与 `trellis_task_archive`（任务归档）中，当显式传入 `modified_files`（任务修改文件清单）时，系统只校验清单内文件的工作区干净度与提交历史；若工作区存在清单之外的其他未提交修改，予以放行并给出 warning 提示，避免因无关未提交文件阻塞当前任务的正常交付与归档。未传 `modified_files` 时保持原有的全局纯净度严格校验。
+
+---
+
+## Features
+
+- **Scoped Git cleanliness check based on `modified_files`**: when `modified_files` is explicitly provided to `trellis_task_update` (completing a task) or `trellis_task_archive` (archiving a task), cleanliness verification is scoped to the declared files. Uncommitted changes outside `modified_files` no longer block completion or archival, emitting a warning instead. Global cleanliness check is preserved when `modified_files` is omitted.
+
+---
+
 ## v0.3.0-rc.7 — 2026-09-07
 
 ## 功能
