@@ -1,0 +1,11 @@
+{
+  "title": "提升 modified_files 局部校验的可发现性",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "quick",
+    "stage": "check",
+    "execution_lane": "quick"
+  },
+  "description": "提升 modified_files 局部 Git 校验功能的可发现性：改写工具参数描述、在收尾技能中补充指引、同步 README 文档，让 Agent 在工作区不干净时主动使用 modified_files 放行。"
+}
