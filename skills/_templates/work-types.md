@@ -32,6 +32,8 @@
    `.trellis/tasks/archive/<yyyy-mm>/<slug>/`——月份键 `<yyyy-mm>` = slug 的 `mm` + 当年
    （与看板读取共用同一逻辑，写读永远一致；无 `mm-dd` 的遗留 slug 归 `other/`），并自动解绑
    指向该任务的会话指针（归档任务只读，不再可激活）。归档**只移动、不删除**记录。
+   若工作区存在与本任务无关的未提交改动，可通过 `modified_files` 声明任务真实改动文件，
+   局部 Git 校验（清单内文件须已提交；清单外改动放行并告警）。
 5. 细阶段用 `work.stage` + 产物文件恢复；**仓库产物优先于聊天历史**。
 6. 写代码前读 `.trellis/spec/`（对应分层 + `guides/` 思考指南）。
 7. 规划/需求澄清加载 `trellis-brainstorm`；实现前 `trellis-before-dev`；质量门 `trellis-check`；

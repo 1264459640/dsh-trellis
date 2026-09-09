@@ -14,6 +14,13 @@ Run this skill to finish a task that has been archived or reported completed.
    with work commits. Note: `trellis_task_update(status: 'completed')` and
    `trellis_task_archive` enforce a hard git cleanliness guardrail and will
    reject operations if uncommitted code changes exist in the workspace.
+   **Scoped relaxation:** when the working tree has uncommitted changes that are
+   unrelated to this task (parallel work, experiments, other tasks), you may pass
+   the task's real modified files via `modified_files` to those tools: the
+   cleanliness check then scopes to those files, uncommitted changes outside the
+   list are allowed with a warning, but the listed files must themselves be
+   committed. Prefer committing the task's own files first, then use
+   `modified_files` instead of stashing unrelated changes.
 2. **Run the commit flow** (work commits → archive commit → journal commit) if it
    has not already happened. Do not `git push` unless the user asks.
 3. **Archive the completed task.** A task whose `status` is `completed` leaves
