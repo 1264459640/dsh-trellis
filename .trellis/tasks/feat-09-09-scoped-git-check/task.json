@@ -1,0 +1,11 @@
+{
+  "title": "支持基于 modified_files 的局部 Git 校验",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "quick",
+    "stage": "check",
+    "execution_lane": "quick"
+  },
+  "description": "允许在归档和完成任务时，若显式声明 modified_files，可仅校验清单内文件的干净度与提交记录，而不强制要求工作区全局干净。"
+}
