@@ -16,13 +16,41 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ## 功能
 
-- **支持基于 `modified_files` 的局部 Git 校验**：在 `trellis_task_update`（任务完成）与 `trellis_task_archive`（任务归档）中，当显式传入 `modified_files`（任务修改文件清单）时，系统只校验清单内文件的工作区干净度与提交历史；若工作区存在清单之外的其他未提交修改，予以放行并给出 warning 提示，避免因无关未提交文件阻塞当前任务的正常交付与归档。未传 `modified_files` 时保持原有的全局纯净度严格校验。
+- **看板工作台全面重构与视觉参考复原**：
+  - **统一设计系统（TB Token）**：建立统一的变量与设计 Token 系统，适配浅色/深色主题，收敛颜色、圆角、阴影与排版规则。
+  - **双模式工作台交互**：提供紧凑气泡列表模式（Popover）与全屏扩展工作台（Expanded Workbench），支持多泳道视图（Lanes View）与紧凑列表视图（List View）一键无缝切换。
+  - **桌面级尺度还原**：全屏容器扩展至 `min(1450px, 100vw - 64px)`，采用深木炭半透明遮罩与 350px 宽度的任务详情抽屉（Inspector），高反差黑色推进 CTA 按钮；窄屏下泳道支持弹性横向平滑滚动。
+  - **任务卡片与进度状态准确呈现**：已完成（completed）与已归档（archived）任务卡片强制展示 100% 绿色完成进度条，并保持准确的步骤计数；优化任务切换与过滤状态，避免切换视图时意外重置选中项。
+  - **产物树与步骤追踪器**：详情抽屉中全面增强原生步骤追踪流水线（Step Tracker Pipeline）、任务产物树（Artifact Tree）及胶囊属性标签，支持一键将产物原生引用推入对话框。
+- **支持基于 `modified_files` 的局部 Git 校验**：在 `trellis_task_update`（任务完成）与 `trellis_task_archive`（任务归档）中，当显式传入 `modified_files`（任务修改文件清单）时，系统只校验清单内文件的工作区干净度与提交历史；若工作区存在清单之外的其他未提交修改，予以放行并给出 warning 提示，避免因并行开发或无关未提交文件阻塞当前任务的正常交付与归档。未传 `modified_files` 时保持原有的全局纯净度严格校验。
+
+## 构建
+
+- **GitHub Release 发布日志自动提取**：新增 `scripts/extract-changelog.mjs`，CI 发布工作流（`.github/workflows/release.yml`）在推送 tag 时自动从 `CHANGELOG.md` 提取对应版本的双语 Release Notes 并生成 GitHub Release。
+
+## 文档
+
+- **建立标准化 CHANGELOG.md 体系**：汇编自 `v0.1.0-rc.3` 至 `v0.3.0-rc.7` 全部 16 个历史版本的发布日志，确立统一的双语 Release Notes 规范模板。
 
 ---
 
 ## Features
 
+- **Kanban workbench redesign and reference visual restoration**:
+  - **Unified design tokens (TB System)**: introduced a cohesive design token system for colors, radii, shadows, and elevation, seamlessly adapting to light/dark themes.
+  - **Dual-mode workbench**: supports compact popover list mode and full expanded workbench with instant lane view / list view switching.
+  - **Desktop-scale visual alignment**: modal expanded to `min(1450px, 100vw - 64px)` with deep charcoal translucent overlay, 350px task inspector drawer, and high-contrast black primary advance button; smooth horizontal scrolling for lane columns on narrower viewports.
+  - **Truthful task progress and card states**: completed and archived task cards consistently render a 100% solid green progress bar with truthful step count metrics; selection state preserved without unexpected reset during filtering.
+  - **Step tracker & artifact tree**: enhanced the native step tracker pipeline, artifact tree, and capsule metadata tags in the inspector drawer, with instant push-to-chat file references.
 - **Scoped Git cleanliness check based on `modified_files`**: when `modified_files` is explicitly provided to `trellis_task_update` (completing a task) or `trellis_task_archive` (archiving a task), cleanliness verification is scoped to the declared files. Uncommitted changes outside `modified_files` no longer block completion or archival, emitting a warning instead. Global cleanliness check is preserved when `modified_files` is omitted.
+
+## Build
+
+- **Automated GitHub Release notes extraction**: added `scripts/extract-changelog.mjs`, enabling the release workflow (`.github/workflows/release.yml`) to automatically parse bilingual release notes from `CHANGELOG.md` upon pushing tags.
+
+## Docs
+
+- **Standardized CHANGELOG.md archive**: aggregated all historical release notes across 16 prior releases (`v0.1.0-rc.3` to `v0.3.0-rc.7`), formalizing the bilingual release format template.
 
 ---
 
