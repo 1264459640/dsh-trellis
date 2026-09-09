@@ -12,6 +12,20 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.0-rc.9 — 2026-09-09
+
+## 功能
+
+- **提升 `modified_files` 局部校验的可发现性**：`trellis_task_update`（任务完成）与 `trellis_task_archive`（任务归档）的 `modified_files` 参数描述现明确说明其语义——传入后 Git 干净度校验限缩到清单内文件（清单内文件必须已提交），工作区中清单之外的其他未提交改动不再阻塞完成/归档，仅给出告警；省略该参数则保持全局严格校验（工作区必须整体干净）。收尾技能 `trellis-finish-work` 新增 "Scoped relaxation" 指引，推荐"先提交任务自身文件、再以 `modified_files` 声明以放行无关改动"，替代盲目 `git stash`；README / README_EN 的 Git 干净度校验条目同步补记该行为。
+
+---
+
+## Features
+
+- **Improved discoverability of the scoped `modified_files` git check**: the `modified_files` parameter descriptions of `trellis_task_update` (completing a task) and `trellis_task_archive` (archiving a task) now spell out the semantics — providing the list scopes the Git cleanliness check to those files (the listed files must themselves be committed), and uncommitted changes outside the list no longer block completion or archival, only emitting a warning; omitting the parameter keeps the global strict check (fully clean working tree). The `trellis-finish-work` wrap-up skill adds a "Scoped relaxation" step recommending "commit the task's own files first, then declare them via `modified_files` to allow unrelated changes" instead of blind `git stash`; README / README_EN Git Cleanliness Check bullets are updated accordingly.
+
+---
+
 ## v0.3.0-rc.8 — 2026-09-09
 
 ## 功能
