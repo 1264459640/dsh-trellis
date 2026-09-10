@@ -1,0 +1,11 @@
+{
+  "title": "Trellis 设置页 UI 对齐效果图（纵向 Tab + 卡片式表单）",
+  "status": "planning",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "prd",
+    "execution_lane": "standard"
+  },
+  "description": "用户反馈当前 Trellis 设置页 UI 与效果图（.dsh/generated/dsh-auxiliary-1788782790255-1.png）差距大。效果图设计语言：大写灰色分节标签（PROJECT / PLUGIN SETTINGS）、Project Path 一体化卡片行（字段名+输入框+Browse 按钮同排）、左侧纵向无边框 Tab 列表（选中=浅蓝底+蓝字）、右侧带浅灰 header 栏的圆角内容卡片、字段三层排布（粗体键名→灰色描述→全宽控件）、品牌色为蓝色（非紫色）。待规划期确认：截图页面（enabled/mode/spec_path/projectPath + 11 个 Tab）由哪份代码渲染——本机未找到匹配源码（官方 @trellis-dsh/trellis-workflow 的 junction 指向已删除的 F:\\dsh-plugins\\trellis-dsh；本仓库 dsh-trellis schema 为 allowlist/injectStep/skipKeywords/inline/enforceReadonlyPlanning）。"
+}
