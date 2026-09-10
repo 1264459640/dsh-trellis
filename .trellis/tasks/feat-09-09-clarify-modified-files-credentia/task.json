@@ -1,0 +1,11 @@
+{
+  "title": "澄清 modified_files 为调用期校验凭据（不落盘）",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "quick",
+    "stage": "check",
+    "execution_lane": "quick"
+  },
+  "description": "澄清 trellis_task_update / trellis_task_archive 的 modified_files 为一次性调用期 Git 校验凭据：描述中明确“不会写入 task.json / 不落盘”，返回值可选回显，消除 Agent 将其误读为任务元数据的混淆。"
+}
