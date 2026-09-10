@@ -177,7 +177,7 @@ test('checkGitCleanliness with scoped modifiedFiles allows uncommitted changes o
     // 1. Scoped check on fileA while fileA is still dirty -> should fail
     const dirtyFileACheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js'] })
     assert.equal(dirtyFileACheck.clean, false)
-    assert.ok(dirtyFileACheck.error.includes('[trellis/git_dirty]'))
+    assert.ok(dirtyFileACheck.error.includes('[trellis/git_declared_dirty]'))
     assert.ok(dirtyFileACheck.error.includes('fileA.js'))
 
     // 2. Commit fileA only; fileB remains dirty in working tree
@@ -201,6 +201,50 @@ test('checkGitCleanliness with scoped modifiedFiles allows uncommitted changes o
     const uncommittedCheck = await checkGitCleanliness(tempDir, { modifiedFiles: ['fileA.js', 'fileNonExistent.js'] })
     assert.equal(uncommittedCheck.clean, false)
     assert.ok(uncommittedCheck.error.includes('[trellis/git_uncommitted]'))
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true })
+  }
+})
+
+test('checkGitCleanliness action wording customizes failure messages and appends scoped guidance', async () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'trellis-action-'))
+  try {
+    try {
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' })
+      execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, stdio: 'ignore' })
+      execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: tempDir, stdio: 'ignore' })
+    } catch (e) {
+      if (e.code === 'EPERM') return
+      throw e
+    }
+
+    writeFileSync(path.join(tempDir, 'tracked.js'), 'v1')
+    execFileSync('git', ['add', '.'], { cwd: tempDir, stdio: 'ignore' })
+    execFileSync('git', ['commit', '-m', 'Init'], { cwd: tempDir, stdio: 'ignore' })
+
+    const probe = await checkGitCleanliness(tempDir)
+    if (!probe.isGitRepo) return
+
+    // Make the working tree dirty
+    writeFileSync(path.join(tempDir, 'tracked.js'), 'v2')
+
+    // 1. action=archive -> "归档任务前" + scoped guidance present
+    const archiveAction = await checkGitCleanliness(tempDir, { action: 'archive' })
+    assert.equal(archiveAction.clean, false)
+    assert.ok(archiveAction.error.includes('[trellis/git_dirty]'))
+    assert.ok(archiveAction.error.includes('归档任务前'))
+    assert.ok(archiveAction.error.includes('modified_files'))
+    assert.ok(archiveAction.error.includes('不会写入 task.json'))
+
+    // 2. action=complete -> "完成任务前"
+    const completeAction = await checkGitCleanliness(tempDir, { action: 'complete' })
+    assert.equal(completeAction.clean, false)
+    assert.ok(completeAction.error.includes('完成任务前'))
+
+    // 3. no action -> neutral "完成或归档任务前" (backward compatible)
+    const neutralAction = await checkGitCleanliness(tempDir)
+    assert.equal(neutralAction.clean, false)
+    assert.ok(neutralAction.error.includes('完成或归档任务前'))
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
   }

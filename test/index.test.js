@@ -12,6 +12,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   validateSlug,
   todayMmDd,
@@ -800,16 +801,20 @@ test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo
       })
       assert.equal(updateCommitted.ok, true)
       assert.equal(updateCommitted.taskJson.status, 'completed')
+      // gitCheck reflects the scoped check
+      assert.equal(updateCommitted.gitCheck.scoped, true)
 
       // 7. Scoped check during archive: other dirty file exists, but modified_files is clean and committed
       writeFileSync(path.join(root2, 'unrelated-dirty.js'), 'console.log("unrelated")')
-      // Global archive fails because unrelated-dirty.js is dirty
+      // Global archive fails because unrelated-dirty.js is dirty, with archive wording + guidance
       const archiveGlobalFail = await archiveTaskRecord(fs2, root2, {
         slug: 'feat-08-20-task2',
       })
       assert.equal(archiveGlobalFail.ok, false)
       assert.match(archiveGlobalFail.error, /\[trellis\/git_dirty\]/)
       assert.match(archiveGlobalFail.error, /unrelated-dirty\.js/)
+      assert.match(archiveGlobalFail.error, /归档任务前/)
+      assert.match(archiveGlobalFail.error, /modified_files/)
 
       // Scoped archive succeeds with modified_files: ['real-committed.js']
       const archiveScopedSuccess = await archiveTaskRecord(fs2, root2, {
@@ -818,10 +823,23 @@ test('updateTaskRecord and archiveTaskRecord enforce git cleanliness in git repo
       })
       assert.equal(archiveScopedSuccess.ok, true)
       assert.equal(archiveScopedSuccess.slug, 'feat-08-20-task2')
+      assert.equal(archiveScopedSuccess.gitCheck.scoped, true)
+      assert.ok(archiveScopedSuccess.gitCheck.warning)
     } finally {
       rmSync(root2, { recursive: true, force: true })
     }
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+
+test('modified_files tool descriptions clarify call-time credential (NOT persisted)', () => {
+  const indexPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'index.js')
+  const source = readFileSync(indexPath, 'utf8')
+  // Both trellis_task_update and trellis_task_archive must carry the credential
+  // semantics so agents do not expect the field to be persisted into task.json.
+  const matches = source.match(/NOT persisted into `task\.json`/g) || []
+  assert.ok(matches.length >= 2, `expected >=2 occurrences of NOT persisted, got ${matches.length}`)
+  // The output schema for both tools must expose gitCheck.
+  assert.ok((source.match(/gitCheck:/g) || []).length >= 2, 'expected gitCheck in both tool output schemas')
 })

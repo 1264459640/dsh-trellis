@@ -180,6 +180,18 @@ export interface TrellisTaskUpdateResult {
   phase: TrellisPhase | null
   /** Bound runtime session file (e.g. "sess_abc.json"), null on failure or unbound. */
   boundSessionFile: string | null
+  /** Git cleanliness check outcome for this call (null when no check ran / on failure). */
+  gitCheck: TrellisGitCheck | null
+}
+
+/**
+ * Outcome of the Git cleanliness check performed during a completing/archiving call.
+ * `scoped` is true when `modified_files` was provided (local check); `warning` carries
+ * the note emitted when uncommitted changes outside the declared list were allowed.
+ */
+export interface TrellisGitCheck {
+  scoped: boolean
+  warning: string | null
 }
 
 /** Shape returned by the `trellis_task_archive` tool. */
@@ -195,6 +207,8 @@ export interface TrellisTaskArchiveResult {
   bucket: string | null
   archivedAt: string | null
   unbound: string[] | null
+  /** Git cleanliness check outcome for this call (null when no check ran / on failure). */
+  gitCheck: TrellisGitCheck | null
 }
 
 /** Plugin configuration. */
