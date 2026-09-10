@@ -12,7 +12,31 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
-## v0.3.0-rc.10 — 2026-09-10
+## v0.3.1 — 2026-09-10
+
+## 功能
+
+- **任务看板 UI 三形态按效果图高保真还原**（`lib/client.js` 渲染层重写）：工作台看板（三泳道卡片）、工作台列表（高密度数据网格）、侧栏紧凑弹窗（紧凑列表）与右侧详情面板均逐区域对齐参考图——结构、配色、排版密度、间距与文案三层一致。
+- **统一设计令牌（TB Token）并对齐效果图取色**：新增/校准选中蓝 `#185DDD`、进度蓝 `#216AE2`、弹窗强调蓝 `#146BFE`、黑胶囊 `#0B0C0D`、完成绿 `#3BAF62`/环 `#61BD7E`、选中浅蓝底 `#EFF6FE`/`#F2F6FC`、缺陷类型橙 `#F77032`；圆角 popover/modal 收敛为 16px。
+- **顶栏与筛选控件重排**：筛选胶囊去除计数、形状由全圆胶囊改为 8px 圆角矩形（与效果图一致）、并左对齐紧跟搜索框；视图切换改为「工作台」静态标签 + 黑底当前模式钮（看板/列表可切）；关闭按钮去边框化。
+- **看板卡片/列表行/弹窗行结构与选中态还原**：卡片四行结构（状态点+类型徽章 / 标题 / slug / 进度条+步骤同行）、完成卡满绿条+绿环勾；列表行阶段徽章显示「实现（impl）」；弹窗头部胶囊+展开/关闭图标、选中行左蓝竖条+右蓝点；footer「仅展示，不直接改状态」。
+- **详情面板重构**：单一黑色主 CTA 状态机（未激活「激活任务」/已激活「推进任务」+轻量取消入口/归档只读）；阶段流水线改单色克制风（无外框、贯通轴线、白底圆节点+深色字形、当前节点蓝环→最终定稿为品牌蓝实心+白序号、节点放大至 20/24px）；产物区简化为图标+mono 文件名+打开按钮；执行步骤清单简行化并新增「已完成 n 个步骤，共 m 个步骤」说明。
+- **死代码清理**：删除未引用的样式常量、locale 键与 `renderIcon` 无调用分支（`artifactMeta`/`phaseLabelOf`/`ensureAnimationStyles` 等），净减约 450 行。
+- **首个稳定版**：版本号自 `0.3.0-rc.10` 升至 `0.3.1`，收敛此前多轮视觉还原迭代。
+
+---
+
+## Features
+
+- **High-fidelity restoration of the task-board UI to the reference mockups** (`lib/client.js` render layer rework): the workbench kanban (three swimlanes), workbench list (dense data grid), sidebar compact popover, and the right-side details panel are each aligned region-by-region to the effect images — matching structure, colors, typography/density, spacing, and copy.
+- **Unified design tokens (TB) aligned to sampled mockup colors**: added/calibrated selected blue `#185DDD`, progress blue `#216AE2`, popover accent blue `#146BFE`, ink `#0B0C0D`, completion green `#3BAF62`/ring `#61BD7E`, selected light-blue backgrounds `#EFF6FE`/`#F2F6FC`, and the orange issue badge `#F77032`; popover/modal radii converge to 16px.
+- **Toolbar and filter controls reworked**: filter pills no longer show counts, their shape changed from stadium capsules to 8px rounded rectangles (matching the mockups), and they sit left-aligned right after the search box; the view switch became a static "Workbench" label plus a black current-mode button (Kanban/List); the close button is now borderless.
+- **Kanban card / list-row / popover-row structure and selection states restored**: cards use a four-row layout (status dot + type badge / title / slug / progress bar with step text on the same row), completed cards show a full green bar with a green ring check; list stage badges display "实现（impl）"; the popover header holds pills plus expand/close icons and selected rows get a left blue accent bar and right blue dot; footer reads "Display only — no direct state changes".
+- **Details panel rebuilt**: a single black primary-CTA state machine (not active → "Activate Task" / active → "Push Task" with a lightweight deactivate entry / archived → read-only); the stage pipeline uses a restrained monochrome style (no outer frame, through-axis line, white round nodes with dark glyphs, current node finally pinned as a brand-blue filled circle with a white index, nodes enlarged to 20/24px); artifacts simplified to icon + monospace filename + open button; the execution-step checklist flattened with a new "Completed n of m steps total" caption.
+- **Dead-code cleanup**: removed unreferenced style constants, locale keys, and unused `renderIcon` branches (`artifactMeta`/`phaseLabelOf`/`ensureAnimationStyles`, etc.), netting ~450 fewer lines.
+- **First stable release**: version bumped from `0.3.0-rc.10` to `0.3.1`, consolidating several rounds of visual-restoration iterations.
+
+---
 
 ## 功能
 

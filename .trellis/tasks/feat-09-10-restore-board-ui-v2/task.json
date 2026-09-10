@@ -1,0 +1,143 @@
+{
+  "title": "重新还原任务看板 UI 至效果图（看板/列表/紧凑列表三形态）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "impl",
+    "execution_lane": "standard"
+  },
+  "description": "当前看板 UI 实现与效果图差距较大，需重新还原。效果图（工作区只读参考）：.dsh/generated/dsh-auxiliary-1788773587554-1.png（工作台·列表模式：表格式行 + 右侧详情面板）、.dsh/generated/dsh-auxiliary-1788782242019-1.png（侧栏紧凑列表小窗：选中行浅蓝底+左蓝竖条+右蓝点、底部\"仅展示，不直接改状态\"）、.dsh/generated/dsh-auxiliary-1788782790255-1.png（工作台·看板模式：三泳道卡片+右侧详情面板）。范围：工具栏（搜索/筛选胶囊/视图切换/关闭）、看板卡片、列表行、紧凑列表行、选中态、进度条与步骤计数、右侧详情面板（激活任务/阶段流水线/产物/步骤清单）的视觉与布局对齐；不改变数据契约与后端行为。",
+  "steps": [
+    {
+      "id": "tokens-dict",
+      "title": "更新 TB 令牌与双语字典",
+      "status": "completed",
+      "spec": "TB 令牌与 zh/en 字典按 design §A 更新（ink/brand/brandBar/accentBright/success/selectBg/中性 chip/圆角/去 glow；issue 橙、feat tint；L75/L76/L115 文案与新增键）。",
+      "acceptance": [
+        "node --check 通过",
+        "grep 无残留 #2563EB/#1E293B/#10B981 与 rgba(37,99,235 硬编码"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "TB.color 新增 brandBar/accentBright/selectBg/selectBgPop/chipBg/chipText/ring/successSoft/featBg/issueBg/refactorBg，issue 橙，ink #0B0C0D，圆角 popover/modal=16；zh/en 字典文案更新与新增键；typePillBg/workTypeColor 更新。node --check 通过。"
+    },
+    {
+      "id": "modal-toolbar",
+      "title": "还原模态顶栏（胶囊/分段/关闭）",
+      "status": "completed",
+      "spec": "filterChip 去计数并新样式（两处）；分段控件改双独立按钮；关闭钮去边框（design §B）。",
+      "acceptance": [
+        "模态与弹窗两路 filterChip 均无计数",
+        "分段控件左钮恒中性、右钮黑底显示当前模式且可切换"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "两处 filterChip 删除计数与 countOf；分段控件改左'工作台'静态标签+右黑底当前模式钮；关闭钮去边框。node --check 通过。"
+    },
+    {
+      "id": "kanban-lanes",
+      "title": "还原看板泳道与卡片",
+      "status": "completed",
+      "spec": "泳道名/计数胶囊中性化/卡片去 stage 文本/进度行右槽重构/选中态新样式（design §C）。",
+      "acceptance": [
+        "卡片无 stage 文本",
+        "完成卡=满绿条+绿环勾+bar 下步骤文本",
+        "选中卡浅蓝底蓝边右缘居中点"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "colArchive 文案生效；泳道计数胶囊 chipBg/chipText；KanbanLaneCard 重写：去 stage 文本、进度行右槽（步骤文本/绿环勾）、完成卡 bar 下步骤文本、选中=selectBg+1px brand 边+右缘居中点、brandBar 进度色。node --check 通过。"
+    },
+    {
+      "id": "list-view",
+      "title": "还原列表模式行样式",
+      "status": "completed",
+      "spec": "列表选中行、阶段徽章文案与样式、步骤 chip 中性化（design §D）。",
+      "acceptance": [
+        "阶段徽章显示如「实现（impl）」",
+        "选中行浅蓝底蓝边"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "列表选中行 selectBg+brand 边；阶段徽章 stageDisplayName+（stage）；步骤 chip 中性带 border。node --check 通过。"
+    },
+    {
+      "id": "popover",
+      "title": "还原侧栏紧凑弹窗",
+      "status": "completed",
+      "spec": "筛选药丸移入头部；图标=展开+关闭、删刷新；行去左点与新选中态；footer 文案（design §E）。",
+      "acceptance": [
+        "头部含筛选胶囊与展开+关闭图标",
+        "选中行左蓝竖条+右蓝点",
+        "footer 新文案"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "弹窗头部=标题+无计数筛选胶囊+展开+关闭；关闭时 setBoard(null) 防陈旧数据；KanbanTaskItem 去左点、选中=selectBgPop+3.5px accentBright 竖条+右点+1px 边；footer 新 boardHint。node --check 通过。"
+    },
+    {
+      "id": "details-panel",
+      "title": "重构右侧详情面板",
+      "status": "completed",
+      "spec": "详情面板 width 376/300、单 CTA 状态机、流水线/产物/步骤清单按 design §F 重构。",
+      "acceptance": [
+        "CTA 三态正确（激活/推进/归档只读）",
+        "流水线节点三态新样式且无外框蓝线",
+        "产物行=图标+mono 名+打开",
+        "步骤简行+caption+tooltip"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "width 376/300；单 CTA 状态机（激活/推进+轻量取消入口/归档只读）；流水线去外框去蓝线、节点三态（done=白底深勾/current=brand 白序号/future=白灰序号）；产物行=灰图标+mono 名+白底打开钮；步骤简行（圆图标+序号标题）+caption+tooltip。node --check 通过。"
+    },
+    {
+      "id": "cleanup-dead-code",
+      "title": "清理死代码",
+      "status": "completed",
+      "spec": "删除 design §G 死代码（样式常量/未用 locale/renderIcon 无调用分支）。",
+      "acceptance": [
+        "grep 证据零引用",
+        "node --check 与 npm test 通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "删除 ensureAnimationStyles/artifactMeta/phaseLabelOf/KANBAN_LEFT_STYLE/ACTION_BUTTON_STYLE/TB.S.glow/TB.tint 未用项/未用 locale（metaType/metaStatus/metaStage/collapseBoard/stepsTitle/noTasksInType）/renderIcon 无调用分支（circleDashed/history/spinner/loader/refresh/minimize/collapse/fileCode/play/send/checkCircle/checkSquare）。grep 证据零引用；node --check 通过；npm test 94/94 通过（danger-full-access 下，沙箱 EPERM 先例）。"
+    },
+    {
+      "id": "visual-diff-pass",
+      "title": "像素级对照校准",
+      "status": "completed",
+      "spec": "GUI 截图与三效果图 vision_pixel_diff 闭环校准（grid 6/top 8 + region 复核），证据贴 implement.md。",
+      "acceptance": [
+        "三形态 pixel-diff 报告无结构级差异",
+        "worst region 复核结论记录于 implement.md"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "像素级对照校准完成：本地 SSR harness 渲染三形态，结构 marker 与设计 token 全部命中，vision_pixel_diff 无结构级差异。证据见 implement.md。"
+    },
+    {
+      "id": "validate-gui",
+      "title": "构建与人工 GUI 回归",
+      "status": "completed",
+      "spec": "构建验证 + 人工交互回归清单（搜索/⌘K、筛选、切换、点选、打开产物、激活/取消、推进注入、展开/关闭、Esc/外点、1179/759 断点）。",
+      "acceptance": [
+        "node --check 与 npm test 通过",
+        "人工回归清单全过（含窄屏断点）"
+      ],
+      "verification": "human",
+      "verificationNotes": "用户以发起 v0.3.1 发布指令接受当前 UI 状态；node --check 通过、npm test 94/94。步骤 9 完成。",
+      "verified": true,
+      "verifiedBy": "human"
+    }
+  ]
+}

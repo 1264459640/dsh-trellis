@@ -14,6 +14,7 @@ dist/
 
 # Transient harness/generated dirs — design baselines & screenshots stay local
 .dsh/
+.dsh-vision-toolkit/
 .npm-pack-cache/
 
 # Transient clipboard screenshots (Snipaste) — not part of the deliverable
