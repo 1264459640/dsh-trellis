@@ -12,6 +12,28 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.0-rc.10 — 2026-09-10
+
+## 功能
+
+- **澄清 `modified_files` 为调用期校验凭据（不落盘）**：`trellis_task_update`（任务完成）与 `trellis_task_archive`（任务归档）的 `modified_files` 参数描述明确其为一次性调用期 Git 校验凭据——仅供本次调用的局部干净度/提交校验使用，**不会写入 `task.json`、不改变任务元数据**，需在完成/归档时再次传入。
+- **区分两类 Git 脏错误码**：声明清单内文件本身未提交时返回新错误码 `[trellis/git_declared_dirty]`（原与全局脏共用 `[trellis/git_dirty]`，现可程序化区分补救动作）；未传清单的工作区整体脏仍为 `[trellis/git_dirty]`；清单文件不在最近提交历史仍为 `[trellis/git_uncommitted]`。
+- **失败报错按调用点定制措辞**：`trellis_task_update` 失败提示"完成任务前…"，`trellis_task_archive` 失败提示"归档任务前…"；未指定调用点时保持中性"完成或归档任务前"（向后兼容）。
+- **全局脏失败追加引导段**：报错末尾提示——若未提交改动与任务无关，可传 `modified_files` 声明任务实际改动文件做局部校验（清单内须已提交、清单外放行并告警）；并重申该参数是调用期凭据、不写入 task.json、需再次传入。
+- **成功返回回显 `gitCheck`**：两工具成功返回新增 `gitCheck: { scoped, warning }`，`scoped=true` 表示本次走了 `modified_files` 局部校验（清单外放行时 `warning` 非空），便于 Agent 确认校验结果。
+
+---
+
+## Features
+
+- **`modified_files` clarified as a call-time credential (not persisted)**: the `modified_files` parameter descriptions of `trellis_task_update` (completing a task) and `trellis_task_archive` (archiving a task) now state it is a one-shot, call-time Git-check credential used only for this call — it is **NOT persisted into `task.json`** and does not alter task metadata; pass it again on each completing/archiving call that needs scoped relaxation.
+- **Distinct dirty error codes**: when a declared file in `modified_files` is itself uncommitted, the new `[trellis/git_declared_dirty]` code is returned (previously shared `[trellis/git_dirty]` with the global case, making remedies indistinguishable programmatically); the no-list global-dirty case keeps `[trellis/git_dirty]`, and declared files missing from recent commit history keep `[trellis/git_uncommitted]`.
+- **Call-site-specific failure wording**: `trellis_task_update` failures say "完成任务前…" while `trellis_task_archive` failures say "归档任务前…"; a neutral "完成或归档任务前" is used when no action is specified (backward compatible).
+- **Scoped-relaxation guidance on global-dirty failures**: the error now appends a hint that unrelated uncommitted changes can be allowed by declaring the task's real files via `modified_files` (listed files must be committed; outside changes are allowed with a warning), and reiterates the credential is call-time, not persisted, and must be passed again.
+- **`gitCheck` echoed on success**: both tools now return `gitCheck: { scoped, warning }` on success (`scoped=true` when `modified_files` was used; `warning` non-null when out-of-list changes were allowed), letting agents confirm the check outcome.
+
+---
+
 ## v0.3.0-rc.9 — 2026-09-09
 
 ## 功能
