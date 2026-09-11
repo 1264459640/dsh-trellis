@@ -12,6 +12,20 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.2 — 2026-09-11
+
+## 修复
+
+- **看板产物「打开」改为 DSH 原生文档预览打开文件链接**（`lib/client.js`）：此前点击产物「打开」把 `@.trellis/tasks/...` 原生文件引用**回填进输入框**并聚焦，与「原生文件引用交给 DSH 原生查看」的设计约定相悖；现改为调用 `ctx.sidebarRight.openResource`（`dsh-resource://file/session/<sessionId>/<path>` 地址，与官方聊天客户端打开 `@file` 引用同机制），在右侧文档预览中原生打开，输入框不再被触碰；右侧栏服务不可用时降级为复制文件引用到剪贴板并提示。活动与归档任务路径均正确处理。
+
+---
+
+## Fixed
+
+- **Kanban artifact "Open" now opens the file link in DSH's native document preview** (`lib/client.js`): clicking "Open" on an artifact previously backfilled the `@.trellis/tasks/...` native file reference into the composer input and focused it, contradicting the "hand the native file reference to DSH for native viewing" design convention. It now calls `ctx.sidebarRight.openResource` (a `dsh-resource://file/session/<sessionId>/<path>` address, the same mechanism the official chat client uses to open `@file` references), opening the file in the right-sidebar document preview without touching the input box; when the right-sidebar service is unavailable it falls back to copying the file reference to the clipboard with a notice. Active and archived task paths are both handled correctly.
+
+---
+
 ## v0.3.1 — 2026-09-10
 
 ## 功能
