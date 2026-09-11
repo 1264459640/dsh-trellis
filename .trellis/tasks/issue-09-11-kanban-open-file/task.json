@@ -1,0 +1,11 @@
+{
+  "title": "看板产物「打开」应通过 DSH 原生打开文件链接而非回填输入框",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "看板详情面板产物行的「打开」按钮当前调用 push(artifactToken(...)) → injectToComposer，将 @.trellis/tasks/... 原生文件引用回填进输入框并聚焦；与 README 约定「产物点击生成原生文件引用交给 DSH 原生查看」不符。应改为通过 DSH 宿主能力直接打开该文件链接。"
+}
