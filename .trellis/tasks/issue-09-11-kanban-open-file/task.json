@@ -1,6 +1,6 @@
 {
   "title": "看板产物「打开」应通过 DSH 原生打开文件链接而非回填输入框",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "standard",
