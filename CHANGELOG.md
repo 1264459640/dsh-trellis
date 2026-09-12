@@ -12,7 +12,7 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
-## Unreleased
+## v0.3.3 — 2026-09-12
 
 ## 功能
 
