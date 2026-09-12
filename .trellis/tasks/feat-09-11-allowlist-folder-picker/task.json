@@ -1,0 +1,11 @@
+{
+  "title": "设置面板白名单支持文件夹选择器",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "增强插件设置面板的注入白名单编辑体验：点击「添加」时能弹出文件夹选择器（资源管理器）选择项目根路径，而不是只能手动输入绝对路径。"
+}
