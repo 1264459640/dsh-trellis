@@ -1,6 +1,6 @@
 {
   "title": "设置面板白名单支持文件夹选择器",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
