@@ -64,3 +64,32 @@ test('push-to-chat and artifact token contracts are present (Subtask 4)', () => 
   assert.match(source, /execCommand\('insertText'/)
   assert.match(source, /navigator\.clipboard && navigator\.clipboard\.writeText/)
 })
+
+test('allowlist folder picker browses via the official directory service (feat-09-11)', () => {
+  const source = readFileSync(clientPath, 'utf8')
+
+  // The browse button lives in the settings tab and calls the Host's native
+  // directory picker through the official workspaces service (the same call
+  // the DSH directory-picker packages use).
+  assert.match(source, /workspaces\.pickDirectory\(\)/)
+  assert.match(source, /onClick: browsePath/)
+
+  // Capability guard: missing/broken workspaces service must NOT throw —
+  // it surfaces browseFailed and keeps the manual input path usable.
+  assert.match(source, /typeof workspaces\.pickDirectory !== 'function'/)
+
+  // Picked paths are normalized (backslashes → forward slashes) before they
+  // join the allowlist, matching the UI's existing forward-slash display.
+  assert.match(source, /replace\(/, {})
+  assert.match(source, /\\\/g, '\/'/)
+
+  // Cancel (null) is a silent no-op; errors are surfaced, never swallowed.
+  assert.match(source, /picked === null \|\| picked === undefined/)
+  assert.match(source, /onError|browseFailed/)
+
+  // Locale dictionaries carry all three browse keys in BOTH languages.
+  for (const key of ['browse:', 'browseBusy:', 'browseFailed:']) {
+    const count = source.split(key).length - 1
+    assert.equal(count, 2, `expected exactly 2 occurrences of ${key} (zh + en), got ${count}`)
+  }
+})

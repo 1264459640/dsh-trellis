@@ -130,3 +130,24 @@
 20. **详情抽屉纯黑实心主 CTA（Vercel 风格）**：
     右侧详情面板使用纯黑背景（`TB.color.ink`）配全宽圆角矩形作为主操作按钮，与阶段流水线 5 节点
     Stepper 及双色步骤进度条建立统一的视觉层级。
+
+## 目录选择服务调用约定（feat-09-11-allowlist-folder-picker 沉淀）
+
+21. **设置面板需要「选择目录」时，优先用官方目录服务，不自绘浏览器**：
+    - 调用链：客户端注入 `workspaces` 服务（本插件 `lib/client.js` 的 `inject` 数组追加
+      `'workspaces'`，与 `dsh-client-ui-directory-picker-native` 同款），在组件点击时经
+      `clientCtx.workspaces.pickDirectory(): Promise<string | null>` 唤起 Host 原生目录选择
+      对话框（Windows 上即资源管理器风格窗口）；`null` 表示用户取消（静默返回，无副作用）。
+    - **loopback 网关**：`host.pickDirectory` 在 `dsh-client-connection` 的
+      `PRIVILEGED_METHODS` 中（与 settings/credentials 同级），仅 loopback 同源放行；
+      本产品 Web GUI 即 127.0.0.1 天然满足；非 loopback（trustedHosts）部署会失败 →
+      必须做能力守卫（`!workspaces || typeof pickDirectory !== 'function'`）与 catch 分支，
+      显示可读错误并保留手输通路，绝不静默吞错或崩面板。
+    - **路径归一化**：原生对话框返回 OS 分隔符（Windows 反斜杠）；Host 端
+      `lib/resolve.js normalizePath` 匹配前统一 `\`→`/` + 盘符大写，所以存储侧做一次
+      轻量 `replace(/\\/g, '/')` 保持 UI 展示一致即可，无需引入 Node path API（client
+      bundle 为 `window.__ModuleLoader__` 单文件，不能 require Node 模块）。
+    - **降级边界**：应用内 Miller 浏览（`listDirectory`/`createDirectory`）由官方
+      `dsh-client-ui-directory-picker-browse` 包负责（注册于
+      `conversation.hero.workspace.directoryFlow` / `sidebar.workspaces.directoryFlow` slot），
+      设置面板等低频页面不重复自绘，原生对话框不可用时用错误提示 + 手输兜底即可。

@@ -67,7 +67,7 @@ After installation, **restart the DSH service**.
 By default, the plugin will not intercept any unconfigured workspaces. Add your target workspace directory to the allowlist:
 
 1. Open the DSH Web UI and navigate to bottom-left **Settings → Plugins → Trellis Workflow**;
-2. Under **Allowed Projects (allowlist)**, add the absolute path of your workspace root directory and click Save (hot-reloaded).
+2. Under **Allowed Projects (allowlist)**, add the absolute path of your workspace root directory — either type it manually or click **Browse…** to pick a folder via the system folder picker, then click Save (hot-reloaded).
 
 > **Note**: To prevent the model from editing source code prior to plan approval, enable **Enforce Read-Only Planning (`enforceReadonlyPlanning`)** in the same settings panel.
 

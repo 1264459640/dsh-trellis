@@ -12,6 +12,20 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## Unreleased
+
+## 功能
+
+- **设置面板白名单支持「浏览…」文件夹选择器**（`lib/client.js`）：注入白名单新增 **浏览…** 按钮，点击后经 DSH 官方目录服务 `ctx.workspaces.pickDirectory()` 唤起系统原生目录选择对话框（Windows 资源管理器风格），选中目录后自动归一化为正斜杠并直接加入白名单（去重，取消无副作用）；原生选择器不可用（如非 loopback 部署）时显示可读错误提示并保留手动输入通路，面板不崩、手输不受影响。
+
+---
+
+## Features
+
+- **Allowlist "Browse…" folder picker in the settings panel** (`lib/client.js`): the injection allowlist gains a **Browse…** button that opens the Host's native directory picker via the official `ctx.workspaces.pickDirectory()` service (Explorer-style dialog on Windows); the picked directory is normalized to forward slashes and appended straight into the allowlist (deduped; cancelling is a silent no-op). When the native picker is unavailable (e.g. non-loopback deployment) a readable error surfaces and the manual input path stays fully functional.
+
+---
+
 ## v0.3.2 — 2026-09-11
 
 ## 修复
