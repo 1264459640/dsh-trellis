@@ -65,16 +65,24 @@ test('push-to-chat and artifact token contracts are present (Subtask 4)', () => 
   assert.match(source, /navigator\.clipboard && navigator\.clipboard\.writeText/)
 })
 
-test('allowlist folder picker browses via the official directory service (feat-09-11)', () => {
+test('allowlist folder picker browses via the official directory service (feat-09-11, issue-09-18)', () => {
   const source = readFileSync(clientPath, 'utf8')
 
   // The browse button lives in the settings tab and calls the Host's native
-  // directory picker through the official workspaces service (the same call
-  // the DSH directory-picker packages use).
-  assert.match(source, /workspaces\.pickDirectory\(\)/)
+  // directory picker through the official `uiWorkspace` service (the same call
+  // the DSH directory-picker packages use: `inject = ["slots", "uiWorkspace"]`).
+  //
+  // Regression guard (issue-09-18-folder-picker-uiworkspace-mismatch): the
+  // service MUST be `uiWorkspace`. `workspaces` is a different service
+  // (dsh-api-workspace-controller's WorkspaceController) that has no
+  // `pickDirectory`, so consuming it makes the capability guard below fail
+  // unconditionally and the picker never opens.
+  assert.match(source, /uiWorkspace\.pickDirectory\(\)/)
+  assert.doesNotMatch(source, /workspaces\.pickDirectory\(\)/)
+  assert.match(source, /'uiWorkspace'/)
   assert.match(source, /onClick: browsePath/)
 
-  // Capability guard: missing/broken workspaces service must NOT throw —
+  // Capability guard: missing/broken uiWorkspace service must NOT throw —
   // it surfaces browseFailed and keeps the manual input path usable.
   assert.match(source, /typeof workspaces\.pickDirectory !== 'function'/)
 

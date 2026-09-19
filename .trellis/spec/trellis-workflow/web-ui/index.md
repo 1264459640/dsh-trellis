@@ -134,14 +134,24 @@
 ## 目录选择服务调用约定（feat-09-11-allowlist-folder-picker 沉淀）
 
 21. **设置面板需要「选择目录」时，优先用官方目录服务，不自绘浏览器**：
-    - 调用链：客户端注入 `workspaces` 服务（本插件 `lib/client.js` 的 `inject` 数组追加
-      `'workspaces'`，与 `dsh-client-ui-directory-picker-native` 同款），在组件点击时经
-      `clientCtx.workspaces.pickDirectory(): Promise<string | null>` 唤起 Host 原生目录选择
+    - 调用链：客户端注入 `uiWorkspace` 服务（本插件 `lib/client.js` 的 `inject` 数组含
+      `'uiWorkspace'`，与 `dsh-client-ui-directory-picker-native` 同款——后者为
+      `inject = ["slots", "uiWorkspace"]` 并经 `ctx.uiWorkspace.pickDirectory()` 调用），
+      在组件点击时经
+      `clientCtx.uiWorkspace.pickDirectory(): Promise<string | null>` 唤起 Host 原生目录选择
       对话框（Windows 上即资源管理器风格窗口）；`null` 表示用户取消（静默返回，无副作用）。
+      > **更正记录（issue-09-18-folder-picker-uiworkspace-mismatch）**：本条原写作
+      > `workspaces` / `clientCtx.workspaces.pickDirectory()`，属**服务名笔误**。
+      > `pickDirectory()` 实际由 `@deepseek-ai/dsh-client-ui-workspace` 注册的服务
+      > `uiWorkspace`（`super(ctx, "uiWorkspace")`）提供；而 `workspaces` 是
+      > `@deepseek-ai/dsh-api-workspace-controller` 注册的**另一个**服务
+      > （`super(ctx, "workspaces")`，成员为 `create/rename/delete/insertBefore/archiveSession`），
+      > **不含** `pickDirectory`。照旧文实现会因能力守卫 `typeof pickDirectory !== 'function'`
+      > 恒为真而**稳定失败**（原生对话框从不被调用）。
     - **loopback 网关**：`host.pickDirectory` 在 `dsh-client-connection` 的
       `PRIVILEGED_METHODS` 中（与 settings/credentials 同级），仅 loopback 同源放行；
       本产品 Web GUI 即 127.0.0.1 天然满足；非 loopback（trustedHosts）部署会失败 →
-      必须做能力守卫（`!workspaces || typeof pickDirectory !== 'function'`）与 catch 分支，
+      必须做能力守卫（`!uiWorkspace || typeof uiWorkspace.pickDirectory !== 'function'`）与 catch 分支，
       显示可读错误并保留手输通路，绝不静默吞错或崩面板。
     - **路径归一化**：原生对话框返回 OS 分隔符（Windows 反斜杠）；Host 端
       `lib/resolve.js normalizePath` 匹配前统一 `\`→`/` + 盘符大写，所以存储侧做一次
