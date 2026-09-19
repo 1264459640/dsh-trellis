@@ -12,6 +12,20 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.4 — 2026-09-19
+
+## 修复
+
+- **设置面板「浏览…」文件夹选择器修复**（`lib/client.js`）：修复点击「浏览…」后提示「调用文件夹选择器失败，请手动输入路径」的问题。根因是客户端注入并调用了错误的宿主服务名 `workspaces`（该服务是工作区列表/会话存储，不含 `pickDirectory`），导致能力守卫 `typeof pickDirectory !== 'function'` 恒为真、原生目录对话框从未被唤起；现改为官方目录服务 `uiWorkspace`（与 `dsh-client-ui-directory-picker-native` 同款用法），并同步更正 `.trellis/spec/trellis-workflow/web-ui/index.md` 目录选择服务调用约定，消除笔误传播源。选中目录后仍按原逻辑归一化为正斜杠并去重写入白名单；取消（`null`）无副作用；手输路径 + 「添加」通路保持不变。
+
+---
+
+## Fixed
+
+- **Fix the settings-panel "Browse…" folder picker** (`lib/client.js`): fixes the "Could not open the directory picker — enter the path manually" error when clicking "Browse…". The root cause was the client injecting and consuming the wrong host service name `workspaces` (a workspace-list/session-store service that has no `pickDirectory`), which made the capability guard `typeof pickDirectory !== 'function'` always true so the native directory dialog was never opened. It now uses the official `uiWorkspace` service (same usage as `dsh-client-ui-directory-picker-native`), and the directory-picker call convention in `.trellis/spec/trellis-workflow/web-ui/index.md` is corrected in sync to remove the typo propagation source. Picked directories are still normalized to forward slashes and deduped into the allowlist; cancel (`null`) stays a silent no-op; the manual input + "Add" path is unchanged.
+
+---
+
 ## v0.3.3 — 2026-09-12
 
 ## 功能
