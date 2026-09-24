@@ -12,6 +12,38 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.5 — 2026-09-24
+
+## 兼容性
+
+- **适配 DSH 0.1.7-rc.1 运行时**：settings 服务在 0.1.7 被重写为 Loader 条目驱动——`ctx.settings.register()` 移除、命名空间改为 Loader 条目 id、Web 表单由条目 `Config` schema 的 volatile 字段投影。host 侧 `lib/settings.js` 不再注册或 opt-in 任何命名空间（0.1.7 的 `autoGenerate` 默认即 `true`；且在 inject 回调里调 `configure()` 会报 `cannot create effect on inactive context`），live 值改读 `ctx.fiber.config`——`ctx.config` 被 cordis 的 inject 守卫拦截（`cannot get property "config" without inject`），原写法会让整个 entry 激活失败；`lib/meta.js` 给全部可配置字段加 `.volatile()` 并把解析出的 cosmokit volatile 包装解包为纯值（`unwrapVolatileConfig`）。
+- **设置面板迁移到新的插件列表页**（`lib/client.js`）：原 `settings.plugins.tab` 页签（连同已删除的 `settingsScope` 服务）改为注册到插件列表页的 `plugins.row.config` 席位，key 为 `@banana-peeljj12/dsh-trellis#trellis-workflow`（即 `rowConfigKey(<包名>, <patch 行 id>)`）。表单改用官方 `@deepseek-ai/dsh-client-ui-primitives` 的 `SettingsFormModel` + `SettingsForm` + `SettingsValueField`，读写宿主共享的 `configForms`，条目 id 由 describe 镜像**动态解析**——bundle 的 `insert:` 行会被加载成 `include:trellis-workflow` 这类带前缀的 id，硬编码裸 id 会让门控永不开启、卡片渲染为空白（实测 `occupants: []`）；编辑暂存、单次保存、支持「已覆盖/恢复默认」。client 依赖改为真实存在的 0.1.7 包（移除已不存在的 `@deepseek-ai/dsh-client-runtime`，补 `dsh-client-ui-plugin-manager`/`dsh-client-ui-workspace`/`dsh-client-ui-sidebar-right`）。
+- **插件配置 schema 必须以 `Config`（大写）声明**（`lib/index.js`）：cordis 只把插件 schema 暴露在 `runtime.Config`，而 dsh-settings 的 `describe()` 正是读 `entry.fiber.runtime.Config`。原先的小写 `config: SCHEMA` 使该条目**永远不会被 settings 收录**——插件其余功能全部正常，唯独插件列表页的配置表单静默消失（渲染为「暂不可配置」）。改为 `Config: SCHEMA` 后条目被正常收录，volatile 字段也真正参与解析（默认值生效；值以 cosmokit volatile 包装到达 `apply`，由 `unwrapVolatileConfig` 解包）。
+- **`system-prompt/assemble` 取会话方式修正**：0.1.7 的 `AssembleContext` 不再携带 `agent`，`enforceReadonlyPlanning` 改从 `ctx.agents.currentInitiator()` 解析当前会话 cwd，只读规划强制恢复生效。
+- **安装器去除过时 harness 白名单补丁**（`scripts/install.mjs`）：0.1.7 下 Web 设置经 `remote.settings` 到达，不再需要补丁 `dsh-host-apiproxy` 的 `WEB_SETTINGS_NAMESPACES`。
+- **peer/dev 依赖对齐 0.1.7-rc.1**：`@deepseek-ai/dsh-*` 升至 `^0.1.7-rc.1`，`@deepseek-ai/cordis` 升至 `^4.0.4`，`@deepseek-ai/schemastery` 升至 `^3.18.4`。
+
+## 修复
+
+- **只读规划强制（`enforceReadonlyPlanning`）恢复生效**：此前因 `context.agent` 为空，cwd 解析恒失败、工具面裁剪从未执行；改为 `currentInitiator()` 后按授权状态正确裁剪 write/edit 与对应 trellis 工具。
+
+---
+
+## Compatibility
+
+- **Adapt to the DSH 0.1.7-rc.1 runtime**: the settings service was rewritten to be Loader-entry driven in 0.1.7 — `ctx.settings.register()` is gone, namespaces are now loader entry ids, and the Web form auto-projects the volatile fields of the entry's `Config` schema. On the host, `lib/settings.js` registers/opt-ins nothing at all (0.1.7's `autoGenerate` defaults to `true`, and calling `configure()` from an inject callback fails with "cannot create effect on inactive context"), and reads live values from `ctx.fiber.config` — `ctx.config` is guard-blocked by cordis ("cannot get property \"config\" without inject") and the original read made the whole entry fail to activate; `lib/meta.js` marks every configurable field `.volatile()` and unwraps the cosmokit volatile wrappers into plain values (`unwrapVolatileConfig`).
+- **The plugin config schema must be declared as `Config` (capital)** (`lib/index.js`): cordis only exposes a plugin's schema at `runtime.Config`, which is exactly what dsh-settings' `describe()` reads (`entry.fiber.runtime.Config`). With the original lowercase `config: SCHEMA` the entry was never listed by settings — every other feature kept working, and only the Plugins-page form silently vanished ("not available"). Declaring `Config: SCHEMA` makes the entry listable, and the volatile fields then really take part in resolution (defaults apply; values reach `apply` as cosmokit volatile wrappers, unwrapped by `unwrapVolatileConfig`).
+- **Migrate the settings page into the new Plugins list** (`lib/client.js`): the former `settings.plugins.tab` tab (along with the removed `settingsScope` service) now registers into the plugin list page's `plugins.row.config` seat, keyed `@banana-peeljj12/dsh-trellis#trellis-workflow` (= `rowConfigKey(<package name>, <patch row id>)`). The form uses the official `@deepseek-ai/dsh-client-ui-primitives` `SettingsFormModel` + `SettingsForm` + `SettingsValueField`, reading and writing the shared `configForms`; the entry id is resolved dynamically from the describe mirror — a bundle-inserted row is loaded as `include:trellis-workflow`, so a hard-coded bare id left the gate permanently closed and the card rendered blank (observed `occupants: []`). Edits are staged, written on one save, with "overridden / reset to default" support. Client dependencies switch to real 0.1.7 packages (drop the non-existent `@deepseek-ai/dsh-client-runtime`; add `dsh-client-ui-plugin-manager` / `dsh-client-ui-workspace` / `dsh-client-ui-sidebar-right`).
+- **Fix how `system-prompt/assemble` resolves the session**: the 0.1.7 `AssembleContext` no longer carries `agent`; `enforceReadonlyPlanning` now resolves the current session cwd from `ctx.agents.currentInitiator()`, restoring read-only planning enforcement.
+- **Drop the obsolete harness allowlist patch from the installer** (`scripts/install.mjs`): on 0.1.7 the Web settings form is reached via `remote.settings`, so patching `dsh-host-apiproxy`'s `WEB_SETTINGS_NAMESPACES` is no longer required.
+- **Align peer/dev dependencies to 0.1.7-rc.1**: `@deepseek-ai/dsh-*` to `^0.1.7-rc.1`, `@deepseek-ai/cordis` to `^4.0.4`, `@deepseek-ai/schemastery` to `^3.18.4`.
+
+## Fixed
+
+- **Read-only planning enforcement (`enforceReadonlyPlanning`) works again**: it previously never ran because `context.agent` was always undefined, so cwd resolution failed and the tool-surface trim never applied; with `currentInitiator()` it now trims write/edit and the matching trellis tools per authorization state.
+
+---
+
 ## v0.3.4 — 2026-09-19
 
 ## 修复

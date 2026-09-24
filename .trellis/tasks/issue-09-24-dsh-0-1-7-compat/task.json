@@ -1,0 +1,10 @@
+{
+  "title": "适配 DSH 0.1.7-rc.1 运行时",
+  "status": "completed",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix",
+    "execution_lane": "standard"
+  }
+}

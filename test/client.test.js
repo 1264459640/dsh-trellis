@@ -65,38 +65,51 @@ test('push-to-chat and artifact token contracts are present (Subtask 4)', () => 
   assert.match(source, /navigator\.clipboard && navigator\.clipboard\.writeText/)
 })
 
-test('allowlist folder picker browses via the official directory service (feat-09-11, issue-09-18)', () => {
+test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7)', () => {
   const source = readFileSync(clientPath, 'utf8')
 
-  // The browse button lives in the settings tab and calls the Host's native
-  // directory picker through the official `uiWorkspace` service (the same call
-  // the DSH directory-picker packages use: `inject = ["slots", "uiWorkspace"]`).
-  //
-  // Regression guard (issue-09-18-folder-picker-uiworkspace-mismatch): the
-  // service MUST be `uiWorkspace`. `workspaces` is a different service
-  // (dsh-api-workspace-controller's WorkspaceController) that has no
-  // `pickDirectory`, so consuming it makes the capability guard below fail
-  // unconditionally and the picker never opens.
-  assert.match(source, /uiWorkspace\.pickDirectory\(\)/)
+  // 0.1.7 migration: the entry's configuration registers into the Plugins
+  // list's `plugins.row.config` seat under the key that page dispatches for
+  // this bundle's row. The removed `settings.plugins.tab` seat and the
+  // removed `settingsScope` service must not come back.
+  assert.match(source, /ctx\.slots\.inject\('plugins\.row\.config'/)
+  assert.match(source, /key: ROW_CONFIG_KEY/)
+  assert.match(source, /const ROW_CONFIG_KEY = '@banana-peeljj12\/dsh-trellis#trellis-workflow'/)
+  assert.doesNotMatch(source, /settings\.plugins\.tab/)
+  assert.doesNotMatch(source, /settingsScope/)
+
+  // The shared host-owned configuration form is the read/write channel. The
+  // entry id is resolved from the describe mirror rather than assumed: a
+  // bundle-inserted row is loaded as `include:trellis-workflow`, so the old
+  // `whileServed([NS])` gate never opened and the card rendered blank.
+  assert.match(source, /new TrellisConfigController\(ctx\.configForms\)/)
+  assert.match(source, /function entryIdOf\(served\)/)
+  assert.match(source, /endsWith\(':' \+ NS\)/)
+  assert.match(source, /this\.mirror\.getSnapshot\(\)\.view/)
+  assert.doesNotMatch(source, /whileServed/)
+  assert.match(source, /'configForms'/)
+  assert.match(source, /SettingsFormModel/)
+  assert.match(source, /SettingsForm\b/)
+
+  // Folder picker: the official `uiWorkspace` service, never `workspaces`
+  // (issue-09-18 regression guard: `workspaces` has no pickDirectory).
+  assert.match(source, /clientCtx && clientCtx\.uiWorkspace/)
+  assert.match(source, /\.pickDirectory\(\)/)
   assert.doesNotMatch(source, /workspaces\.pickDirectory\(\)/)
   assert.match(source, /'uiWorkspace'/)
-  assert.match(source, /onClick: browsePath/)
 
-  // Capability guard: missing/broken uiWorkspace service must NOT throw —
+  // Capability guard: a missing/broken uiWorkspace service must NOT throw —
   // it surfaces browseFailed and keeps the manual input path usable.
-  assert.match(source, /typeof workspaces\.pickDirectory !== 'function'/)
+  assert.match(source, /typeof ws\.pickDirectory !== 'function'/)
 
   // Picked paths are normalized (backslashes → forward slashes) before they
-  // join the allowlist, matching the UI's existing forward-slash display.
-  assert.match(source, /replace\(/, {})
-  assert.match(source, /\\\/g, '\/'/)
-
-  // Cancel (null) is a silent no-op; errors are surfaced, never swallowed.
+  // join the allowlist, and cancel (null) stays a silent no-op.
+  assert.ok(source.includes(".replace(/\\\\/g, '/')"), 'backslash normalization missing')
   assert.match(source, /picked === null \|\| picked === undefined/)
-  assert.match(source, /onError|browseFailed/)
+  assert.match(source, /browseFailed/)
 
-  // Locale dictionaries carry all three browse keys in BOTH languages.
-  for (const key of ['browse:', 'browseBusy:', 'browseFailed:']) {
+  // Locale dictionaries carry the browse keys in BOTH languages.
+  for (const key of ['browse:', 'browseFailed:']) {
     const count = source.split(key).length - 1
     assert.equal(count, 2, `expected exactly 2 occurrences of ${key} (zh + en), got ${count}`)
   }

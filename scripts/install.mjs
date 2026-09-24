@@ -13,9 +13,12 @@
  *   3. (optional)       — `--fix-deps` removes stale `link:` deps whose target
  *      path does not exist; `--uninstall` removes the config row, the
  *      dependency junction, and the package.json dep entries in one step.
- *   `--patch-harness`   — standalone: only patch the harness
- *      `WEB_SETTINGS_NAMESPACES` allowlist (no profile required), so the Web
- *      client can read/write the `trellis-workflow` settings namespace.
+ *
+ * DSH 0.1.7 note: settings are Loader-entry driven — the Web settings form is
+ * the entry's Config schema keyed by `trellis-workflow`, reached by the client
+ * through the generated `remote.settings` namespace. No harness
+ * `WEB_SETTINGS_NAMESPACES` patch is needed anymore, so this installer no
+ * longer patches dsh-host-apiproxy.
  *
  * After a successful run, restart the DSH process for the profile. The package
  * `postinstall` hook invokes this script with `--auto` (safe, idempotent, and
@@ -114,18 +117,16 @@ trellis-workflow 注入层一键安装器
   --inline              按 codex-inline 调度模式解析阶段
   --auto                幂等自动模式（postinstall 使用；无法识别时静默退出）
   --dry-run             只预览将发生的改动，不写盘
-  --uninstall           一步卸载：配置行 + 依赖 junction + package.json 依赖项 + harness 白名单回撤
+  --uninstall           一步卸载：配置行 + 依赖 junction + package.json 依赖项
   --fix-deps            清理 package.json 中指向不存在路径的 trellis link 依赖
-  --patch-harness       只对 dsh-host-apiproxy 的 WEB_SETTINGS_NAMESPACES 白名单做幂等补丁
-                       （新增 trellis-workflow，无需 profile；DSH 升级覆盖后可重跑补回）
   -h, --help            显示本帮助
 
-安装时会额外对 dsh-host-apiproxy 的 WEB_SETTINGS_NAMESPACES 白名单做幂等补丁
-（新增 trellis-workflow，Web 设置页签必需）；DSH 升级覆盖后可重跑本命令补回。
+DSH 0.1.7 起 settings 由 Loader 条目驱动：Web 设置表单即条目 Config（命名空间为
+loader 条目 id trellis-workflow），客户端经生成的 remote.settings 命名空间读写，
+不再需要打 harness 白名单补丁。
 
 示例:
   node scripts/install.mjs --profile web --allowlist "F:/Projects/FordProject"
-  node scripts/install.mjs --patch-harness
   node scripts/install.mjs --dry-run
   node scripts/install.mjs --uninstall --dry-run
   node scripts/install.mjs --uninstall
@@ -532,10 +533,9 @@ if (process.env.TRELLIS_SKIP_AUTO === '1' && args.auto) {
   process.exit(0)
 }
 if (args.patchHarness) {
-  // Standalone harness allowlist patch — no profile required.
-  console.log('== trellis-workflow harness 白名单补丁 ==')
-  for (const message of patchHarnessAllowlist(args.dryRun)) console.log(message)
-  console.log('\n补丁完成。重启 DSH（对应 profile 的进程）后，Web 设置页签生效。')
+  // DSH 0.1.7: settings are Loader-entry driven and reached by the client via
+  // the generated remote.settings namespace — no harness allowlist patch.
+  console.log('DSH 0.1.7 起 Web 设置由 Loader 条目驱动（remote.settings），无需再补丁 harness 白名单。')
   process.exit(0)
 }
 
@@ -578,8 +578,6 @@ if (args.uninstall) {
   console.log(removeLink(profileDir, args.dryRun).message)
   // 3. package.json dep entries
   for (const message of removeTrellisDeps(profileDir, args.dryRun)) console.log(message)
-  // 4. harness settings-exposure allowlist (path A reversal)
-  for (const message of unpatchHarnessAllowlist(args.dryRun)) console.log(message)
   console.log('\n卸载完成。重启 DSH（对应 profile 的进程）后，插件完全移除。')
   process.exit(0)
 }
@@ -614,8 +612,8 @@ if (args.fixDeps) {
   if (!bad.length) console.log('依赖检查：无失效 link 依赖')
 }
 
-// harness settings-exposure allowlist (path A): the Web settings tab needs it
-for (const message of patchHarnessAllowlist(args.dryRun)) console.log(message)
+// DSH 0.1.7: the Web settings form is the entry's Config reached via
+// remote.settings — no harness WEB_SETTINGS_NAMESPACES patch is required.
 
 if (ok) {
   console.log('\n完成。重启 DSH（对应 profile 的进程）后，注入层与 Web 设置页签生效。')
