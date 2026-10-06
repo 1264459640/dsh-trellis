@@ -62,6 +62,28 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 After installation, **restart the DSH service**.
 
+> **Desktop app (DeepSeek Harness App): use the bundled carrier CLI.** The ordinary `dsh`
+> CLI refuses to touch the `desktop` profile with
+> `error: profile "desktop" is managed exclusively by the Electron application` (that name is
+> hard-coded as protected). Use the CLI shipped inside the app instead:
+>
+> ```sh
+> & "F:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add link:F:\dsh-plugins\dsh-trellis
+> ```
+>
+> For a local development checkout, install it as `link:<absolute repo path>`. Afterwards
+> **fully quit and relaunch the desktop app** (including the tray icon — confirm no
+> `DeepSeek Harness.exe` remains in Task Manager) for the change to take effect.
+
+> **Version compatibility**: the `@deepseek-ai/dsh-*` peer ranges a plugin declares must cover
+> the running DSH version. DSH validates those ranges both in the install preflight (before pnpm
+> runs) and at profile startup; a mismatch produces `installation rejected` and the plugin is not
+> loaded. This is a declaration problem, not a code problem: on a `0.2.0-rc.2` runtime,
+> `^0.1.7-rc.1` (= `>=0.1.7-rc.1 <0.2.0-0`) does not cover it and must be raised to
+> `^0.2.0-rc.2`. If the plugin suddenly stops working after a DSH upgrade, check the peer ranges
+> first. This repository currently targets **DSH 0.2.0-rc.2**; see
+> [`docs/ref/dsh-0.2.0-rc.2-audit.md`](docs/ref/dsh-0.2.0-rc.2-audit.md) for the audit evidence.
+
 ### 2. Configure Allowed Directories (Important)
 
 By default, the plugin will not intercept any unconfigured workspaces. Add your target workspace directory to the allowlist:

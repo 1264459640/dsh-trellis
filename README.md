@@ -62,6 +62,25 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 安装完成后**重启 DSH 服务**。
 
+> **桌面版（DeepSeek Harness App）请用自带的 carrier CLI。** 普通 `dsh` CLI 会以
+> `error: profile "desktop" is managed exclusively by the Electron application` 拒绝操作
+> `desktop` profile（该名字被硬编码保护）。请改用桌面版自带的 CLI：
+>
+> ```sh
+> & "F:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add link:F:\dsh-plugins\dsh-trellis
+> ```
+>
+> 装的若是本地开发目录，用 `link:<仓库绝对路径>`；装完成后**完整退出并重启桌面版**
+> （含托盘图标，确认任务管理器中不再有 `DeepSeek Harness.exe`）才会生效。
+
+> **版本兼容性**：插件声明的 `@deepseek-ai/dsh-*` peer 范围必须覆盖当前 DSH 运行时版本。
+> DSH 会在安装前置检查（pnpm 运行之前）与 profile 启动时校验该范围，不匹配会直接
+> `installation rejected` 并拒绝加载——这不是代码问题，而是声明问题：
+> 例如运行时为 `0.2.0-rc.2` 时，`^0.1.7-rc.1`（= `>=0.1.7-rc.1 <0.2.0-0`）不覆盖它，
+> 必须提升到 `^0.2.0-rc.2`。升级 DSH 后若插件突然失效，请先核对 peer 范围。
+> 本仓库当前面向 **DSH 0.2.0-rc.2**；审计证据见
+> [`docs/ref/dsh-0.2.0-rc.2-audit.md`](docs/ref/dsh-0.2.0-rc.2-audit.md)。
+
 ### 2. 配置白名单目录（重要）
 
 为避免非预期介入，插件默认不会拦截未授权的目录。请在 Web 端或配置文件中添加生效路径：
