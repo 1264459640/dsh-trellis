@@ -1,13 +1,13 @@
 {
   "title": "修复 Issue #2 看板暗色模式对比度不足",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "issue",
     "mode": "quick",
     "stage": "fix-note",
     "execution_lane": "quick"
   },
-  "description": "代码与验证已完成；保留未提交改动供审阅，未发布、未归档，现有GUI实际安装验收待用户重载插件。",
+  "description": "用户已于2026-10-08验收通过；修复与0.3.7发布文件已提交（94ca960），135项测试及浏览器对比度验证通过。保留完成任务记录，未归档；下一步推送v0.3.7标签触发发布。",
   "steps": [
     {
       "id": "theme",
@@ -21,8 +21,7 @@
       "verify": true,
       "verified": true,
       "verifiedBy": "ai",
-      "verificationNotes": "已记录测试和浏览器检查通过证据。",
-      "blockedReason": ""
+      "verificationNotes": "28项主题测试及隔离Edge计算样式通过，最低受检对比度5.19:1；用户明确反馈验收通过。"
     },
     {
       "id": "verify",
@@ -36,7 +35,8 @@
       "verify": true,
       "verified": true,
       "verifiedBy": "ai",
-      "verificationNotes": "标准node --test 135/135通过；git diff --check通过；fix-note记录离线验证和真实GUI部署边界。"
+      "verificationNotes": "发布前全量135项测试、打包及更新日志提取通过；用户验收通过。",
+      "blockedReason": ""
     }
   ]
 }
