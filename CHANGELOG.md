@@ -12,6 +12,28 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.3.7 — 2026-10-08
+
+## 修复
+
+- **修复暗色模式下任务看板浅底白字、标题与徽章难以辨认的问题**（[#2](https://github.com/1264459640/dsh-trellis/issues/2)）：将不存在的 `--dsw-alias-bg-layer-0` 改为宿主实际定义的 `--dsw-alias-bg-base`，并让选中行、类型徽章、步骤计数及阶段圆圈跟随宿主主题。区分强调填充色与文字色，保留深色按钮与白字的明确配对；紧凑看板、泳道、列表和详情在明暗主题间切换时均保持可读，不改变布局与任务交互。
+
+## 测试
+
+- **新增 28 项主题回归测试**：覆盖三类选中任务、三种看板视图及明亮、暗色、无宿主变量三种配色环境；全量 `node --test` 共 135 项通过。另以隔离浏览器验证真实 CSS 计算与同一 DOM 的明暗切换，受检文字最低对比度为 **5.19:1**，高于普通文本 4.5:1 标准。
+
+---
+
+## Fixed
+
+- **Fix unreadable kanban titles and badges in dark mode** ([#2](https://github.com/1264459640/dsh-trellis/issues/2)): replace the nonexistent `--dsw-alias-bg-layer-0` with the host-defined `--dsw-alias-bg-base`, and make selected rows, type badges, step counts, and stage circles follow the host theme. Separate accent fills from readable text colors while keeping explicit dark-button/white-label pairs. The compact board, lanes, list, and details remain readable across light/dark switches without changing layout or task interactions.
+
+## Tests
+
+- **Add 28 theme regression tests**: cover three selected task types, three board views, and light, dark, and no-host-token palettes; all 135 `node --test` checks pass. Isolated-browser checks also verify computed CSS colors and theme switching on the same mounted DOM, with a minimum measured text contrast of **5.19:1**, above the 4.5:1 threshold for normal text.
+
+---
+
 ## v0.3.6 — 2026-10-05
 
 ## 兼容性

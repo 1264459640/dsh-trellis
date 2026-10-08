@@ -1,0 +1,42 @@
+{
+  "title": "修复 Issue #2 看板暗色模式对比度不足",
+  "status": "in_progress",
+  "work": {
+    "type": "issue",
+    "mode": "quick",
+    "stage": "fix-note",
+    "execution_lane": "quick"
+  },
+  "description": "代码与验证已完成；保留未提交改动供审阅，未发布、未归档，现有GUI实际安装验收待用户重载插件。",
+  "steps": [
+    {
+      "id": "theme",
+      "title": "修复看板主题配色",
+      "status": "completed",
+      "spec": "按 analysis.md 修复不存在的背景 token 和固定浅色表面",
+      "acceptance": [
+        "主表面、选中行、徽章和阶段数字在明暗主题下可读"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "已记录测试和浏览器检查通过证据。",
+      "blockedReason": ""
+    },
+    {
+      "id": "verify",
+      "title": "完成回归测试并记录结果",
+      "status": "completed",
+      "spec": "编译、全量测试、主题对比度验证及修复说明",
+      "acceptance": [
+        "所有测试通过，说明真实 GUI 验证边界"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "标准node --test 135/135通过；git diff --check通过；fix-note记录离线验证和真实GUI部署边界。"
+    }
+  ]
+}

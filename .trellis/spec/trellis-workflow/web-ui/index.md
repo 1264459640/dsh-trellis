@@ -161,3 +161,19 @@
       `dsh-client-ui-directory-picker-browse` 包负责（注册于
       `conversation.hero.workspace.directoryFlow` / `sidebar.workspaces.directoryFlow` slot），
       设置面板等低频页面不重复自绘，原生对话框不可用时用错误提示 + 手输兜底即可。
+
+## 看板主题与对比度（issue-10-08-kanban-dark-contrast / GitHub #2）
+
+22. **先核对宿主实际定义，再使用主题 token**：DSH 的基础表面是
+    `--dsw-alias-bg-base`，不存在 `--dsw-alias-bg-layer-0`。不存在的变量即使写了
+    白色 fallback，也不能与会随暗色主题变浅的文字 token 安全搭配。
+23. **文字与背景成对设计**：主表面、选中行、徽章、阶段圆圈都需随宿主主题调整；
+    不可只修主背景而保留固定浅色选中底。强调填充色不等于可读的小字号文字色，
+    文字可向宿主 label-primary 混色；固定深色 CTA 与白字、固定深蓝阶段节点与白字
+    可以作为明确的配对保留。使用 CSS 变量跟随宿主即时切换，不另建 OS 主题监听器。
+24. **回归覆盖必须包含明暗主题和真实渲染数据**：`test/client-theme.test.js` 从当前
+    bundle 获取组件树，使用有来源的真实主题子集，检查三种看板视图、三类选中任务、
+    阶段数字、类型/状态徽章与步骤标题在 light/dark/无宿主 token 下至少 4.5:1。
+    轻量测试中的 CSS 解析不是浏览器；变更主题表达式后，另用浏览器计算样式验证，
+    尤其是 `color-mix()` 和同一 DOM 的 light→dark→light 切换。离线页面验证不等于
+    已在用户现有 GUI 安装并验收；须明确区分。
