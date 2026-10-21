@@ -151,7 +151,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 插件向运行时注册了以下专用工具：
 
 - **`trellis_task_create`**：创建新的工作流任务，生成初始 `task.json` 与阶段交付物模板，并自动绑定当前会话。
-- **`trellis_task_update`**：推进任务阶段、更新步骤进度、记录验证证据或更新任务信息。
+- **`trellis_task_update`**：推进任务阶段、更新步骤进度、记录验证证据或更新任务信息，不改变当前会话绑定。显式传入 `slug` 只选择更新目标；切换任务请使用看板的激活按钮。
 - **`trellis_artifact_update`**：安全更新任务交付文档（如 `prd.md`, `design.md`, `check.md` 等），受白名单和路径校验约束。
 - **`trellis_task_archive`**：将已完成的任务归档至 `.trellis/tasks/archive/YYYY-MM/` 目录下，并解除当前会话绑定。
 - **`trellis_task_skip`**：经用户同意后，在当前会话跳过 Trellis 工作流约束，直接放行全量工具权限。

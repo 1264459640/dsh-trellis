@@ -153,7 +153,7 @@ When `enforceReadonlyPlanning: true` is configured, the plugin TRIMS ONLY the sp
 The plugin registers the following specialized tools:
 
 - **`trellis_task_create`**: Creates a new task with initial `task.json`, seeds templates, and binds to the current session.
-- **`trellis_task_update`**: Advances task stages, updates step progress, records verification evidence, or modifies task metadata.
+- **`trellis_task_update`**: Advances task stages, updates step progress, records verification evidence, or modifies task metadata without changing the current session binding. An explicit `slug` selects only the update target; use the board's activate button to switch tasks.
 - **`trellis_artifact_update`**: Safely updates task planning documents (such as `prd.md`, `design.md`, `check.md`), restricted by path and filename whitelists.
 - **`trellis_task_archive`**: Archives a completed task to `.trellis/tasks/archive/YYYY-MM/` and unbinds the session.
 - **`trellis_task_skip`**: Skips the Trellis workflow for the active session upon user approval, unlocking write tools.

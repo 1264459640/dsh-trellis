@@ -178,7 +178,7 @@ export interface TrellisTaskUpdateResult {
   workType: string | null
   stage: string | null
   phase: TrellisPhase | null
-  /** Bound runtime session file (e.g. "sess_abc.json"), null on failure or unbound. */
+  /** Legacy field, always null: updating task data no longer changes session binding. */
   boundSessionFile: string | null
   /** Git cleanliness check outcome for this call (null when no check ran / on failure). */
   gitCheck: TrellisGitCheck | null
