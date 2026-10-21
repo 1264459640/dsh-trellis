@@ -12,6 +12,40 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.2 — 2026-10-21
+
+## 功能
+
+- **看板和任务条界面大改版（视觉更清爽、突出当前任务）**：重新设计了顶栏和底栏的任务状态条（Chip）以及弹出看板。去掉了花花绿绿的彩色标签，改用干净的单色设计；红黄色仅在“任务卡住（blocked）”或“等人工确认”时才会出现；当前会话正在绑定的任务会有呼吸光圈和明确的“当前任务”标识。
+- **当前任务置顶卡片与步骤清单**：正在做的任务直接固定在弹窗最顶部的焦点卡片里，卡片内自带清晰的步骤清单；当前步骤加粗显示，并直接展示完成条件或卡住原因；做完的步骤会自动折叠起来，不占空间；解绑任务的按钮也直接整合在卡片右上角，切换更顺手。
+- **全屏看板改为清晰的三组分类与右侧详情面板**：展开的大看板按“进行中 / 规划中 / 已完成”分为三栏列表，点任意任务右侧直接滑出详情抽屉，能一屏看清整个任务的生命周期阶段、完整步骤清单和产物文档。
+
+## 文档
+
+- **更新使用文档与真实界面截图**：在 `README.md` 与 `README_EN.md` 中替换了旧版截图，展示了新版看板在明亮、暗色模式下的实际效果，并结合使用流程做了清晰说明。
+
+## 测试
+
+- **补充新界面的样式与文字清晰度测试**：针对新版界面的交互、置顶卡片、步骤展示逻辑补充了测试用例；增加了在明亮、暗色和默认环境下的文字对比度检查，确保文字一眼看得清、不刺眼；全部 152 项自动化测试均通过。
+
+---
+
+## Features
+
+- **Cleaner Kanban and Task Chip UI (single accent & quiet list)**: redesigned the top/bottom task status chip and board popup. Replaced rainbow-colored badges with clean typography; reserved red/amber warnings strictly for blocked tasks and manual verification gates; active tasks bound to the current session now feature a gentle breathing halo and a distinct "current" badge.
+- **Pinned Hero Card with Step Checklist**: the currently active task is now pinned in a prominent card at the very top of the popup, complete with a live step checklist that highlights what's being worked on, acceptance criteria, or blockers; completed steps fold away automatically, and the unbind button is built directly into the card.
+- **Grouped Table and Details Drawer for Full Board**: reorganized the full-screen kanban into three clean sections (In Progress, Planning, Completed); clicking any task slides out a side drawer showing full lifecycle progress, all steps, and generated documents.
+
+## Docs
+
+- **Refreshed Screenshots and Documentation**: updated `README.md` and `README_EN.md` with new light and dark mode UI screenshots to match the real look and feel.
+
+## Tests
+
+- **Added UI and Theme Contrast Tests**: expanded test coverage for the new card layouts, step rendering rules, and theme contrast checks (light, dark, and default palettes); all 152 automated tests pass.
+
+---
+
 ## v0.4.1 — 2026-10-21
 
 ## 功能
