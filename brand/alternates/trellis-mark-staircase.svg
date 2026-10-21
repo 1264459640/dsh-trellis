@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="trellis (v1 staircase)">
+  <title>trellis v1 staircase</title>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.6 19.8H7.8V14.6H13V9.4H14.6" stroke="#185DDD" stroke-width="2.8"/>
+    <path d="M14.6 9.4 17.3 12.1 21.4 4.2" stroke="#3BAF62" stroke-width="2.9"/>
+  </g>
+</svg>

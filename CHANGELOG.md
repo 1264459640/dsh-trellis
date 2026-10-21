@@ -12,6 +12,32 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.0 — 2026-10-21
+
+## 功能
+
+- **紧凑看板支持行内快捷激活/取消激活**：在任务行右侧直接提供一键激活与取消激活按钮，无需下钻详情页即可快速流转任务状态；内置加载等待态防连击逻辑，并完全适配宿主明暗主题配色。
+- **裁撤 `design-review` 冗余阶段并强化防过度工程规范**：精简标准 `feat` 任务生命周期，将架构与设计评审职责收敛至设计与实施前环节，消除形式化阻滞；同步确立简洁设计与最小必要实现守则。
+- **Trellis 核心技能文档与提示词中文统一**：将全部内置技能说明、产物模板与指导原则统一为清晰易读的中文表述，降低多代理协作中的理解成本与术语分歧。
+
+## 测试
+
+- **新增看板行内交互与状态回归测试**：覆盖紧凑看板激活按钮渲染、禁用与点击触发逻辑，验证明暗主题兼容性；确保全量测试通过。
+
+---
+
+## Features
+
+- **Inline activate/deactivate in compact kanban**: add one-click activate and deactivate actions directly to task rows for quick switching without opening task details; includes loading/debounce protection and seamless light/dark theme adaptation.
+- **Prune `design-review` stage and enforce anti-overengineering**: streamline the standard `feat` workflow by pruning the separate design review phase, eliminating bureaucratic overhead while reinforcing minimalist design and single-purpose changes.
+- **Unify Trellis skills and prompt templates in Chinese**: convert all bundled skill definitions, artifact templates, and guidance into consistent Chinese for reduced cognitive overhead and clearer multi-agent collaboration.
+
+## Tests
+
+- **Add board inline interaction and state tests**: cover rendering, disabled states, and action dispatch for the compact board activate button, ensuring full regression test suite passes.
+
+---
+
 ## v0.3.7 — 2026-10-08
 
 ## 修复

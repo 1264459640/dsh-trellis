@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="trellis">
+  <title>trellis</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+    <stop offset="0" stop-color="#1A2740"/><stop offset="1" stop-color="#0A1120"/>
+  </linearGradient></defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <g transform="translate(76.00 76.00) scale(15.0)"><defs><mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#FFFFFF"/><path d="M17.33 11.95 18.27 12.89 19.87 10.68" fill="none" stroke="#000000" stroke-width="1.44" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><g fill="none" stroke="#6AA6FF" stroke-width="1.8"><rect x="3.3" y="3.6" width="4.2" height="16.8" rx="2.1"/><rect x="9.9" y="3.6" width="4.2" height="16.8" rx="2.1"/></g><g fill="#6AA6FF"><rect x="4.40" y="14.6" width="2.0" height="2.0" rx="0.7"/><rect x="11.00" y="10.2" width="2.0" height="2.0" rx="0.7"/></g><rect x="15.60" y="2.70" width="6.00" height="18.60" rx="3.00" fill="#6AA6FF" mask="url(#cut)"/></g>
+</svg>

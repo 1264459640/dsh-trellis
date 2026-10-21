@@ -1,0 +1,71 @@
+{
+  "title": "裁剪 trellis-feat 中的 design-review 环节并简化流程链路",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "重构并简化 Trellis 工作流：从 feat 任务轨道中移除独立的 design-review 阶段，减少过度设计与冗余卡点，同步调整状态机、看板及相关技能说明",
+  "steps": [
+    {
+      "id": "step-1-state-machine",
+      "title": "改造底层状态机与工具描述，剔除 design-review",
+      "status": "completed",
+      "spec": "更新 lib/state.js 与 lib/index.js 中的状态机定义与工具描述",
+      "acceptance": [
+        "feat 的 stages 数组精确为 5 个阶段（prd, design, impl, review, check）",
+        "planning 映射覆盖 prd 与 design，对历史 design-review 安全兼容"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/state.js 和 lib/index.js 已移除 design-review 阶段，保留向后兼容映射"
+    },
+    {
+      "id": "step-2-design-source",
+      "title": "重塑设计源头（模板与技能指引）并清理模板文件",
+      "status": "completed",
+      "spec": "更新设计模板与需求澄清技能，注入反过度设计约束",
+      "acceptance": [
+        "skills/_templates/feat/design-review.md 被移除，新建任务不再生成",
+        "skills/_templates/feat/design.md 补充 Non-goals、YAGNI 与反过度设计约束",
+        "skills/trellis-brainstorm/SKILL.md 补充防过度设计指引"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "design-review.md 模板已删除，design.md 模板与 trellis-brainstorm 技能已注入 YAGNI 与反过度设计规则"
+    },
+    {
+      "id": "step-3-workflow-skills-docs",
+      "title": "更新工作流技能指令、路由表与文档",
+      "status": "completed",
+      "spec": "更新 trellis-feat 技能、工作类型路由表与中英文 README",
+      "acceptance": [
+        "skills/trellis-feat/SKILL.md 彻底移除 design-review 阶段与独立审查子代理调度",
+        "skills/_templates/work-types.md 与 README 保持一致"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "skills/trellis-feat/SKILL.md, work-types.md, README.md, README_EN.md 均已剔除 design-review 阶段与子代理调度"
+    },
+    {
+      "id": "step-4-client-and-tests",
+      "title": "调整看板显示与执行全量单测验证",
+      "status": "completed",
+      "spec": "调整前端看板兼容、修改测试用例并全量验证",
+      "acceptance": [
+        "看板与前端 stage 映射正常",
+        "test/state.test.js 与 test/board.test.js 单测全部通过",
+        "node --test 全部执行通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "全套 140 个测试用例全部通过（pass: 140, fail: 0），看板轨道与向后兼容映射验证无误"
+    }
+  ]
+}

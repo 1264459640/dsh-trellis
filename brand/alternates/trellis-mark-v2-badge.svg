@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="trellis (v2 badge)">
+  <title>trellis v2 badge</title>
+  <g fill="none" stroke="#185DDD" stroke-width="1.8">
+    <rect x="2.5" y="3.6" width="4.6" height="16.8" rx="2.3"/>
+    <rect x="9.7" y="3.6" width="4.6" height="16.8" rx="2.3"/>
+    <rect x="16.9" y="3.6" width="4.6" height="16.8" rx="2.3"/>
+  </g>
+  <g fill="#185DDD"><rect x="3.70" y="14.4" width="2.2" height="2.2" rx="0.7"/>
+    <rect x="10.90" y="10.0" width="2.2" height="2.2" rx="0.7"/></g>
+  <circle cx="19.2" cy="6.8" r="2.3" fill="#3BAF62"/>
+  <path d="M18.05 6.80 18.92 7.77 20.46 5.60" fill="none" stroke="#FFFFFF" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

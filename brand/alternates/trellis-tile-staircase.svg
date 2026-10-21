@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="trellis (v1)">
+  <title>trellis v1</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#1A2740"/><stop offset="1" stop-color="#0A1120"/></linearGradient></defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <g transform="translate(70 70) scale(15.4)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.6 19.8H7.8V14.6H13V9.4H14.6" stroke="#6AA6FF" stroke-width="2.35"/>
+    <path d="M14.6 9.4 17.3 12.1 21.4 4.2" stroke="#4FD07E" stroke-width="2.45"/>
+  </g>
+</svg>
