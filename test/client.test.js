@@ -114,3 +114,40 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
     assert.equal(count, 2, `expected exactly 2 occurrences of ${key} (zh + en), got ${count}`)
   }
 })
+
+test('compact kanban row exposes inline activate AND deactivate actions (feat-10-20)', () => {
+  const source = readFileSync(clientPath, 'utf8')
+
+  // The row is no longer a single <button>: an inline action would nest a
+  // button inside a button. Guard the split-wrapper contract instead of the
+  // old one-element shape.
+  assert.match(source, /function KanbanTaskItem\(/)
+  assert.match(source, /const \{ task, t, selected, active, busy, onSelect, onActivate, onDeactivate \} = props;/)
+
+  // Right slot holds exactly one action per row: ■ clears the session binding
+  // when this task is active, ▶ binds it otherwise. No static dot anymore, so
+  // every row offers a clickable action.
+  assert.match(source, /aria-label': t\('activate'\) \+ ': ' \+ task\.title/)
+  assert.match(source, /aria-label': t\('deactivate'\) \+ ': ' \+ task\.title/)
+  assert.match(source, /renderIcon\('stop', \{ size: 11, color: TB\.color\.brand, strokeWidth: 2\.5 \}\)/)
+
+  // renderIcon hardcodes fill:'none', so both glyphs must be stroke shapes;
+  // passing `fill` at the call site would be a dead argument.
+  assert.match(source, /case 'play':/)
+  assert.match(source, /case 'play':[\s\S]{0,200}M7 4\.5v15l13-7\.5-13-7\.5Z/)
+  assert.match(source, /renderIcon\('play', \{ size: 12, color: TB\.color\.brand, strokeWidth: 2 \}\)/)
+  assert.match(source, /case 'stop':[\s\S]{0,200}rect/)
+  assert.doesNotMatch(source, /renderIcon\('play',\s*\{[^}]*fill:/)
+  assert.doesNotMatch(source, /renderIcon\('stop',\s*\{[^}]*fill:/)
+
+  // Locale dictionaries carry the deactivate label in BOTH languages; a key
+  // added only to zh renders the raw key in the English UI.
+  for (const key of ['deactivate:']) {
+    const count = source.split(key).length - 1
+    assert.equal(count, 2, `expected exactly 2 occurrences of ${key} (zh + en), got ${count}`)
+  }
+  // The status dot's own hint key was dropped with the dot — no dead i18n keys,
+  // and the old hardcoded Chinese tooltip is still gone.
+  assert.doesNotMatch(source, /activeSessionHint/)
+  assert.doesNotMatch(source, /title:\s*'当前会话激活'/)
+})
