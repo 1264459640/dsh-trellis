@@ -12,6 +12,38 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.1 — 2026-10-21
+
+## 功能
+
+- **内置技能升级自动同步机制**：支持插件升级后自动将最新的官方技能与模板内容无损同步至项目的 `.agents/skills/` 目录，通过 `.trellis-version` 标记精确跟踪版本状态，并完整保留用户的自定义技能。
+- **内置技能体系与工程规则全面精简与规范化**：对全部 14 个内置技能（`trellis-feat`、`trellis-issue`、`trellis-refactor`、`trellis-brainstorm`、`trellis-finish-work` 等）进行了提示词净化与规范精简，消除冗长啰嗦的套话，强化防过度工程、单轮提问、复现用例先行、严格行为等价以及硬性卡点。
+
+## 修复
+
+- **防止陈旧任务更新操作错误篡改当前会话绑定**（issue-10-21-fix-stale-task-binding）：将 `trellis_task_update` 工具与底层的会话绑定逻辑解耦，显式传入 `slug` 时只更新目标任务的元数据与状态，绝不改变当前会话的任务绑定；同步引入进程级变更轮次（mutation epoch）机制，防止异步旧读取覆盖较新的会话激活状态与看板摘要。
+
+## 测试
+
+- **新增技能自动同步升级与会话绑定并发隔离测试**：新增 `task-binding.test.js` 与 `native-steps.test.js` 中的版本升级同步用例，覆盖旧任务延迟写回、跨会话并发绑定隔离及版本递增同步全流程；全量 153 项测试全绿通过。
+
+---
+
+## Features
+
+- **Automatic synchronization for bundled skills on upgrade**: automatically syncs updated bundled skills and templates to `.agents/skills/` during plugin upgrades using `.trellis-version` version tracking, while keeping custom user skills intact.
+- **Refined and concise engineering guidance across skills**: streamlined all 14 bundled skills (`trellis-feat`, `trellis-issue`, `trellis-refactor`, `trellis-brainstorm`, `trellis-finish-work`, etc.) with cleaner prompts, anti-overengineering principles, strict behavior equivalence, and crisp phase gates.
+
+## Fixed
+
+- **Prevent stale task updates from overriding active session binding** (issue-10-21-fix-stale-task-binding): decoupled `trellis_task_update` from session pointer mutation so updating an explicit `slug` modifies only task data; added mutation epoch fencing to ensure delayed asynchronous reads cannot overwrite fresh session activations or board summaries.
+
+## Tests
+
+- **Add comprehensive binding concurrency and skill auto-upgrade tests**: added `test/task-binding.test.js` and upgrade regression tests covering delayed writes, session pointer isolation, and `.trellis-version` synchronization; all 153 tests pass.
+
+---
+
 ## v0.4.0 — 2026-10-21
 
 ## 功能
