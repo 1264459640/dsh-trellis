@@ -13,16 +13,6 @@
   🌏 <a href="./README.md">中文</a> · <a href="./README_EN.md"><b>English</b></a>
 </div>
 
-<br />
-
-<p align="center">
-  <img src="./docs/images/web-kanban-list.png" width="49%" alt="Compact task list with details inspector" />
-  <img src="./docs/images/web-kanban-lanes.png" width="49%" alt="Kanban lanes with collapsed empty lanes" />
-</p>
-<p align="center">
-  <img src="./docs/images/web-kanban-refactor.png" width="49%" alt="Refactor lane view with task details" />
-</p>
-
 ---
 
 ## Overview
@@ -46,6 +36,15 @@ In complex, multi-turn AI coding workflows, typical pain points include:
 - **Optional Read-Only Planning**: When enabled via settings, code-writing tools (`write` / `edit`) are filtered out during planning phases, leaving only a sandboxed artifact channel for design documentation.
 - **Session-Level Isolation**: Session pointers are stored independently under `.trellis/.runtime/sessions/`, preventing multi-session or subagent race conditions.
 - **Dual-Mode Task Board**: A dense compact task list by default (type badge + title + stage + step summary), expanding into a full-screen kanban with workflow-stage lanes, auto-collapsed empty lanes, live search, type filters, and an archive lane. The UI is fully iconized (self-contained inline SVG icon set), and the details inspector provides a Step Tracker pipeline, an artifact file tree, and capsule-style property tags. The board stays deliberately restrained — it never mutates task state directly; the only advance path is the **Advance Task** button injecting an instruction into the composer for the Agent to execute, and artifact clicks produce native `@.trellis/tasks/...` file references handled by DSH.
+
+<p align="center">
+  <img src="./docs/images/web-kanban-list.png" width="49%" alt="Compact task list with details inspector" />
+  <img src="./docs/images/web-kanban-lanes.png" width="49%" alt="Kanban lanes with collapsed empty lanes" />
+</p>
+<p align="center">
+  <img src="./docs/images/web-kanban-refactor.png" width="49%" alt="Refactor lane view with task details" />
+</p>
+
 - **Git Cleanliness Check (scoped mode supported)**: Automatically verifies that the Git working tree is clean and committed before closing or archiving a task. When the working tree contains uncommitted changes unrelated to the current task, pass the task's actual changed files via `modified_files` to `trellis_task_update` / `trellis_task_archive`: the check then scopes to those files (which must themselves be committed), and uncommitted changes outside the list only emit a warning instead of blocking. Omitting the parameter keeps the global strict check.
 
 ---
