@@ -1,33 +1,25 @@
 ---
 name: trellis-before-dev
-description: "Before editing code during an implementation phase, read the project spec and the task's planning artifacts so the changes follow established conventions and requirements."
+description: "在实施阶段修改代码前，研读项目规范与任务规划产物，确保代码改动严格遵循既定架构约定与需求标准。"
 ---
 
-# Trellis Before Dev
+# Trellis Before Dev（编码前规范研读）
 
-Load this skill at the start of implementation (Phase 2) to ground edits in the
-project's spec and the active task's reviewed artifacts.
+在正式切入实施阶段（Phase 2）修改代码前加载本技能，使所有编码工作严格建立在项目工程规范与已获批的规划产物基础之上。
 
-## Steps
+## 执行步骤
 
-1. **Read project spec.** Load each package/layer's spec index that this task
-   touches (`.trellis/spec/<package>/<layer>/index.md` and the guideline files it
-   points to). This is where conventions, error-handling rules, and architecture
-   notes live.
-2. **Read task artifacts**, in this order:
-   - `prd.md` — requirements and acceptance criteria.
-   - `design.md` if present — boundaries, data flow, contracts, verification plan,
-     risks/rollback.
-   - The task's execution step list from `task.json` (read via `trellis_state` or
-     the task dir) — active step and its acceptance criteria, verification mode
-     (`ai` / `human`).
-3. **Read research** under `<task>/research/` for material the task gathered.
-4. Implement the reviewed artifacts, not remembered habits.
+1. **研读项目工程规范（Spec）**：
+   - 查阅本任务涉及的各个模块/分层的规范索引（`.trellis/spec/<package>/<layer>/index.md` 及其引用的指导文件）。这里记录了项目的编码约定、错误处理规范和架构边界。
+2. **依序研读任务规划产物**：
+   - `prd.md`：核心需求与验收标准；
+   - `design.md`（如有）：模块边界、数据流、对外契约、可执行验证计划、风险与回滚方案；
+   - `task.json.steps`：当前执行步骤清单、每步的具体验收标准与验证方式（`ai` 自动化验证 / `human` 人工确认）。
+3. **查阅调研资料**：查阅任务目录下 `<task>/research/` 收集的技术证据与参考材料。
+4. **严格对照产物施工**：按照已评审确定的规划产物编写代码，严禁脱离规划凭主观习惯随意发挥。
 
-## Guardrails
+## 守则与红线
 
-- Follow the spec's Pre-Development checklist before first edit.
-- Conventions are read from the spec, not recalled; if a rule you expected is
-  absent, prefer the project's existing patterns over your own defaults.
-- Stop and surface a spec gap (rather than silently diverging) if the reviewed
-  artifacts contradict the actual code.
+- 在写下第一行代码前，对照规范中的“开发前检查项”。
+- 项目约定以 spec 文档记录为准，若缺少特定规则，优先参考仓库中既有的代码风格与模式，而非套用自己的个人习惯。
+- 若发现已评审的产物与实际代码存在根本性冲突，必须**立刻停下并指出规范落差**，切勿擅自偏离或掩盖问题。

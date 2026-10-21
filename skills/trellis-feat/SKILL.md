@@ -1,12 +1,21 @@
 ---
 name: trellis-feat
-description: "Feature workflow for new functionality or feature rework: resume and advance prd -> design -> design-review -> impl -> review -> check on quick/standard lanes. Do not use for bug fixes (trellis-issue) or behavior-preserving refactor (trellis-refactor)."
+description: "功能特性工作流：新功能开发或重大特性改造，按 quick/standard 推进 prd -> design -> impl -> review -> check。不可用于 Bug 修复（使用 trellis-issue）或重构（使用 trellis-refactor）。"
 ---
 
 # trellis-feat
 
 在 Trellis task 上运行的 Feature 流程（由 FTM/CodeStable 工作流通用化而来）。
 路由表与阶段机对照：`_templates/work-types.md`；产物模板：`_templates/feat/`。
+
+## 核心理念：极简设计原则（Anti-Overengineering）
+
+在推进 Feature 开发时，严防滑入“过度设计的深渊”：
+1. **YAGNI 原则**：只解决当前明确提出的问题，严禁为了“未来假想扩展”提前堆砌抽象层、中间件或配置项。
+2. **加尔定律（Gall's Law）**：复杂的有效系统必然是从简单的有效系统演化而来的。优先以最小侵入、最直接的代码起步，靠真实摩擦力驱动演进，而非空想架构。
+3. **KISS 原则**：保持代码结构直观紧凑，追求最低认知负荷。如果 20 行直接逻辑能解决，坚决不新建工厂与策略类。
+4. **把关 Non-goals**：方案把关的重点在于做减法，审查并剔除不必要的复杂度与假想需求。
+5. **可测试性优先**：衡量方案好坏的标准是可测试性与改动成本，而非架构模式的复杂度。
 
 ## 启动
 
@@ -34,7 +43,7 @@ description: "Feature workflow for new functionality or feature rework: resume a
 |------|------|
 | `--mode quick` / 小改 / 流程太重且确实局部 | `execution_lane=quick` |
 | `--mode standard` | `execution_lane=standard` |
-| `--stage design\|design-review\|impl\|review\|check` | 偏好阶段（仍以产物为准） |
+| `--stage design|impl|review|check` | 偏好阶段（仍以产物为准） |
 
 ## Lane 选择
 
@@ -57,9 +66,8 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 | 条件 | stage | 下一步 |
 |------|-------|--------|
 | 无/空 `prd.md` | prd | 写 prd（可 `trellis-brainstorm`） |
-| 有 prd；standard 且无 design 或 design.status≠approved | design | 写/改 `design.md`，**等人确认** |
-| design approved；standard 且 design-review 非 passed | design-review | **派独立子代理**写 `design-review.md`（独立审查；主会话不自审自批） |
-| planning 产物齐 + 人卡通过 | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `task.json.status=in_progress` | 进入 impl |
+| 有 prd；standard 且无 design 或 design.status≠approved | design | 写/改 `design.md`（聚焦需求拆解与实现方案，按 YAGNI/KISS 保持精简），**等人确认** |
+| design approved；planning 产物齐 + 人卡通过 | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `task.json.status=in_progress` | 进入 impl |
 | in_progress；代码未完成 | impl | `trellis-before-dev` → 按 `task.json.steps` 逐步实现（可派实现子代理） |
 | 实现完成；review 非 passed | review | **派独立子代理**写 `review.md`；机械自修可另用 `trellis-check` |
 | review 过；check 未通过 | check | 派 `trellis-check`，按项目 `.trellis/spec/` 质量门验证；将结果写入 `review.md` |
@@ -71,10 +79,9 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 ## 人卡点（硬）
 
 1. **design 未 approved**（standard）→ 禁止写 `status=in_progress`、禁止改业务代码。
-2. **design-review = blocking**（或尚未由独立审查产出 passed）→ 禁止 start/继续 impl。
-3. **code review = blocking**（`review.md`）→ 禁止 archive；应回到 impl 修复后重审。
-4. **`trellis-check` 或任务要求的验证未通过** → 禁止宣称完成 / archive。
-5. 用户对 design 的确认必须是**本回合之后**的明确回复；创建 task ≠ 批准实现。
+2. **code review = blocking**（`review.md`）→ 禁止 archive；应回到 impl 修复后重审。
+3. **`trellis-check` 或任务要求的验证未通过** → 禁止宣称完成 / archive。
+4. 用户对 design 的确认必须是**本回合之后**的明确回复；创建 task ≠ 批准实现。
 
 ## 产物
 
@@ -83,7 +90,6 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 ```text
 prd.md
 design.md
-design-review.md
 review.md
 ```
 
@@ -93,15 +99,14 @@ review.md
 
 | 阶段 | 子代理 | 写入 | 说明 |
 |------|--------|------|------|
-| design-review | 独立子代理（`trellis-channel` 或 subagent） | `design-review.md` | 独立设计审查；只读代码 + 写审查产物，不实现功能 |
 | impl | 实现子代理（可选） | 业务代码 | 按 prd/design 实现 |
 | review | 独立子代理 | `review.md` | 独立代码审查（findings-first） |
 | 自修/验证 | `trellis-check` | 可改代码 | 对照 spec 自修 + 项目验证门；与独立审查互补，不互相替代 |
 
 调度要求：
 1. dispatch prompt 必须以 `Active task: <task 目录路径>` 开头。
-2. design-review / code-review **必须由主会话派发**，实现主会话不得"自己写个 review 冒充独立审查"。
-3. reviewer 返回 `blocking` → 停在该 stage，修复/改 design 后重派。
+2. code-review **必须由主会话派发**，实现主会话不得"自己写个 review 冒充独立审查"。
+3. reviewer 返回 `blocking` → 停在该 stage，修复后重派。
 
 ## 实现期规则
 
@@ -120,5 +125,6 @@ review.md
 ## 反模式
 
 - 未批准 design 就写 `status=in_progress`
+- 为了“预留未来需求”引入不必要的抽象与接口（违背 YAGNI）
 - Quick 名义下改跨模块契约
 - 用实现细节充当验收标准，跳过 prd 验收

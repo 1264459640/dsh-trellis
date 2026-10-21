@@ -1,27 +1,25 @@
 ---
 name: trellis-break-loop
-description: "Break a repeated-debugging loop: classify the true root cause, explain why earlier fixes failed, and propose prevention. Use when the same issue has been fixed multiple times."
+description: "打破反复调试与打补丁的死循环：深入剖析真正的根本原因，复盘前期修复为何失效，并提出根本性预防方案。当同一问题被重复修复多次仍复发时使用。"
 ---
 
-# Trellis Break Loop
+# Trellis Break Loop（打破调试死循环）
 
-Use this skill when a debugging cycle repeats — the same issue fixed twice or more,
-or an issue that keeps resurfacing after "fixes".
+当调试陷入反复拉锯时使用本技能——例如同一问题被修复了两次以上，或者某 Bug 在声称“已修好”后仍然不断复发。
 
-## Steps
+## 执行步骤
 
-1. **Classify the root cause.** Be precise about the actual mechanism, not the
-   symptom. Reproduce if possible.
-2. **Why did earlier fixes fail?** For each prior attempt, state the mechanism it
-   addressed and why it did not address the real cause (wrong layer, wrong timing,
-   partial state, masking, etc.).
-3. **Propose prevention.** Recommend the durable fix and, when warranted, a spec
-   note so the class of issue does not recur.
-4. Persist the lesson to the task `research/` (and spec per trellis-update-spec).
+1. **精准定位根本原因（Root Cause）**：
+   - 必须精确阐明底层的失效机制，绝不能停留在表象症状上；尽可能构建出稳定的复现用例。
+2. **深度复盘前期修复为何失效**：
+   - 逐一审视之前的每一次修复尝试，明确其当时试图解决的机制，以及为何没能触及真因（例如：打补丁找错了分层、异步时序问题、局部状态残留、掩盖了错误导致次生问题等）。
+3. **制定根本性预防方案**：
+   - 提出治本的长效方案；必要时提炼成规范说明（Spec Note），杜绝同类问题在未来再度滋生。
+4. **沉淀防坑教训**：
+   - 将分析结论与技术教训持久化记录到任务目录的 `research/` 下（并在收尾时通过 `trellis-update-spec` 沉淀到工程规范中）。
 
-## Guardrails
+## 守则与红线
 
-- Stop patching symptoms; each iteration must target a refined root-cause model.
-- If you cannot reproduce, say so and gather the missing evidence instead of
-  guessing another fix.
-- Capture the lesson in files — conversations get compacted, files do not.
+- **坚决停止对表象“头痛医头脚痛医脚”**：每一次迭代都必须建立在更深入、更精准的根因模型之上。
+- 如果无法复现，明确向用户说明，并针对性收集缺失的上下文证据，严禁在未确证的情况下胡乱盲猜改码。
+- 必须将结论沉淀到磁盘文件中——聊天上下文会被压缩截断，但文件资产不会丢失。

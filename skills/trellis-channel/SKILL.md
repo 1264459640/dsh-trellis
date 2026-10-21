@@ -1,36 +1,26 @@
 ---
 name: trellis-channel
-description: "Coordinate a multi-agent channel: workers, progress reporting, shared context, and handoffs. Use when a task is split across several workers or agents."
+description: "多代理协作通道调度：协调子代理职责、进度汇报、共享上下文与任务交接。适用于将复杂任务拆解给多个并行工作代理时。"
 ---
 
-# Trellis Channel
+# Trellis Channel（多代理协作通道）
 
-Use this skill to coordinate work across multiple workers/agents when a task is
-split into independently verifiable chunks.
+当复杂任务被拆分为多个可独立验证的代码块并由多个子代理协同推进时，使用本技能进行协调管控。
 
-## Principles
+## 协作核心原则
 
-- **One authoritative shared context.** Keep the source of truth in files/task
-  artifacts, not scattered chat. Workers read artifacts, then report.
-- **Independent units.** Each worker owns a deliverable that can be verified on its
-  own; express ordering dependencies in the artifacts, not by implied tree position.
-- **Frequent, thin progress.** Report state (done / blocked / next) with artifacts,
-  not narrative.
+- **统一且权威的单一共享上下文**：事实源始终以磁盘文件与任务产物（Artifacts）为准，而非零散漫无边际的聊天记录。工作代理先读产物，完工后以产物形式汇报。
+- **独立可验证的交付单元**：每个子代理拥有独立可自测的交付件；任务依赖关系必须在产物与步骤元数据中显式声明，而非依赖隐式的树状顺序推断。
+- **轻量高频的客观进度汇报**：以结构化状态（完成 / 阻塞 / 下一步）配合文件改动进行汇报，避免通篇主观叙事汇报。
 
-## Workflow
+## 协作工作流
 
-1. Define the task tree: a parent task for the source requirements + cross-child
-   acceptance, child tasks for independently verifiable deliverables.
-2. Dispatch each child with an explicit prompt that starts with the active task and
-   names the deliverable.
-3. After each worker, update progress and the relevant artifact; resolve conflicts
-   in the shared context.
-4. On completion, run the parent's integration review against the cross-child
-   acceptance criteria.
+1. **构建任务拓扑**：建立负责顶层需求与跨模块集成验收的父任务，以及负责独立可验证交付件的子任务。
+2. **规范派发指令**：每次派发子代理时，Prompt 必须以活跃任务路径（`Active task: ...`）开头，并明确指定交付目标与写作用域。
+3. **收敛汇总与冲突仲裁**：在每个工作代理执行完毕后，主控代理更新全局进度并更新相关产物，负责在共享上下文中解决可能的逻辑或代码冲突。
+4. **集成收尾验收**：所有子任务完结后，由父任务严格对照跨模块验收标准执行全量集成回归测试。
 
-## Guardrails
+## 守则与红线
 
-- A worker that would spawn the same role it already is should not; avoid
-  unbounded recursive dispatch.
-- Do not treat parent/child position as a dependency system — write ordering into
-  the child artifacts.
+- 严禁同角色无界限递归派生（例如审查代理又派审查代理），杜绝套娃式子代理爆炸。
+- 不要把简单的父子任务结构当作隐式依赖，必须显式在步骤或依赖配置中指明顺序。

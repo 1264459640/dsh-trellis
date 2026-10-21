@@ -46,7 +46,7 @@
 
 | 用户意图 | 入口 skill | 说明 | slug 前缀建议 |
 |----------|------------|------|----------------|
-| 新功能 / 功能改造 | `trellis-feat` | 按 quick/standard 推进 prd→design→design-review→impl→review→check | `feat-<mm-dd>-...` |
+| 新功能 / 功能改造 | `trellis-feat` | 按 quick/standard 推进 prd→design→impl→review→check | `feat-<mm-dd>-...` |
 | Bug / 异常 / 回归 | `trellis-issue` | 推进 report→analyze→fix→fix-note；反复调试时配合 `trellis-break-loop` | `issue-<mm-dd>-...` |
 | 行为等价重构 / 拆分 / 优化 | `trellis-refactor` | 推进 scan→design→apply；行为变更转 feat/issue | `refactor-<mm-dd>-...` |
 | 会话开工 / 恢复上下文 | 原生 Trellis（Active Task） | `trellis_state` / `trellis-continue` | — |
@@ -59,13 +59,12 @@
 | stage | 产物 | 人卡点 |
 |-------|------|--------|
 | prd | `prd.md` | Quick 可较轻 |
-| design | `design.md`（含验证计划与风险/回滚） | Standard：用户 approve |
-| design-review | `design-review.md`（独立子代理） | Standard：reviewer passed |
+| design | `design.md`（落实 YAGNI 与 Non-goals，防过度设计） | Standard：用户 approve |
 | impl | 代码；步骤清单以 `task.json.steps` 为准 | 需先写 `status=in_progress`；`verification: human` 步骤须用户确认 |
 | review | `review.md`（独立子代理） | blocking 需修复；可选 `trellis-check` 自修 |
 | check | `trellis-check` 结果与验证证据（写入 `review.md`） | 必须通过后 archive |
 
-Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review；仍建议最小 prd + 实现后 check。
+Quick：`prd` 清晰且局部、无新跨系统契约时可精简 design；仍建议最小 prd + 实现后 check。
 
 ## Issue 阶段
 
@@ -93,7 +92,7 @@ Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review�
 
 | Trellis status | 典型 work.stage |
 |----------------|-----------------|
-| planning | feat: prd/design/design-review；issue: report/analyze；refactor: scan/design |
+| planning | feat: prd/design；issue: report/analyze；refactor: scan/design |
 | in_progress | feat: impl/review/check；issue: fix/fix-note；refactor: apply |
 | completed | archived（`.trellis/tasks/archive/<yyyy-mm>/<slug>`） |
 
@@ -101,7 +100,6 @@ Quick：`prd` 清晰且局部、无新跨系统契约时可跳过 design-review�
 
 | 角色 | 派发方式 | 用途 |
 |------|----------|------|
-| 设计审查 | 主会话派独立子代理（`trellis-channel` 或 subagent） | 设计审查 → `design-review.md` |
 | 代码审查 | 主会话派独立子代理 | 代码审查 → `review.md` |
 | 实现 | 主会话派实现子代理（可选） | 按 prd/design 实现 |
 | 规范自修/验证 | `trellis-check` | 规范对照 + 自修/验证 |

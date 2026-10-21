@@ -1,44 +1,31 @@
 ---
 name: trellis-start
-description: "Begin the Trellis workflow: classify the request and first ask for task-creation consent before creating any task. Use at the start of a session or when a new task may be needed."
+description: "启动 Trellis 工作流：对用户诉求进行分类，在创建任务前必须先征得用户明确同意。适用于会话开始或需要新建任务时。"
 ---
 
-# Trellis Start
+# Trellis Start（工作流启动）
 
-Use this skill to open a Trellis workflow session correctly. Do not create a task
-before reading this rule: task creation requires explicit user consent.
+使用本技能规范开启 Trellis 工作流会话。在创建任务前请务必牢记：**创建任务必须获得用户的明确同意**。
 
-## Preconditions
+## 前置条件
 
-- No active Trellis task has been confirmed for this turn.
-- You can read the project's `.trellis/` directory (runtime + workflow assets).
+- 当前回合未绑定任何活跃的 Trellis 任务（处于 `no_task` 状态）。
+- 可以读取项目的 `.trellis/` 目录（运行时与工作流资产）。
 
-## Steps
+## 执行步骤
 
-1. **Classify the request.**
-   - Simple conversation or small task → ask only whether this turn should
-     create a Trellis task. If the user says no, do not touch Trellis this session.
-   - Complex task → ask whether you may create a Trellis task and enter planning.
-     If the user says no, do not do broad inline implementation; instead explain,
-     clarify scope, or suggest a smaller split.
-2. **Consent is not implementation approval.** Getting permission to create a task
-   only starts planning. Implementation still waits for the planning gate.
-3. **Look for an existing task.** If a `<workflow-state>` breadcrumb (or
-   `trellis_state`) already reports an active task, prefer resuming that task via
-   `trellis-continue` instead of creating a new one.
-4. **Create the task with `trellis_task_create`** (after consent): the tool writes
-   `.trellis/tasks/<slug>/task.json` (status=planning), seeds the artifact templates,
-   and **synchronously writes the `.trellis/.runtime/sessions/` `current_task`
-   pointer** — the breadcrumb, phase and Web chip resolve the new task immediately.
-   Do not hand-create the task directory or session files; derive the slug as
-   `<work-type>-<mm-dd>-<name>` and let the tool validate it.
+1. **评估与分类用户诉求**：
+   - **日常对话或轻微问答**：仅确认本回合是否需要创建 Trellis 任务。若用户拒绝，则本会话绝不触碰 Trellis。
+   - **复杂特性/缺陷/重构诉求**：询问用户是否允许创建 Trellis 任务并进入规划阶段（planning）。若用户拒绝，不要直接进行大范围的内联改动，而是先做范围澄清或建议更小的拆分。
+2. **建任务授权 ≠ 实施批准**：获得创建任务的许可仅代表进入规划期（planning，工作区仍受只读保护），具体代码实施必须等待规划方案获批。
+3. **检查既有任务**：若 `<workflow-state>` 面包屑（或 `trellis_state`）已报告活跃任务，优先通过 `trellis-continue` 恢复该任务，切勿重复新建。
+4. **通过 `trellis_task_create` 创建任务**（获得同意后）：
+   - 该工具会自动写入 `.trellis/tasks/<slug>/task.json`（status=planning）、播种初始产物模板，并**同步写入会话指针 `.trellis/.runtime/sessions/`**，使得面包屑、相位和 Web 徽标立即生效。
+   - 严禁手动创建任务目录或 session 文件；slug 格式必须符合 `<work-type>-<mm-dd>-<短名>`（如 `feat-10-21-xxx`），由工具自动校验。
 
-## Guardrails
+## 守则与红线
 
-- Never run `start` (activate) right after `create`. Planning must be reviewed first.
-- One question per message when choosing scope; recommend options over open-ended asks.
-- Do not invent a product/spec hierarchy the repository does not have; read existing
-  docs and specs first.
-- Creating a task without `trellis_task_create` (or without writing the runtime
-  session pointer) leaves the session in `no_task` — the tool is the only
-  supported path.
+- 创建（create）后绝不可立即激活并开始写码，必须先完成规划并由用户确认。
+- 澄清范围时单次只提一个最高价值问题，优先提供选项而非开放式发散。
+- 不要凭空捏造仓库中不存在的规范层级，先查阅既有文档与 spec。
+- 创建任务必须且只能通过内置工具 `trellis_task_create`。

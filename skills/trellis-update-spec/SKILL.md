@@ -1,40 +1,34 @@
 ---
 name: trellis-update-spec
-description: "Review whether a task produced new knowledge worth recording under the project spec: new patterns or conventions, pitfalls, and technical decisions. Walk through the judgment even if the conclusion is nothing-to-update."
+description: "复盘任务是否沉淀了值得写入工程规范的新认知：提炼新发现的编码模式、避免复发的踩坑教训与关键技术决策。即使结论为无需更新，也需显式走完判断逻辑。"
 ---
 
-# Trellis Update Spec
+# Trellis Update Spec（工程规范知识沉淀）
 
-Run this skill in Phase 3 (before commit) to capture lessons from a finished task
-so future work benefits.
+在实施收尾（Phase 3 代码提交前）运行本技能，将当前任务中积累的宝贵经验与教训转化为项目工程规范，沉淀为团队与 Agent 的长期资产。
 
-## Judgment
+## 价值判断维度
 
-Ask whether this task surfaced anything worth writing down:
+审视本次任务是否产生了值得书面沉淀的客观知识：
+- **新模式与新约定**：项目中应当长期保持的新设计模式、统一风格或架构范式；
+- **技术深坑与陷阱**：本次踩过的隐蔽 Bug 或坑点，记录原因与解法以杜绝未来重蹈覆辙；
+- **关键架构技术决策**：重大的架构选型、取舍考量及其决策背景（ADR）。
 
-- a newly discovered pattern or convention the project should keep
-- a pitfall you hit (so it does not recur)
-- a new technical decision and its rationale
+## 沉淀落脚点
 
-## Where it lands
+- **模块级规范指引**：落脚在 `.trellis/spec/<package>/<layer>/` 下——要么扩充既有的指引文件，要么新建指引并在模块索引 `index.md` 中建立链接；
+- **全局跨包工程思维**：记录在 `.trellis/spec/guides/index.md`。
 
-- Spec guidelines: under `.trellis/spec/<package>/<layer>/` — either extend the
-  relevant guideline file or add a pointer from the package index.
-- Cross-package thinking guides: under `.trellis/spec/guides/index.md`.
+## 执行步骤
 
-## Steps
+1. 对照上述三个判断维度，系统审阅任务产物与本次实际代码改动。
+2. **显式决策与记录**：
+   - 若有明确成果，写入对应的 spec 文件；
+   - 若本次属于常规轻微改动无新增知识，**依然显式记录判断过程**（表明已认真评估而非无视流程）。
+3. 保持规范条目紧凑精准，与实际代码事实强绑定；若新增指引文件，务必同步更新模块的 `index.md`。
 
-1. Review the task artifacts and the changes for the categories above.
-2. Decide: concrete result → write it to the correct spec location.
-   Nothing to update → still walk through the judgment explicitly (so the decision
-   is visible, not skipped).
-3. Keep spec edits focused and tied to the evidence; update the package index if you
-   add a guideline file.
+## 守则与红线
 
-## Guardrails
-
-- Do not record code-as-spec unless it encodes a convention worth following.
-- Spec writes belong in the same task's commit batch (Phase 3.4), not a forgotten
-  follow-up.
-- If the task fixed a bug whose root cause belongs in the spec, land that before
-  committing — not after.
+- 切勿把零碎的实现代码直接当成规范抄录，规范必须是具有普遍指导意义的约定。
+- 规范沉淀属于本任务同一批次提交流程的一部分，严禁拖延成“以后再补”。
+- 若本任务修复了一个揭示底层机制缺陷的 Bug，务必先在 spec 中沉淀根因说明，再行提交代码。

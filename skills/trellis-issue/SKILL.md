@@ -1,6 +1,6 @@
 ---
 name: trellis-issue
-description: "Issue workflow for bugs, anomalies, and regressions: resume and advance report -> analyze -> fix -> fix-note. Do not use for new features (trellis-feat) or behavior-preserving refactor (trellis-refactor)."
+description: "Bug 修复工作流：处理缺陷、异常与回归问题，推进 report -> analyze -> fix -> fix-note。不可用于新功能（使用 trellis-feat）或行为等价重构（使用 trellis-refactor）。"
 ---
 
 # trellis-issue

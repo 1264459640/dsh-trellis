@@ -1,95 +1,78 @@
 ---
 name: trellis-brainstorm
-description: "Guides collaborative requirements discovery before implementation: clarify scope one question at a time, research the codebase first, and converge on planning artifacts (prd.md, plus design.md for complex tasks)."
+description: "在实施前引导协作式需求发现与方案规划：贯彻简洁设计理念，每次聚焦澄清一个核心问题，深入代码调研，收敛产出规划产物（prd.md，复杂任务辅以 design.md）。"
 ---
 
-# Trellis Brainstorm
+# Trellis Brainstorm（需求澄清与规划引导）
 
-A request to build, implement, or "go ahead" is not approval to leave planning —
-and task-creation consent is not implementation approval. For every non-trivial
-task, the user must respond at least once after the initial request before
-implementation begins. If no clarification is needed, that response must approve
-the final planning summary described below.
+用户要求构建、实现或说“直接开干”，绝不代表批准跳过规划阶段；**征得建任务同意也绝不等于批准实施**。对于任何非微小改动的任务，在正式编码实施前，用户必须在提出初始诉求之后至少做出一次明确答复。即便无需额外澄清，该答复也必须是对最终规划总结的明确批准（Approve）。
 
-## Non-Negotiable Evidence Rule
+---
 
-If a question can be answered by exploring the codebase, explore instead of asking.
-Before asking the user, check whether the answer already exists in code, tests,
-configs, docs, spec files, or task history. Ask only for product intent,
-preference, scope, risk tolerance, or acceptance behavior that remains genuinely
-ambiguous after inspection.
+## 核心工程哲学：极简设计理念（Anti-Overengineering & Simplicity-First）
 
-## Planning Flow
+在起草技术方案与需求拆解时，模型必须深度内化以下设计原则，坚决防范陷入过度设计的深渊：
 
-1. Capture the request and known facts into `prd.md`.
-2. Inspect evidence before asking: code, tests, fixtures, configs, README/docs,
-   existing specs, related tasks, research files, session history.
-3. Split findings into: confirmed facts; product intent still needed; scope/risk
-   decisions still needed; likely out-of-scope items.
-4. If a user-owned decision remains: ask the single highest-value question with a
-   recommendation and the trade-off; then **stop**. Do no implementation this turn.
-5. After each answer, update `prd.md`, recompute the decision inventory, repeat.
-6. When no user-owned decision remains, write `design.md` (with verification plan
-   and risks/rollback) for complex tasks (lightweight tasks may be PRD-only);
-   draft the execution step list (`task.json.steps` via `trellis_task_update`) with
-   acceptance criteria and `verification: 'ai' | 'human'`.
-7. Run the requirement-convergence gate, then the PRD convergence pass.
-8. Present the final planning summary and **stop**. Do not run `start`.
-9. Only a subsequent user message explicitly approving the latest summary
-   authorizes `start` and implementation. If artifacts change materially after
-   approval, repeat the final review.
+### 1. 坚决奉行 YAGNI 原则（You Aren't Gonna Need It）
+- **只解决当下明确已确证的问题**：严禁为了“未来可能出现”的假想需求、未知扩展性或虚构的高并发而提前增加设计复杂度。
+- **拒绝过早抽象**：严禁无业务确定支撑就提前引入通用抽象层、中间层、动态插件体系或过度配置化。
 
-## Question Rules
+### 2. 践行加尔定律（Gall's Law）
+- **复杂系统的演化规律**：所有运转良好的复杂系统，必然是从运转良好的简单系统演化而来的；从零空想、脱离实际摩擦力设计的复杂架构几乎必然失败。
+- **方案以最小可行（MVP）起步**：优先产出最直接、侵入性最小的紧凑实现，在后续真实业务上下文和代码摩擦力的驱动下自然演进。
 
-- Ask **one** question per message.
-- Each question includes: the decision needed, why it matters, your recommended
-  answer, the trade-off if chosen differently.
-- Do not ask process questions ("should I search?"). Do the evidence work directly.
-- Recommendations are not default selections. Do not pick a product decision on the
-  user's behalf merely because they asked to build.
+### 3. KISS 原则（Keep It Simple, Stupid）与最少概念
+- **追求最低认知负荷**：如果 20 行紧凑直观的代码能彻底解决问题，坚决不新建 5 个文件、3 个接口和 1 个工厂模式。
+- **代码直接性高于形式对称**：拒绝脱离实际的“架构美学自嗨”和纯书面形式主义。
 
-## Artifact Rules
+### 4. 把关维度彻底倒转：强审“明确不做（Non-goals）”
+- **做减法是设计的最高价值**：设计拆解的核心价值不是罗列“还能多做什么”，而是严谨界定“坚决不做哪些扩展”。
+- **逼问最小必要性**：面对任何新增的抽象或通用化设计，逼问自己：*“这个抽象如果现在砍掉，核心系统是否依然能完美运转？”* 如果是，果断砍掉。
 
-- `prd.md`: goal + user value, confirmed facts, requirements, acceptance criteria,
-  out of scope, blocking open questions.
-- `design.md`: architecture/boundaries, data flow + contracts, compatibility, key
-  trade-offs, verification plan (executable commands), rollback. Complex tasks only.
-- Execution step list lives in `task.json.steps` (planned here, advanced during
-  implementation) — each step has acceptance criteria and a verification mode
-  (`ai` automated / `human` approval gate).
-- Complex tasks must have `prd.md`, `design.md` and a planned `task.json.steps`
-  before `start`. Lightweight tasks may be PRD-only.
+### 5. 衡量标准：可测试性与最小侵入性 > 通用性
+- **唯一的方案优劣指标**：设计方案是否极大地方便了编写轻量单元/集成测试？是否对现有代码库的侵入和认知复杂度增量最低？凡是增加测试和调试难度的“高深架构”，一律判定为劣质方案。
 
-## Requirement Convergence Gate
+---
 
-Before final review, verify:
-- user outcome + product value explicit
-- in-scope and out-of-scope explicit
-- acceptance criteria describe observable outcomes
-- user-owned product/scope/UX/compatibility/risk decisions resolved
-- blocking open questions empty
-- technical unknowns researched or explicitly deferred without changing MVP behavior
+## 事实核查底线原则
 
-## PRD Convergence Pass
+**只要能通过探索代码库找到答案的问题，必须直接探索，严禁发问。**
+在向用户提问之前，务必先在代码、单测、配置、既有文档、spec 规范或历史任务中查证。只有涉及产品真实诉求、技术偏好、边界裁定、风险容忍度或真正歧义的验收行为时，才向用户发问。
 
-Before declaring ready, rewrite `prd.md` against the final structure, losslessly:
-fold temporary sections into canonical sections, remove resolved questions, merge
-parallel lists that describe the same work, preserve every file:line anchor,
-decision, constraint, requirement id, and acceptance mapping.
+## 规划流程
 
-## Non-Negotiable Planning Contract
+1. 将用户诉求与已知客观事实记录到 `prd.md` 中。
+2. 提问前全面查证证据：代码、测试、配置、文档、既有 spec、关联任务与会话记录。
+3. 将调研发现整理为：已确认事实、待决定的产品意图、待裁定的范围/风险、明确排除的项（Non-goals）。
+4. **若存在必须由用户裁定的事项**：单次只提一个最高价值问题，并附带推荐选项及不同选择的权衡，然后**立刻停住（stop）**，本回合绝不修改任何业务代码。
+5. 每次用户回复后，更新 `prd.md`，重新评估待决清单，循环推进。
+6. **当不再存在待决事项时**：
+   - 为复杂任务起草 `design.md`（按简洁设计理念进行需求拆解与实现设计，包含可执行的验证计划与风险/回滚策略，简单任务可仅保留 PRD）；
+   - 通过 `trellis_task_update` 将执行步骤清单录入 `task.json.steps`，每步明确验收标准与验证方式（`verification: 'ai' | 'human'`）。
+7. 执行需求收敛门禁（Requirement Convergence Gate）与 PRD 收敛整理。
+8. 向用户呈现最终规划总结并**立刻停住（stop）**，切勿直接开始实现。
+9. **唯有用户在此后明确回复批准（Approve）最新规划总结时，方可正式切入实施（in_progress）**。若产物发生实质变更，必须重新发起确认。
 
-For every non-trivial task the user must respond at least once after the initial
-request before implementation begins. While any user-owned product/scope/UX/
-compatibility/risk/acceptance decision remains unresolved, end the turn with
-exactly one highest-value question. Do not edit product code, dispatch
-implementation, or run `start`.
+## 提问规则
 
-## Quality Bar
+- 每轮对话**最多只提一个**最高价值问题。
+- 每个提问必须包含：需要裁定的问题、为什么重要、你的推荐选项、若选择其他选项的代价与权衡。
+- 禁止问流程性废话（如“我应该去搜索吗？”），直接做工程调研。
+- 推荐选项不等于默认采纳，严禁替用户越俎代庖裁定产品偏好。
 
-Before declaring planning ready: testable acceptance criteria; no unresolved
-temporary sections; no duplicate facts; blocking questions empty; complex tasks
-have design+implement; and the latest final summary was **explicitly approved** by
-the user in a subsequent message.
+## 产物规范
 
-Do not start implementation merely because the user originally asked to build.
+- `prd.md`：目标与业务价值、已确认事实、核心需求、验收标准、排除范围（Non-goals）、阻塞性开放问题。
+- `design.md`：基于需求的工程技术拆解与落地实现方案（涉及模块与边界、核心数据流、对外契约变更、关键技术选型与取舍、可执行验证命令、风险与回滚）。
+- **执行步骤清单**：由 `task.json.steps` 承载（规划期完整录入，执行期单步推进行），每步包含明确验收标准与验证方式。
+
+## 需求收敛门禁（Requirement Convergence Gate）
+
+在发起最终人审前，逐项检查：
+- 用户收益与产品价值明确清晰；
+- 纳入范围（In-scope）与明确排除的非目标（Non-goals）清晰无歧义；
+- `design.md` 严格遵循简洁设计理念，无过度工程化或脱离需求的空想抽象；
+- 验收标准均描述客观可观察的结果；
+- 所有用户层面的产品、范围、交互、兼容与风险决策已全部敲定；
+- 阻塞性开放问题（Blocking questions）为空；
+- 技术未知项已调研清晰，或已明确延期且不改变 MVP 行为。

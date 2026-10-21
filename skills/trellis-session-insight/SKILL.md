@@ -1,41 +1,31 @@
 ---
 name: trellis-session-insight
-description: "Interpret runtime session and task state to know where a Trellis workflow stands: active task, status, phase, and diagnostics."
+description: "解读运行时会话与任务状态：深度诊断 Trellis 工作流当前所处位置，包括活跃任务、状态、相位及诊断信息。"
 ---
 
-# Trellis Session Insight
+# Trellis Session Insight（会话状态诊断与洞察）
 
-Use this skill to understand the current state of a Trellis workflow from its
-runtime artifacts before acting.
+在采取行动前，使用本技能通过对磁盘运行时资产的精准探测，掌握 Trellis 工作流的准确当前状态。
 
-## Where state lives
+## 状态存储位置（事实源）
 
-- **Runtime session files** — `.trellis/.runtime/sessions/*.json`; each has a
-  `current_task` pointer (the active task dir).
-- **Task JSON** — `.trellis/tasks/<task>/task.json` with `status` (
-  `planning` / `in_progress` / `completed`) and the execution step list `steps`
-  (5-state: `pending` / `in_progress` / `verifying` / `blocked` / `completed`;
-  per-step `verification: 'none' | 'ai' | 'human'`).
-- **Artifacts** — `prd.md`, `design.md` if present, `research/` files.
-- **Workflow breadcrumb** — the matching `[workflow-state:STATUS]` block in
-  `.trellis/workflow.md`.
+- **会话运行时文件**：`.trellis/.runtime/sessions/*.json`；记录当前会话绑定的 `current_task` 路径。
+- **任务定义元数据**：`.trellis/tasks/<slug>/task.json`；包含宏观 `status`（`planning` / `in_progress` / `completed`）、轨道 `work.type` / `work.stage`，以及原生步骤清单 `steps`（支持 `pending` / `in_progress` / `verifying` / `blocked` / `completed` 状态与 `verification` 验证模式）。
+- **规划与交付产物**：任务目录下的 `prd.md`、`design.md`（如有）、`review.md` 及 `research/` 资料。
+- **工作流每轮面包屑**：系统自动探测并注入的 `[workflow-state:STATUS]` 块。
 
-## Reading the phase
+## 相位推导映射
 
-| status / state | phase |
+| 宏观状态 / 运行时事实 | 对应相位（Phase） |
 |---|---|
-| no active task | `no_task` |
-| task created, planning | `planning` |
-| task started | `in_progress` |
-| task archived | `completed` |
+| 无绑定任务 / session 指针为空 | `no_task` |
+| 任务已建，处于规划阶段 | `planning` |
+| 任务已获批，开始实施写码 | `in_progress` |
+| 任务归档完结 | `completed` |
 
-Combine presence checks: a complex task that is `planning` but lacks `design.md` /
-a planned `steps` list is not planning-ready; an `in_progress` task with a dirty
-tree still needs the commit step.
+在做出判断时必须结合产物事实：若复杂任务标记为 `planning` 但缺少 `design.md` 或步骤清单，则方案尚未就绪；若处于 `in_progress` 且代码改动未提交，则必须先完成提交方能完工。
 
-## Guardrails
+## 守则与红线
 
-- Treat the runtime session file as the source of truth for *which* task is active;
-  a session may point nowhere even when tasks exist.
-- Do not trust a `<workflow-state>` block alone as final — verify status and
-  artifacts when the decision matters.
+- **会话文件是“哪个任务活跃”的绝对事实源**：即使磁盘存在任务目录，只要会话指针未绑定，就属于 `no_task`。
+- 绝不要仅仅孤立地看待 `<workflow-state>` 字符串，在关键决策时务必通过 `trellis_state` 或直接查阅任务元数据确证产物。

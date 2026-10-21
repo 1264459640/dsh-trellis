@@ -1,44 +1,32 @@
 ---
 name: trellis-finish-work
-description: "Wrap up an archived or completed Trellis task: confirm the working tree is clean, run any remaining bookkeeping, and record the session."
+description: "收尾已完成或已归档的 Trellis 任务：确认 Git 工作区干净、执行规范提交、归档任务目录并沉淀研发日志与索引。"
 ---
 
-# Trellis Finish Work
+# Trellis Finish Work（任务完结与收口归档）
 
-Run this skill to finish a task that has been archived or reported completed.
+当任务实施验证完毕、准备标记完成或归档时运行本技能。
 
-## Steps
+## 执行步骤
 
-1. **Confirm commit state.** If the working tree is dirty, return to the commit
-   step and land the work commits first — never interleave bookkeeping commits
-   with work commits. Note: `trellis_task_update(status: 'completed')` and
-   `trellis_task_archive` enforce a hard git cleanliness guardrail and will
-   reject operations if uncommitted code changes exist in the workspace.
-   **Scoped relaxation:** when the working tree has uncommitted changes that are
-   unrelated to this task (parallel work, experiments, other tasks), you may pass
-   the task's real modified files via `modified_files` to those tools: the
-   cleanliness check then scopes to those files, uncommitted changes outside the
-   list are allowed with a warning, but the listed files must themselves be
-   committed. Prefer committing the task's own files first, then use
-   `modified_files` instead of stashing unrelated changes.
-2. **Run the commit flow** (work commits → archive commit → journal commit) if it
-   has not already happened. Do not `git push` unless the user asks.
-3. **Archive the completed task.** A task whose `status` is `completed` leaves
-   the active board. Call the `trellis_task_archive` tool with the task slug: it
-   atomically moves `.trellis/tasks/<slug>/` to
-   `.trellis/tasks/archive/<yyyy-mm>/<slug>/` (month key = the slug's `mm` +
-   the current year, e.g. `feat-08-15-x` → `2025-08`, shared with the kanban
-   board reader; legacy slugs without an `mm-dd` go under `other/`) and unbinds
-   every session that had the task bound. Archiving **moves** the record — never
-   delete the task directory. Do not hand-craft the move or the session files;
-   the tool is the single source of truth for the layout.
-4. **Record the session.** Append a journal entry and update the personal index so
-   cross-session tracking stays continuous.
-5. **Wrap up.** Tell the user the task is closed and where the session record lives.
+1. **确认 Git 提交状态**：
+   - 若工作区存在未提交的改动，必须先完成业务代码的提交——绝不要将簿记/日志提交与实际业务改动混在一起。
+   - 注意：`trellis_task_update(status: 'completed')` 与 `trellis_task_archive` 内置了严格的 Git 干净度硬门禁；若工作区存在未提交的代码改动，操作将被拒绝。
+   - **作用域放宽机制（Scoped relaxation）**：若工作区存在与当前任务无关的未提交改动（如并行任务、临时实验等），可在调用上述工具时通过 `modified_files` 参数传入本任务实际涉及的文件列表。门禁将只校验这些文件是否已干净提交，允许列表外的改动以告警形式通过。
+2. **执行标准提交流**：
+   - 顺序为：业务实现提交（Work commit） $\to$ 任务归档提交（Archive commit） $\to$ 研发日志提交（Journal commit）。
+   - 除非用户明确要求，否则绝不擅自执行 `git push`。
+3. **安全归档已完成的任务**：
+   - 处于 `status=completed` 的任务应从活跃看板移出。
+   - 必须通过 `trellis_task_archive` 工具执行归档：它会自动将 `.trellis/tasks/<slug>/` 移动至对应月份的归档桶 `.trellis/tasks/archive/<yyyy-mm>/<slug>/`，并自动解绑会话指针。
+   - 归档是**移动目录并持久化存储**，严禁直接物理删除任务目录。严禁手动搬运文件夹或手写 session 文件。
+4. **沉淀研发日志与索引**：
+   - 在研发月报 `.trellis/journal/<yyyy-mm>.md` 中追加本次任务交付摘要，更新索引文件。
+5. **正式完结汇报**：
+   - 告知用户任务已成功收口，并明确指出归档记录与代码提交的落脚点。
 
-## Guardrails
+## 守则与红线
 
-- Never `git commit --amend`.
-- Work commits first, then bookkeeping — in order.
-- If the user commits by hand instead, skip to wrap-up once they confirm; do not
-  present a second commit plan after a rejection.
+- 严禁执行 `git commit --amend` 篡改历史。
+- 先提交业务代码，再提交工作流簿记文件，顺序绝对不能颠倒。
+- 若用户选择手动自行执行 git commit，在用户确认后直接跳到收尾汇报，不要强行重复提出提交计划。

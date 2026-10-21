@@ -95,7 +95,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 在对话中提出较复杂的需求时，模型会引导创建或推进工作流任务：
 
-- **新增功能**：创建 `feat-mm-dd-name`，推进 `prd` → `design` → `design-review` → `impl` → `review` → `check`；
+- **新增功能**：创建 `feat-mm-dd-name`，推进 `prd` → `design` → `impl` → `review` → `check`；
 - **修复问题**：创建 `issue-mm-dd-name`，推进 `report` → `analyze` → `fix` → `fix-note`；
 - **重构优化**：创建 `refactor-mm-dd-name`，推进 `scan` → `design` → `apply` → `done`。
 
@@ -109,7 +109,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 | 工作流类型 | 命名规范 | 阶段推进顺序 | 说明 |
 |---|---|---|---|
-| **功能特性 (`feat`)** | `feat-MM-DD-name` | `prd` → `design` → `design-review` → `impl` → `review` → `check` | 适合从 0 到 1 开发新特性或重大功能调整 |
+| **功能特性 (`feat`)** | `feat-MM-DD-name` | `prd` → `design` → `impl` → `review` → `check` | 适合从 0 到 1 开发新特性或重大功能调整 |
 | **缺陷修复 (`issue`)** | `issue-MM-DD-name` | `report` → `analyze` → `fix` → `fix-note` | 适合排查和定位 bug、回归问题及异常情况 |
 | **代码重构 (`refactor`)** | `refactor-MM-DD-name` | `scan` → `design` → `apply` → `done` | 保持对外行为不变的前提下进行架构或代码优化 |
 

@@ -97,7 +97,7 @@ By default, the plugin will not intercept any unconfigured workspaces. Add your 
 
 When describing complex tasks in chat, the model will guide you through creating and advancing Trellis tasks:
 
-- **New Features**: Creates `feat-mm-dd-name`, advancing through `prd` → `design` → `design-review` → `impl` → `review` → `check`;
+- **New Features**: Creates `feat-mm-dd-name`, advancing through `prd` → `design` → `impl` → `review` → `check`;
 - **Bug Fixes**: Creates `issue-mm-dd-name`, advancing through `report` → `analyze` → `fix` → `fix-note`;
 - **Refactoring**: Creates `refactor-mm-dd-name`, advancing through `scan` → `design` → `apply` → `done`.
 
@@ -111,7 +111,7 @@ The plugin provides three standard tracks mapped to the task stage (`work.stage`
 
 | Track | Naming Pattern | Stage Progression | Description |
 |---|---|---|---|
-| **Feature (`feat`)** | `feat-MM-DD-name` | `prd` → `design` → `design-review` → `impl` → `review` → `check` | For new feature development or major functionality changes |
+| **Feature (`feat`)** | `feat-MM-DD-name` | `prd` → `design` → `impl` → `review` → `check` | For new feature development or major functionality changes |
 | **Issue (`issue`)** | `issue-MM-DD-name` | `report` → `analyze` → `fix` → `fix-note` | For bug diagnosis, fixing anomalies, and regression testing |
 | **Refactor (`refactor`)** | `refactor-MM-DD-name` | `scan` → `design` → `apply` → `done` | For behavior-preserving optimizations and cleanups |
 

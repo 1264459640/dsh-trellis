@@ -243,9 +243,9 @@ test('buildBoard passes inline through and keeps archive cache working', async (
     const boardInline = await buildBoard(fs, root, 'session-abc', true)
     assert.equal(boardInline.kind, 'board')
     // Stage-lane tracks are shipped with the board (single source of truth):
-    // feat contains design-review; completed display terminals are exposed.
+    // feat stages are prd, design, impl, review, check; completed display terminals are exposed.
     assert.deepEqual(boardInline.tracks, {
-      feat: { stages: ['prd', 'design', 'design-review', 'impl', 'review', 'check'], completed: 'finish' },
+      feat: { stages: ['prd', 'design', 'impl', 'review', 'check'], completed: 'finish' },
       issue: { stages: ['report', 'analyze', 'fix', 'fix-note'], completed: 'fix-note' },
       refactor: { stages: ['scan', 'design', 'apply', 'done'], completed: 'done' },
     })

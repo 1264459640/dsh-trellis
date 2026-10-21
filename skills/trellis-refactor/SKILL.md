@@ -1,6 +1,6 @@
 ---
 name: trellis-refactor
-description: "Refactor workflow for behavior-preserving optimization, splitting, or cleanup: resume and advance scan -> design -> apply. When external observable behavior would change, route to trellis-feat or trellis-issue instead. Do not use for new features or primary bug fixes."
+description: "行为等价重构工作流：代码优化、模块拆分与清理，推进 scan -> design -> apply。若改动影响外部可观察行为，转由 trellis-feat 或 trellis-issue 处理。"
 ---
 
 # trellis-refactor

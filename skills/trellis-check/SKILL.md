@@ -1,34 +1,30 @@
 ---
 name: trellis-check
-description: "Verify code changes against specs and task artifacts: fix findings directly, then confirm lint, type-check, and tests pass. Use after implementation changes before reporting completion."
+description: "对照工程规范与任务产物验证代码改动：直接修复发现的问题，并确保代码检查、类型检查与自动化测试全部通过。在完成实施向用户汇报前使用。"
 ---
 
-# Trellis Check
+# Trellis Check（代码验证与质量把关）
 
-Run this skill at the end of an implementation chunk (and as the final full-scope
-pass before commit) to verify changes against the project spec and the task's
-reviewed artifacts.
+在每个实施阶段块结束时（以及提交代码前作为全量收口阶段）运行本技能，严格对照项目规范与已评审的任务产物全面检验改动实效。
 
-## Steps
+## 执行步骤
 
-1. **Compare against artifacts.** Review all changes against:
-   - the relevant `.trellis/spec/<package>/<layer>/index.md` Quality Check + guidelines
-   - `prd.md` (acceptance criteria), `design.md` if present, and the task's
-     `task.json.steps` acceptance criteria (read the active task state)
-2. **Run tooling.** Lint, type-check, and tests relevant to the changed packages.
-3. **Auto-fix findings directly.** Do not just report; fix what you can and re-run.
-4. **Cross-layer consistency.** When changes span layers or packages, check each
-   affected package's spec Quality Check, not just the latest chunk.
+1. **对照规范与产物审查**：
+   - 对照关联的 `.trellis/spec/<package>/<layer>/index.md` 质量检查门禁与规范指引；
+   - 对照 `prd.md` 中的验收标准、`design.md`（如有）的技术契约，以及 `task.json.steps` 中各步骤声明的验收指标。
+2. **执行自动化工程工具**：
+   - 运行受影响模块对应的 Lint 代码风格检查、类型检查（type-check）以及单元/集成测试。
+3. **就地修复发现的问题（Auto-fix）**：
+   - 不要只停留在报告问题层面；对检查出的机械性或规范性问题，直接就地修复并重新运行验证。
+4. **跨层/跨模块一致性检验**：
+   - 当改动涉及多个分层或包时，逐个验证每个受影响包的质量门，防范中间迭代产生的联动问题。
 
-## Final full-scope pass
+## 全量终审关卡（Final full-scope pass）
 
-Before the commit step, run a last check over all affected packages — this catches
-multi-package issues a mid-iteration local check misses.
+在进入 commit 阶段前，对所有受影响的包执行一次最终全量检查，杜绝局部验证未能捕获的跨模块隐患。
 
-## Guardrails
+## 守则与红线
 
-- Green tooling is necessary but not sufficient: the change must also satisfy the
-  task's acceptance criteria and the spec.
-- If a check reveals a `prd.md` defect, return to Phase 1, fix the artifact, and
-  re-implement — do not paper over it.
-- Do not report completion until checks pass and acceptance criteria are met.
+- **测试绿灯是必要条件而非充分条件**：除了工具无报错，代码改动必须逐条满足任务 PRD 的业务验收标准。
+- 如果检查过程中暴露出 `prd.md` 的严重定义缺陷，必须退回规划阶段更新产物并重新实现，绝不能掩耳盗铃。
+- 只有所有检查全部绿灯、所有验收标准均得到确证后，方可宣称任务完成。
