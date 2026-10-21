@@ -35,7 +35,7 @@ In complex, multi-turn AI coding workflows, typical pain points include:
 - **Verification Gates**: Standard step states (`pending`, `in_progress`, `verifying`, `blocked`, `completed`) with explicit support for automated AI testing and human sign-off gates before marking steps complete.
 - **Optional Read-Only Planning**: When enabled via settings, code-writing tools (`write` / `edit`) are filtered out during planning phases, leaving only a sandboxed artifact channel for design documentation.
 - **Session-Level Isolation**: Session pointers are stored independently under `.trellis/.runtime/sessions/`, preventing multi-session or subagent race conditions.
-- **Dual-Mode Task Board**: A dense compact task list by default (type badge + title + stage + step summary), expanding into a full-screen kanban with workflow-stage lanes, auto-collapsed empty lanes, live search, type filters, and an archive lane. The UI is fully iconized (self-contained inline SVG icon set), and the details inspector provides a Step Tracker pipeline, an artifact file tree, and capsule-style property tags. The board stays deliberately restrained — it never mutates task state directly; the only advance path is the **Advance Task** button injecting an instruction into the composer for the Agent to execute, and artifact clicks produce native `@.trellis/tasks/...` file references handled by DSH.
+- **Dual-Mode Task Board (Visual Language v2)**: A compact task popover by default (active bound task pinned at the top as a hero card with an inline step checklist; open tasks grouped cleanly by status below), expanding into a full-screen board (tasks grouped by In Progress / Planning / Completed with `⌘K` search and workflow filters); the right-hand details drawer provides a **Step Tracker checklist**, stage track nodes, and an artifact file list. The board adheres to a **single-accent color system** and **restrained interaction** — it never mutates task state directly; the only advance path is the **Advance Task** button injecting an instruction into the composer for the Agent to execute, and artifact clicks produce native `@.trellis/tasks/...` file references handled by DSH.
 - **Git Cleanliness Check (scoped mode supported)**: Automatically verifies that the Git working tree is clean and committed before closing or archiving a task. When the working tree contains uncommitted changes unrelated to the current task, pass the task's actual changed files via `modified_files` to `trellis_task_update` / `trellis_task_archive`: the check then scopes to those files (which must themselves be committed), and uncommitted changes outside the list only emit a warning instead of blocking. Omitting the parameter keeps the global strict check.
 
 ---
@@ -124,26 +124,27 @@ The `steps` array in `task.json` serves as the execution list and supports 5 sta
 - **Human Approval Gate (`verification: 'human'`)**: Reserved for critical or high-risk changes. The step cannot be marked `completed` unless confirmed by the user and saved with `verifiedBy: 'human'`.
 - **Completion Audit**: When closing or archiving a task, the plugin validates that all steps are completed and verified, and that the Git working tree is clean.
 
-### 2. Dual-Mode Task Board (Compact List & Full-Screen Lanes)
+### 2. Dual-Mode Task Board (Compact Popover & Full-Screen Board)
 
 In the DSH Web UI, the session header phase chip provides an interactive task board with dual presentation modes:
 
-#### Compact List View & Full-Screen Lanes
-The default popover presents tasks in a high-density vertical list, complemented by a details inspector featuring a **Stage Pipeline Stepper**, an artifact file explorer, and a **Step Tracker checklist**. Clicking the top-right maximize icon expands it into a roomy full-screen board with `⌘K` search and stage columns:
+#### Compact Popover View & Full-Screen Board
+The default popover pins the active bound task at the top in a prominent card featuring a live **Step Tracker checklist** (bolding active step with acceptance criteria and collapsible completed steps), with other tasks grouped by status below. Clicking the top-right maximize icon expands it into a roomy full-screen board with `⌘K` search and a comprehensive details drawer:
 
 <p align="center">
-  <img src="./docs/images/web-kanban-list.png" width="45%" alt="Compact task list with details inspector" />
+  <img src="./docs/images/web-kanban-list.png" width="38%" alt="Compact task popover with pinned active card" />
   &nbsp;
-  <img src="./docs/images/web-kanban-lanes.png" width="52%" alt="Kanban lanes with collapsed empty lanes" />
+  <img src="./docs/images/web-kanban-lanes.png" width="59%" alt="Full-screen task board with details drawer" />
 </p>
 
-#### Workflow Filter & Empty Lane Folding
-Users can instantly filter by workflow type (Features / Issues / Refactors). When scoping down to a specific workflow track (such as refactoring), empty stages automatically fold into dashed placeholders to maximize information density:
+#### Workflow Filter & Comprehensive Details
+Users can instantly filter by workflow type (Features / Issues / Refactors). Scoping down to a specific workflow track (such as refactoring) displays matching tasks alongside stage pipeline nodes, full step state machine status, and artifact files:
 
 <p align="center">
-  <img src="./docs/images/web-kanban-refactor.png" width="85%" alt="Refactor lane view with task details" />
+  <img src="./docs/images/web-kanban-refactor.png" width="85%" alt="Refactor workflow filter with details drawer" />
 </p>
 
+- **Single-Accent Visual Language**: Workflow types are rendered in clean, uncolored text; brand blue is reserved for active session bindings and in-progress steps, while red/amber alerts appear strictly for external blockers and human verification gates.
 - **Restrained Interaction**: The board serves strictly for observation and intent steering without mutating state behind the model's back. The right-hand **Advance Task** button simply injects structured prompts into the composer for the Agent to carry out.
 - **Native File Navigation**: Clicking "Open" on any artifact resolves a native `@.trellis/tasks/...` reference, seamlessly opening DSH's native sidebar preview.
 
@@ -203,7 +204,7 @@ dsh-trellis/
 │   ├── artifact.js         # Sandboxed writes: whitelisted artifact updates and security checks
 │   ├── archive.js          # Archiving logic: completion validation, directory migration, Git checks
 │   ├── board.js            # Kanban data: aggregates active tasks and archive buckets
-│   ├── client.js           # Web client: phase badge, mini kanban, and settings panel
+│   ├── client.js           # Web client: phase chip, dual-mode board (compact popover + full-screen board), and settings panel
 │   └── types/index.d.ts    # TypeScript type definitions
 ├── skills/                 # Bundled workflow skills and markdown templates
 ├── docs/images/            # Screenshots and architecture diagrams
