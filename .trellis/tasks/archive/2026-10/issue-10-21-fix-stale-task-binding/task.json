@@ -1,0 +1,10 @@
+{
+  "title": "修复创建任务后偶发绑定过去任务",
+  "status": "completed",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  }
+}
