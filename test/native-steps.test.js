@@ -18,7 +18,7 @@ import {
   buildBreadcrumbMessage,
 } from '../lib/breadcrumb.js'
 import { assertSafeArtifactPath, ALLOWED_ARTIFACTS, updateTaskArtifact } from '../lib/artifact.js'
-import { ensureProjectSkills, pruneDeprecatedProjectTemplates, DEPRECATED_PROJECT_TEMPLATES } from '../lib/skills.js'
+import { ensureProjectSkills, pruneDeprecatedProjectTemplates, DEPRECATED_PROJECT_TEMPLATES, PACKAGE_VERSION, VERSION_FILE_NAME } from '../lib/skills.js'
 
 function mockFs(root) {
   const target = (p) => ({ targetKey: path.resolve(p), displayPath: p })
@@ -579,6 +579,55 @@ test('ensureProjectSkills prunes deprecated templates after provisioning', async
     const res = await ensureProjectSkills(fs, root)
     assert.ok(Array.isArray(res.copied))
     assert.throws(() => statSync(stale))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('ensureProjectSkills auto-updates bundled skills on plugin version upgrade', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-version-sync-'))
+  try {
+    const fs = mockFs(root)
+
+    // 1. Initial provisioning
+    const initRes = await ensureProjectSkills(fs, root)
+    assert.ok(initRes.copied.length > 0)
+    assert.equal(initRes.updated.length, 0)
+    assert.equal(initRes.version, PACKAGE_VERSION)
+
+    const versionFile = path.join(root, '.agents', 'skills', VERSION_FILE_NAME)
+    assert.equal(readFileSync(versionFile, 'utf8').trim(), PACKAGE_VERSION)
+
+    // 2. Re-run with same version: presence check skips, no writes
+    const sameRes = await ensureProjectSkills(fs, root)
+    assert.equal(sameRes.copied.length, 0)
+    assert.equal(sameRes.updated.length, 0)
+    assert.ok(sameRes.present.length > 0)
+
+    // 3. User custom skill should be preserved
+    const customSkillDir = path.join(root, '.agents', 'skills', 'my-custom-skill')
+    mkdirSync(customSkillDir, { recursive: true })
+    const customSkillFile = path.join(customSkillDir, 'SKILL.md')
+    writeFileSync(customSkillFile, 'custom skill content')
+
+    // 4. Simulate a stale project version with modified skill content
+    const featSkillFile = path.join(root, '.agents', 'skills', 'trellis-feat', 'SKILL.md')
+    writeFileSync(featSkillFile, 'stale outdated feat skill content')
+    writeFileSync(versionFile, '0.1.0') // older version
+
+    // 5. Run ensureProjectSkills — should trigger auto-upgrade
+    const upgradeRes = await ensureProjectSkills(fs, root)
+    assert.ok(upgradeRes.updated.includes('trellis-feat'))
+    assert.equal(upgradeRes.version, PACKAGE_VERSION)
+    assert.equal(readFileSync(versionFile, 'utf8').trim(), PACKAGE_VERSION)
+
+    // Verify official skill was overwritten with latest packaged content
+    const updatedFeatContent = readFileSync(featSkillFile, 'utf8')
+    assert.notEqual(updatedFeatContent, 'stale outdated feat skill content')
+    assert.ok(updatedFeatContent.includes('trellis-feat'))
+
+    // Verify user custom skill remains completely untouched
+    assert.equal(readFileSync(customSkillFile, 'utf8'), 'custom skill content')
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

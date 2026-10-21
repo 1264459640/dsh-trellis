@@ -1,26 +1,32 @@
 ---
 name: trellis-spec-bootstrap
-description: "初始化或扩展项目工程规范（Spec）：分析代码仓库架构，按包与分层组织规范，并规划任务。适用于新项目或尚无 Trellis spec 的既有项目。"
+description: "在项目中初始化 .trellis/spec/ 代码规范体系：梳理项目真实目录分层，建立开发前检查与测试质检清单。"
 ---
 
-# Trellis Spec Bootstrap（工程规范体系初始化）
+# trellis-spec-bootstrap
 
-使用本技能在项目中搭建或扩充 `.trellis/spec/` 规范体系，为工作流中的 `trellis-before-dev`、`trellis-check` 和 `trellis-update-spec` 提供权威规则基准。
+当新项目接入 Trellis 或项目尚无规范骨架时使用。快速提炼仓库现有代码约定并落盘。
 
-## 执行步骤
+## 初始化三步走
 
-1. **深入剖析代码仓库**：
-   - 识别系统分包、逻辑分层与核心代码热点：系统入口、错误处理机制、既有编码风格、README 与既有开发文档。
-2. **建立分层规范结构**：
-   - `.trellis/spec/<package>/<layer>/index.md`：核心入口，承载**开发前检查清单（Pre-Development Checklist）**与**质量验收门禁（Quality Check）**；具体细则以同级引用的 Markdown 文件呈现（如 `error-handling.md`、`conventions.md` 等）。
-   - `.trellis/spec/guides/index.md`：跨模块的全局工程思维与指导手册。
-3. **沉淀实事求是的初始约定**：
-   - 严格从仓库当前真实运转的代码事实出发，切忌空想假大空的规则；让规则在后续具体任务中自然演进与积累（参见 `trellis-update-spec`）。
-4. **基于新架构规划后续任务**：
-   - 确立清晰的分层边界，为后续功能迭代打下坚实的地基。
+| 步骤 | 目标 | 具体产物 | 要点 |
+|------|------|----------|------|
+| 1. 扫描代码现状 | 搞清分包（packages）与分层（如 api/service/model） | 记录实际目录树 | 严格以真实代码结构为准，不空想不存在的架构层 |
+| 2. 建立模块规范 | 为核心模块建立规范入口 | `.trellis/spec/<package>/<layer>/index.md` | 写明：动手前看什么、质量验收命令（跑什么测试/lint） |
+| 3. 补充全局指引 | 提取全局通用约定 | `.trellis/spec/guides/` | 如统一错误处理、日志规范等 |
 
-## 守则与红线
+## 规范目录推荐结构
 
-- 严禁凭空捏造与实际代码脱节的虚假架构层级；规范组织必须严格映射真实的目录与代码结构。
-- 工程规范是鲜活演进的资产：先搭建最小骨架，通过真实任务不断打磨淬炼。
-- 明确记录架构层级的决策理由，确保后续扩充保持风格统一。
+```text
+.trellis/spec/
+├── guides/
+│   └── conventions.md      # 全局通用编码与提交约定
+└── <package>/<layer>/
+    ├── index.md            # 本层动手前检查清单与质量验收命令
+    └── rules.md            # 具体的模块约定（如接口签名、错误格式）
+```
+
+## 硬性卡点
+
+1. **实事求是**：只记录当前仓库正在生效的真实模式，严禁抄写脱离项目的假大空教条。
+2. **先搭骨架，不搞大而全**：初次只需搭建核心模块的最小骨架，后续做任务时通过 `trellis-update-spec` 按需逐步补充。

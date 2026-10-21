@@ -1,6 +1,6 @@
 # Work Type Workflows (feat / issue / refactor)
 
-通用化的三类工作流（源自 FTM/CodeStable，随 trellis-workflow 插件分发，MIT）。
+Trellis 核心三类工作流。
 **载体**：`.trellis/tasks/{slug}/`
 **入口**：由工作流路由表驱动，复用原生 Trellis skill（`trellis-feat` / `trellis-issue` / `trellis-refactor`）
 **模板**：`.trellis/templates/{feat,issue,refactor}/`（首次使用时由对应技能自动初始化）

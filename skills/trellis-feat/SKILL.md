@@ -5,7 +5,7 @@ description: "功能特性工作流：新功能开发或重大特性改造，按
 
 # trellis-feat
 
-在 Trellis task 上运行的 Feature 流程（由 FTM/CodeStable 工作流通用化而来）。
+在 Trellis task 上运行的 Feature 流程。
 路由表与阶段机对照：`_templates/work-types.md`；产物模板：`_templates/feat/`。
 
 ## 核心理念：极简设计原则（Anti-Overengineering）

@@ -5,99 +5,50 @@ description: "行为等价重构工作流：代码优化、模块拆分与清理
 
 # trellis-refactor
 
-行为等价重构流程，载体为 Trellis task（由 FTM/CodeStable 工作流通用化而来）。
-对照：`_templates/work-types.md`；模板：`_templates/refactor/`。
+用于纯内部代码优化、拆分提取、消除坏味道的工作流。**核心铁律：行为严格等价，不改变任何对外业务逻辑与可观察表现。**
+
+## 底线原则：行为等价
+
+- 外部表现（UI 显示、用户交互、API 响应字段、报错提示、路由跳转）**一律不准改变**。
+- 一旦重构过程中需要改动业务逻辑或外部接口契约：**立即停止，转为 `trellis-feat`（新需求）或 `trellis-issue`（修 Bug）**。
 
 ## 启动
 
-1. 恢复上下文：用 `trellis_state` 或读 `.trellis/.runtime/sessions/*.json` 的
-   `current_task`；也可加载 `trellis-continue`。
-2. 无 task 且用户同意：`trellis-start` → 用内置工具 **`trellis_task_create`** 建 task
-   （`workType=refactor`；自动写 `.trellis/tasks/<slug>/task.json`（status=planning）、播种
-   `scan.md` 等模板、并**同步写 `.trellis/.runtime/sessions/` 的 `current_task`**，面包屑/
-   阶段/Web 徽标立即生效，无需手动写 session 文件）。slug=`<work-type>-<mm-dd>-<短名>`，
-   如 `refactor-01-15-xxx`；工具会自动校验/推导。
-3. 更新阶段或状态使用内置工具 **`trellis_task_update`**（如 `status=in_progress, stage=apply`；自动校验轨道并刷新 Web 徽标）：
+1. **若无活跃任务**：征得用户同意后，用内置工具 `trellis_task_create` 创建：
    ```json
-   "work": { "type": "refactor", "mode": "standard", "stage": "scan" }
+   trellis_task_create({
+     "workType": "refactor",
+     "title": "重构 xxx 模块",
+     "name": "简短英文名",
+     "mode": "standard"
+   })
    ```
-4. 按产物恢复 stage。
+2. **若已有活跃任务**：加载 `trellis-continue` 恢复。
+3. **状态流转**：使用内置工具 `trellis_task_update`。
 
-## 模板初始化（首次使用）
+## 阶段机与执行步骤
 
-若 `.trellis/templates/refactor/` 不存在，把本技能资源目录的 `_templates/refactor/*` 复制过去，
-并把 `_templates/work-types.md` 复制到 `.trellis/templates/work-types.md`。已存在则跳过。
+| 条件 | 当前阶段 (stage) | 核心动作 | 产物与工具 | 下一步 |
+|------|------------------|----------|------------|--------|
+| 无 `scan.md` | scan | 梳理待清理项、风险点，列出本次重构范围与坚决不动的模块 | `scan.md` | 等用户确认范围 |
+| 范围已确认，无 design | design | 制定重构方案与测试保护策略；录入执行步骤清单 | `refactor-design.md`、`task.json.steps` | 等用户批准方案 |
+| 方案已获批 | 准备开工 | 调 `trellis_task_update` 将任务状态切为 `in_progress` | `task.json.status="in_progress"` | apply |
+| 正在重构中 | apply | 依据步骤单小步改造，加载 `trellis-before-dev`，记录改动与对比证据 | `apply-notes.md` | finish |
+| 全部步骤实施完毕 | finish | 运行全量测试 `trellis-check` 验证行为等价 → 必要时 `trellis-update-spec` → 归档 `trellis-finish-work` | commit / archive | 完成 |
 
-## 参数意图
+> **关于轻量重构（fastforward）**：仅当重构范围局限在单一函数/局部文件、测试完全覆盖且能一秒回滚时，可将 scan 与 design 合并为极简说明。
 
-| 信号 | 含义 |
-|------|------|
-| `--mode standard\|fastforward` | 模式 |
-| `--stage scan\|design\|apply` | 偏好阶段 |
-| 流程太重 / 范围极小 | 评估是否 ff |
+## 产物清单
 
-## 行为等价底线（硬）
+所有产物落在 `.trellis/tasks/<slug>/` 目录下：
+- `scan.md`：现状分析、坏味道盘点、本次纳入范围与排除范围。
+- `refactor-design.md`：目标结构、抽离方式、测试覆盖与保护措施。
+- `apply-notes.md`：每一步的具体代码变动记录与回归验证结果。
+- `task.json.steps`：由 `trellis_task_update` 维护的执行步骤清单。
 
-外部可观察行为包含但不限于：UI 展示结果、交互语义、网络契约、缓存生命周期、错误/Toast 语义、导航结果。
-**任一会变 → 停止本流程，改 `trellis-feat` 或 `trellis-issue`。**
+## 硬性卡点
 
-## 阶段机
-
-| 条件 | stage | 下一步 |
-|------|-------|--------|
-| 无 `scan.md` 或用户未勾选纳入项 | scan | 写 `scan.md`，**等人勾选** |
-| 已勾选；无 design 或 status≠approved | design | 写 `refactor-design.md`，**等人 approve** |
-| design approved | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `status=in_progress` | apply |
-| in_progress | apply | 按 `task.json.steps` 逐步改（`verification: human` 步骤须用户确认）；写 `apply-notes.md` |
-| 步骤 verification=human 且未确认 | 暂停 | 等人确认该步 |
-| 全部步骤验证完 | final | `trellis-check` + 全量验证记录 |
-| 用户最终确认 | finish | `trellis-update-spec` → commit → `trellis-finish-work` / archive |
-
-### fastforward
-
-同时满足才允许：
-
-- 范围单点、挂载点清晰
-- 行为等价无疑问
-- 可快速回滚
-- 不改跨模块公开契约
-
-ff：可压缩 scan/design 为短说明，但仍需 apply-notes + check；不确定则回 standard。
-
-## 人卡点（硬）
-
-1. **scan 未勾选** → 禁止 design 定案写码。
-2. **design 未 approved**（standard）→ 禁止写 `status=in_progress`。
-3. **HUMAN 验证步未确认** → 禁止把该步标 done / 进入依赖它的下一步。
-4. **最终人审未过** → 禁止 archive。
-
-## 产物
-
-```text
-scan.md
-refactor-design.md
-apply-notes.md
-```
-
-（从 `_templates/refactor/` 复制。执行步骤清单不设独立文件，一律由 `task.json.steps` 承载。）
-
-## Apply 规则
-
-- 小步提交式改动；每步可验证。
-- 优先 characterization / 现有测试锁行为，再挪结构。
-- 遵守 `.trellis/spec` 约束（模块目录、分层、准入等）。
-- 实现前 `trellis-before-dev`；阶段末 `trellis-check`。
-
-## 退出
-
-| 结果 | 动作 |
-|------|------|
-| NeedsHuman | scan 勾选 / design 确认 / human 验证 |
-| SwitchRequired | 发现行为变更 → 转 feat/issue |
-| Completed | apply-notes 齐 + check 过 + 人审 + archive |
-
-## 反模式
-
-- 借重构改产品行为
-- 无 `task.json.steps` 清单的大爆炸改动
-- 未批准就写 `status=in_progress`
+1. **先加测试保护再动手重构**：若原逻辑没有单测覆盖，重构前尽量先补关键行为测试，锁住预期结果。
+2. **方案未获用户确认前，严禁切 `in_progress` 并修改代码**。
+3. **步骤中标记为 `verification: human` 的，必须等待用户确认后才能标记完成**。
+4. **全量测试未全部绿灯前，禁止归档任务**。
