@@ -1,0 +1,96 @@
+{
+  "title": "看板与徽标视觉及交互体验升级",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "review",
+    "execution_lane": "standard"
+  },
+  "description": "优化 session header 任务徽标（TaskChip）、迷你看板（KanbanBoard）与展开大看板（KanbanExpandedModal）的视觉效果与交互体验。",
+  "steps": [
+    {
+      "id": "1",
+      "title": "视觉基础：token、ensureStyles、stateStyle",
+      "status": "completed",
+      "spec": "新增 well/raised/raisedShadow/hover token，移除 ink/accentBright/brandBar/ring/selectBg/selectBgPop；注入 .tw- 作用域样式表；stateStyle 统一选中样式。",
+      "acceptance": [
+        "无 document 时 ensureStyles 安全跳过",
+        "暗色主题下 well/raised 跟随 host token"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "token、TW_CSS + ensureStyles、stateStyle 已实现；theme token 测试通过"
+    },
+    {
+      "id": "2",
+      "title": "重做徽标 TaskChip",
+      "status": "completed",
+      "spec": "状态点+类型·中文阶段+截断标题+chevron；加载/无任务/失败三态；hover/展开/焦点交互态。",
+      "acceptance": [
+        "四种 summary 状态渲染各自区分",
+        "展开时 chevron 旋转且套用 raised"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "离线渲染核对 6 种状态（亮+暗）"
+    },
+    {
+      "id": "3",
+      "title": "重做迷你看板",
+      "status": "completed",
+      "spec": "两行头部+分段筛选计数；槽内行项套用新状态模型和步骤进度；弹出动画；↑/↓/Enter 键盘；骨架/失败/空态；底部文案改写。",
+      "acceptance": [
+        "行内动作约束测试不变通过",
+        "选中行背景为 raised 且无 brand border",
+        "键盘 ↑/↓/Enter 生效"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "行内动作测试通过；新增选中态断言通过；键盘已接入（真实浏览器待人工验证）"
+    },
+    {
+      "id": "4",
+      "title": "重做展开大看板",
+      "status": "completed",
+      "spec": "遮罩模糊+缩放进场；泳道卡片/列表行/归档行/筛选统一状态模型；进度条与完成标记改用 token 色。",
+      "acceptance": [
+        "去掉右侧选中圆点与蓝框",
+        "对比度矩阵全部通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "泳道/列表共用状态断言通过；对比度矩阵通过"
+    },
+    {
+      "id": "5",
+      "title": "测试更新与全量回归",
+      "status": "completed",
+      "spec": "更新 client-theme 测试中 theme key，新增选中态断言，执行 node --test。",
+      "acceptance": [
+        "node --test 全部通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "node --test 155/155"
+    },
+    {
+      "id": "6",
+      "title": "GUI 人工验收",
+      "status": "completed",
+      "spec": "重建并刷新当前 GUI，亮/暗两种主题下验收五种状态与键盘操作。",
+      "acceptance": [
+        "用户确认视觉与交互达标"
+      ],
+      "verification": "human",
+      "verified": true,
+      "verifiedBy": "human",
+      "verificationNotes": "用户 2026-10-21 在 GUI 中验收通过（方案 A + 步骤清单）。"
+    }
+  ]
+}
