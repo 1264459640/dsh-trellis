@@ -1,0 +1,110 @@
+{
+  "title": "小看板支持列表项快捷激活任务",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "steps": [
+    {
+      "id": "step-1-i18n",
+      "title": "i18n：复用 activate / deactivate，删死键",
+      "status": "completed",
+      "spec": "v5：取消激活复用既有 deactivate key，避免死键",
+      "acceptance": [
+        "不新增 i18n key；复用既有 activate / deactivate（zh/en 均已存在）；删除 v4 试加的 activeSessionHint；源码无 '当前会话激活' 硬编码"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/client.js 无 activeSessionHint（断言 doesNotMatch）；deactivate: 在 zh/en 各一处；无 '当前会话激活' 硬编码"
+    },
+    {
+      "id": "step-2-icon",
+      "title": "renderIcon 新增 play / stop 描边图标",
+      "status": "completed",
+      "spec": "按 D1 用描边图元，不改 renderIcon fill 契约",
+      "acceptance": [
+        "case 'play' 描边 path M7 4.5v15l13-7.5-13-7.5Z；case 'stop' 描边 rect；两处调用不传 fill"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "client.test.js 断言 case 'play' + path、case 'stop' + rect、两处调用不传 fill；均 pass"
+    },
+    {
+      "id": "step-3-row",
+      "title": "重构 KanbanTaskItem：外层容器 + 主按钮 + 右槽 ▶/■ 动作按钮",
+      "status": "completed",
+      "spec": "按 D3 样式归属表 + D4 v5 规则（active ? deactivateButton : activateButton）",
+      "acceptance": [
+        "外层 div 承载 boxSizing/边框/底色/分隔线/圆角/boxShadow/transition；内层主 button 无 border/outline；Accent Bar pointerEvents:'none'；右槽恒有一个按钮：active→■（title=t('deactivate'), onClick stopPropagation+onDeactivate）/ 否则 ▶（stopPropagation+onSelect+onActivate）；无静态状态点"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/client.js KanbanTaskItem 右槽两分支；theme 用例断言 active 行有 ■（含 rect 子节点、title=zh.deactivate）、无 ▶、无 brand 圆点；点击 ■ 调 onDeactivate 且不调 onSelect"
+    },
+    {
+      "id": "step-4-props",
+      "title": "KanbanBoard 向下透传 onActivate / onDeactivate / busy",
+      "status": "completed",
+      "spec": "仅补传已解构的 props（1891）",
+      "acceptance": [
+        "KanbanBoard map 内传入 busy / onActivate / onDeactivate；popover 调用点零改动"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "变异测试：分别删除 busy,/onActivate, 均能精确变红；onDeactivate 由 ■ 点击用例守护"
+    },
+    {
+      "id": "step-5-tests",
+      "title": "新增结构断言与渲染树断言，跑全量 pnpm test",
+      "status": "completed",
+      "spec": "按 D5 计划 A+B（8 项）",
+      "acceptance": [
+        "新增「无 button 嵌套 / selected&&!active 仍有 ▶ / active 行有 ■ 且无 ▶ / busy 禁用（▶ 与 ■）/ 点击时序（▶=select→activate，■=deactivate）/ boxSizing」断言；全量 node --test 无新增失败"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "全量 87 tests / 82 pass / 5 fail（与基线失败集合一致，均为未安装 @deepseek-ai/{cordis,dsh-tools,schemastery}）；两个目标文件 37/37"
+    },
+    {
+      "id": "step-6-manual",
+      "title": "人工浏览器验收：▶ 激活 / ■ 取消激活 双向生效、选中后按钮仍在、Console 无嵌套告警、双主题可见性",
+      "status": "completed",
+      "spec": "离线 DOM 断言 ≠ 浏览器计算样式验收",
+      "acceptance": [
+        "浏览器实测：hover tooltip 正确；点行正文后 ▶ 仍在；点 ▶ → 行变 ■ 且 chip 切换；点 ■ → 行回到 ▶且 chip 回到无激活态；console 无 validateDOMNesting；行 scrollWidth===clientWidth；双主题图标可见"
+      ],
+      "verification": "human",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "human",
+      "verificationNotes": "用户于 2026-10-21 10:53（Asia/Shanghai）回复「验收通过，归档」：小看板 ▶ 激活 / ■ 取消激活双向生效、选中后按钮仍在、chip 联动正常。"
+    },
+    {
+      "id": "step-7-spec",
+      "title": "回写 spec：更新 web-ui 约定 18",
+      "status": "completed",
+      "spec": "trellis-update-spec；已执行",
+      "acceptance": [
+        "web-ui/index.md 约定 18 拓注：取消蓝灯、删光晕、选中态表达、右槽恒有一个动作（▶/■）、至多一个 ■"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "已写入「更正记录（feat-10-20-compact-kanban-activate）」①无光晕 ②蓝灯取消且右槽改为每行恒一个动作（▶/■）③选中态表达 ④不保留静态状态点"
+    }
+  ]
+}
