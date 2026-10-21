@@ -30,7 +30,7 @@ export function loadClient(source = clientSource) {
   const marker = 'exports.apply = apply;'
   if (!source.includes(marker)) throw new Error('Client export marker missing')
   vm.runInNewContext(source.replace(marker,
-    'exports.themeTest = { TB, KanbanBoard, KanbanExpandedModal, KANBAN_POPOVER_STYLE, zh };\n' + marker), { window })
+    'exports.themeTest = { TB, TW_CSS, KanbanBoard, KanbanExpandedModal, StepList, KANBAN_POPOVER_STYLE, zh };\n' + marker), { window })
   return client.themeTest
 }
 
@@ -50,21 +50,22 @@ export const tasks = ['feat', 'issue', 'refactor'].map((workType, i) => ({
   hasPendingVerification: i === 2,
   steps: [
     { id: 'a', title: 'Completed step', status: 'completed' },
-    { id: 'b', title: 'Current step', status: 'in_progress' },
-    { id: 'c', title: 'Pending step', status: 'pending' },
+    { id: 'b', title: 'Current step', status: 'in_progress', acceptance: ['Acceptance text'] },
+    { id: 'c', title: 'Pending step', status: 'pending', verification: 'human' },
   ],
 }))
 
+// Design v2: the popover (current-task card + grouped rows) and the expanded
+// board (grouped table + details pane with the full step list).
 export function renderViews(client, selected = tasks[0].slug) {
   const props = {
     board: { tasks, tracks: TRACKS, currentTask: selected },
     selected, t: (key) => client.zh[key] || key, filter: 'all', busy: false,
-    expanded: new Set(), onToggle: noop, onSelect: noop, onActivate: noop,
-    onDeactivate: noop, onFilterChange: noop, onClose: noop,
+    onSelect: noop, onActivate: noop, onDeactivate: noop, onFilterChange: noop,
+    onClose: noop, stepsOpen: false, onToggleSteps: noop,
   }
   return {
     popover: { type: 'div', props: { style: client.KANBAN_POPOVER_STYLE }, children: [client.KanbanBoard(props)] },
-    lanes: client.KanbanExpandedModal({ ...props, initialViewMode: 'lanes' }),
-    list: client.KanbanExpandedModal({ ...props, initialViewMode: 'list' }),
+    board: client.KanbanExpandedModal(props),
   }
 }

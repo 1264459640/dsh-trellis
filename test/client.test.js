@@ -115,21 +115,21 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
   }
 })
 
-test('compact kanban row exposes inline activate AND deactivate actions (feat-10-20)', () => {
+test('kanban keeps inline bind and an explicit unbind action (feat-10-20, design v2)', () => {
   const source = readFileSync(clientPath, 'utf8')
 
-  // The row is no longer a single <button>: an inline action would nest a
-  // button inside a button. Guard the split-wrapper contract instead of the
-  // old one-element shape.
+  // The row is not a single <button>: an inline action would nest a button
+  // inside a button. Guard the split-wrapper contract.
   assert.match(source, /function KanbanTaskItem\(/)
-  assert.match(source, /const \{ task, t, selected, active, busy, onSelect, onActivate, onDeactivate \} = props;/)
+  assert.match(source, /const \{ task, t, selected, busy, onSelect, onActivate \} = props;/)
 
-  // Right slot holds exactly one action per row: ■ clears the session binding
-  // when this task is active, ▶ binds it otherwise. No static dot anymore, so
-  // every row offers a clickable action.
+  // Rows offer ▶ (bind this task to the session). Design v2 moved the bound
+  // task into the current-task card, which carries the single unbind action
+  // (stop glyph, still labelled `deactivate: <title>`).
   assert.match(source, /aria-label': t\('activate'\) \+ ': ' \+ task\.title/)
-  assert.match(source, /aria-label': t\('deactivate'\) \+ ': ' \+ task\.title/)
-  assert.match(source, /renderIcon\('stop', \{ size: 11, color: TB\.color\.brand, strokeWidth: 2\.5 \}\)/)
+  assert.match(source, /ariaLabel: t\('deactivate'\) \+ ': ' \+ task\.title/)
+  assert.match(source, /function CurrentTaskCard\(/)
+  assert.match(source, /icon: 'stop'/)
 
   // renderIcon hardcodes fill:'none', so both glyphs must be stroke shapes;
   // passing `fill` at the call site would be a dead argument.
