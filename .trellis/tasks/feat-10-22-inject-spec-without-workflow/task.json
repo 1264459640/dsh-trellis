@@ -1,10 +1,10 @@
 {
   "title": "免 workflow.md 下的 Spec 动态索引与阶段感知注入",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
-    "stage": "check",
+    "stage": "finish",
     "execution_lane": "standard"
   },
   "description": "在不再注入与依赖 .trellis/workflow.md 的前提下，通过系统提示词装配（system-prompt/assemble）与每轮面包屑/步骤联动（agent/pre-step），实现 .trellis/spec/ 工程规范的自动扫描、紧凑索引与阶段感知注入。",
