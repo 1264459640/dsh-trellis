@@ -12,6 +12,28 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.4 — 2026-10-22
+
+## 功能
+
+- **项目工程规范自适应注入（无 workflow.md 模式）**：实现了无需生成 `.trellis/workflow.md` 即可自动向模型系统提示词注入 `.trellis/spec/` 规范索引的能力。新增边界受控且 fail-open 的规范扫描模块（`lib/spec.js`），仅注入路径与“先读规范再改代码”约束，杜绝上下文膨胀；新增 `injectSpecIndex` 插件配置开关，同时在规划、实施阶段的面包屑中按步骤状态精准引导规范阅读。
+- **大看板任务类型辨识度强化与已完成分组折叠**：
+  - 任务类型列由纯文本升级为中性描边胶囊徽标，并为三类任务配备单色图标（feat=火花 / issue=虫子 / refactor=刷新），拓宽列宽防止英文截断，在严格保持单强调色约束的同时显著提升辨识度。
+  - 「已完成 · 归档」任务分组默认折叠，减少长列表视觉噪点；支持一键展开/收起，并在有搜索关键字时自动展开。
+- **工作流技能路由与问题排查模板优化**：完善了 `trellis-issue`、`trellis-break-loop` 与 `trellis-check` 等技能指引，强化缺陷分析模板规范与门禁阶段核验。
+
+---
+
+## Features
+
+- **Project Spec Index Auto-Injection (Workflow-less Mode)**: automatically injects `.trellis/spec/` indices into the system prompt without requiring `.trellis/workflow.md`. Added a bounded, fail-open spec scanner (`lib/spec.js`) that injects only file paths and read-first constraints to prevent token bloat; added the `injectSpecIndex` plugin setting and step-state-aware spec guidance in breadcrumbs.
+- **Enhanced Kanban Task Type Badges & Completed Group Folding**:
+  - Replaced plain text type labels with neutral bordered badges paired with monochrome icons (feat=sparkles, issue=bug, refactor=refresh) and widened the column to prevent ellipsis truncation while respecting single-accent UI guidelines.
+  - The "Completed / Archived" section is now collapsed by default to reduce visual clutter; supports manual expand/collapse and auto-expands when searching.
+- **Skill Routing & Issue Analysis Workflow Optimization**: enhanced `trellis-issue`, `trellis-break-loop`, and `trellis-check` skills along with the issue analysis template for stricter spec adherence and verification gates.
+
+---
+
 ## v0.4.3 — 2026-10-22
 
 ## 修复
