@@ -62,7 +62,7 @@
      `readonlyInstructionFor`），让模型在提示词文本里明确读到"当前只读、方案获批前禁止改码"，
      而不只是面对裁剪后的工具面。注入条件与裁剪条件一致（`enforceReadonlyPlanning=true` +
      命中 allowlist + `undecided`/`planning`）；`authorized` 时三函数均返回 null、装配结果与
-     现状逐字节一致。`trellis:readonly` 是**预留 section 名**：追加前先过滤同名段保证至多一份，
+     现状一致——但 `trellis:spec-index` 段与授权无关、任何相位都可能存在（见约定 7）。`trellis:readonly` 是**预留 section 名**：追加前先过滤同名段保证至多一份，
      满足 harness invariant（name 非空唯一 + 字符串 text）。指令文本为中文硬编码（PRD 决策，
      无 i18n；无 workflow.md 的项目会出现英文默认面包屑 + 唯一中文指令段的混排，属有意为之）。
    - Web 看板/徽标同样消费解析后的 `phase`（`lib/board.js` 记录携带 `phase` 字段），不直接按裸
@@ -79,8 +79,34 @@
    下的 `feat/implement.md`、`refactor/checklist.yaml`）——仅硬编码相对路径、`assertPolicyAllowsWrite`
    沙箱 fail-closed、**绝不触碰 `tasks/` 下任何历史产物**；修剪失败静默跳过，不影响面包屑注入。
 
+7. **工程规范索引（`trellis:spec-index`）＝ 免 workflow.md 的 spec 注入通道**（feat-10-22 沉淀）：
+   本插件不再创建或注入 `.trellis/workflow.md`（项目级 `[workflow-state:*]` 覆盖块**仍然读取**），
+   因此"项目带 `.trellis/spec/`"这一事实不能只靠面包屑传递。
+   - **装配期注入**：`system-prompt/assemble` 在命中 allowlist 且项目有 `.trellis/spec/` 时追加
+     `trellis:spec-index` 段（`lib/spec.js`：`listProjectSpecs` + `formatSpecIndexInstruction` +
+     `appendSpecInstruction`）。**只注入索引（路径 + 先读约束），绝不注入正文**——正文由模型按需 read。
+   - **与只读策略解耦**：spec 索引是领域知识而非写保护，由独立开关 `injectSpecIndex`（默认 true）控制，
+     **不得**挂在 `enforceReadonlyPlanning` 之下。
+   - **路径必须有根锚点**：`matchAllowlist` 是祖先匹配，会话 cwd 可能是子目录，渲染必须带
+     「路径相对项目根 `<root>`」，否则子目录会话的 `read` 必然打空。
+   - **热路径必须 memo**：`system-prompt/assemble` 按**请求**触发（改动前未开只读保护时该处理器零 fs），
+     故 spec 索引以 project root 为键做短 TTL memo（`SPEC_INDEX_TTL_MS`），并把 `context.signal`
+     透传给 `fs.resolve/stat/listDir`。无 memo 的目录遍历属于回归项。
+   - **walk 必须收着走**：`maxDirs` 限广度、`maxDepth` 限深度、`maxEntries` 限输出，且必须
+     **先收全有界树再排名截断**（index.md 优先 → 深度 → 字典序），否则浅层旁支文档会把真正管事的
+     深层 `index.md` 挤掉；越界条目（symlink/junction 指向 root 之外）用
+     `fs.contains(rootTarget, childTarget)` 拦掉，判定失败即跳过。
+   - **失败一律 fail-open**：目录缺失/不可读/已 abort/恶意树都返回"无规范"（不注入、不抛错），
+     绝不因为索引坏掉而中断一轮对话。
+
 ## 已知坑（防复发）
 
+- **"不再注入 workflow.md" 不等于"不再读它"**：插件仍读项目级 `[workflow-state:*]` 覆盖块
+  （`composeBreadcrumb` 的 `source: 'project'` 分支）。删掉 `readOptionalText(fs, p.workflow)`
+  会静默丢掉项目自定义面包屑，属功能回退（feat-10-22）。
+- **配置项不得只在 schema 里加字段**：任何新增 volatile 字段都要同步 `lib/client.js` 的中英
+  label/hint + `settingsBoolField` + `projection()`，以及 `test/settings-projection.test.js`
+  的 `FIELDS` 全等断言与 README/README_EN 配置表——否则设置面板看不见、测试直接红（feat-10-22）。
 - **更新任务数据不等于切换会话绑定**（issue-10-21-fix-stale-task-binding）：`updateTaskRecord`
   不写 runtime 指针；显式 `slug` 只选更新目标。否则旧任务更新晚完成会把新建任务的绑定改回旧任务。
   绑定由创建和显式激活/取消激活负责；不得用“先检查再写回指针”的非原子补丁恢复隐式重绑。

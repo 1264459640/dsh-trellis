@@ -21,6 +21,7 @@ import {
 } from '../lib/breadcrumb.js'
 import { assertSafeArtifactPath, ALLOWED_ARTIFACTS, updateTaskArtifact } from '../lib/artifact.js'
 import { ensureProjectSkills, pruneDeprecatedProjectTemplates, DEPRECATED_PROJECT_TEMPLATES, PACKAGE_VERSION, VERSION_FILE_NAME } from '../lib/skills.js'
+import { composeBreadcrumb } from '../lib/state.js'
 
 function mockFs(root) {
   const target = (p) => ({ targetKey: path.resolve(p), displayPath: p })
@@ -673,4 +674,100 @@ test('ensureProjectSkills auto-updates bundled skills on plugin version upgrade'
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+// --- feat-10-22: spec awareness without workflow.md -------------------------
+
+test('builtin breadcrumbs teach spec conformance in planning and in_progress', () => {
+  const planning = composeBreadcrumb('planning', { workflow: '', sourceProject: '/proj' })
+  assert.equal(planning.source, 'builtin')
+  assert.match(planning.text, /\.trellis\/spec\//)
+  assert.match(planning.text, /index\.md/)
+
+  const inline = composeBreadcrumb('planning-inline', { workflow: '' })
+  assert.match(inline.text, /\.trellis\/spec\//)
+
+  const impl = composeBreadcrumb('in_progress', { workflow: '' })
+  assert.match(impl.text, /\.trellis\/spec\//)
+  assert.match(impl.text, /Before editing code/)
+
+  const implInline = composeBreadcrumb('in_progress-inline', { workflow: '' })
+  assert.match(implInline.text, /\.trellis\/spec\//)
+
+  // no_task / completed stay clean: no spec nagging where there is nothing to do.
+  assert.doesNotMatch(composeBreadcrumb('no_task', { workflow: '' }).text, /\.trellis\/spec\//)
+  assert.doesNotMatch(composeBreadcrumb('completed', { workflow: '' }).text, /\.trellis\/spec\//)
+})
+
+test('a project workflow.md block still wins over the builtin fallback', () => {
+  const workflow = '[workflow-state:in_progress]\nProject override line.\n[/workflow-state:in_progress]'
+  const crumb = composeBreadcrumb('in_progress', { workflow, sourceProject: '/proj' })
+  assert.equal(crumb.source, 'project')
+  assert.equal(crumb.text, 'Project override line.')
+})
+
+test('builtin header no longer claims a missing .trellis/ when only workflow.md is gone', () => {
+  const fake = (msg) => msg
+  const msg = buildBreadcrumbMessage(
+    {
+      sourceKind: 'trellis',
+      text: 'body',
+      source: 'builtin',
+      projectRoot: 'E:/proj',
+      phase: 'in_progress',
+    },
+    fake,
+  )
+  const text = msg.content[0].text
+  assert.match(text, /no project \.trellis\/workflow\.md override at E:\/proj/)
+  assert.doesNotMatch(text, /no \.trellis\/ detected/)
+})
+
+test('formatStepPrompt states the spec pre-read requirement with and without step.spec', () => {
+  const withSpec = formatStepPrompt({
+    step: { id: 's1', title: 't', spec: '分层规则', acceptance: ['a'], status: 'in_progress' },
+    index: 0,
+    total: 1,
+  })
+  assert.match(withSpec, /规范前置（必须）/)
+  assert.match(withSpec, /\.trellis\/spec\//)
+
+  const withoutSpec = formatStepPrompt({
+    step: { id: 's2', title: 't', acceptance: ['a'], status: 'in_progress' },
+    index: 0,
+    total: 1,
+  })
+  assert.match(withoutSpec, /规范前置/)
+  assert.match(withoutSpec, /\.trellis\/spec\//)
+  assert.doesNotMatch(withoutSpec, /规范前置（必须）/)
+})
+
+test('the spec pointer is timing-aware: blocked and verifying steps get the follow-up rule', () => {
+  const blocked = formatStepPrompt({
+    step: { id: 's3', title: 't', acceptance: ['a'], status: 'blocked', blockedReason: '上游接口未定' },
+    index: 0,
+    total: 1,
+  })
+  assert.match(blocked, /规范落点/)
+  assert.doesNotMatch(blocked, /动手前先 read/, 'a blocked step must not be told to start over')
+
+  const verifying = formatStepPrompt({
+    step: { id: 's4', title: 't', acceptance: ['a'], status: 'verifying', verification: 'ai' },
+    index: 0,
+    total: 1,
+  })
+  assert.match(verifying, /规范核对/)
+  assert.doesNotMatch(verifying, /动手前先 read/, 'code is written; the read instruction is stale')
+
+  const pending = formatStepPrompt({
+    step: { id: 's5', title: 't', acceptance: ['a'], status: 'pending', spec: '交付物' },
+    index: 0,
+    total: 1,
+  })
+  assert.match(pending, /规范前置（必须）/)
+})
+
+test('formatStepReminder stays a single short line (no spec block on dedup)', () => {
+  const reminder = formatStepReminder({ id: 's1', title: 't' })
+  assert.doesNotMatch(reminder, /\.trellis\/spec\//)
+  assert.equal(reminder.split('\n').length, 1)
 })

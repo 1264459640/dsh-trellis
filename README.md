@@ -182,7 +182,8 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 |---|---|---|---|
 | `allowlist` | `string[]` | `[]` | **生效白名单**：允许插件接入的项目根目录绝对路径列表。为空时不介入任何项目 |
 | `enforceReadonlyPlanning` | `boolean` | `false` | **规划期只读保护**：开启后，方案定稿前在运行时移除代码修改工具 |
-| `skipKeywords` | `string[]` | `['no-trellis']` | **跳过关键词**：用户消息包含这些词时，该轮跳过工作流注入与拦截 |
+| `injectSpecIndex` | `boolean` | `true` | **注入工程规范索引**：项目存在 `.trellis/spec/` 时，把一份紧凑的规范索引（分层 `index.md` 路径 + 先读约束）写入系统提示词，让模型在出方案与改码前先对齐规范。只注入索引，不注入规范正文 |
+| `skipKeywords` | `string[]` | `['no-trellis']` | **跳过关键词**：用户消息包含这些词时，该轮跳过面包屑注入与拦截（系统提示词段的 `injectSpecIndex` / `enforceReadonlyPlanning` 属会话级，不受单轮关键词抑制，请用各自开关关闭） |
 | `injectStep` | `number` | `1` | 面包屑提示词的注入步数，默认仅在每轮交互第 1 步注入 |
 | `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析模式 |
 
@@ -198,6 +199,7 @@ dsh-trellis/
 │   ├── skills.js           # 技能供给：向项目注入 standard 工作流技能与产物模板
 │   ├── breadcrumb.js       # 上下文提示：提取焦点步骤与构建面包屑
 │   ├── readonly.js         # 只读策略：推导 undecided / planning / authorized 授权状态
+│   ├── spec.js             # 规范索引：扫描 .trellis/spec、渲染索引与装配 trellis:spec-index 段
 │   ├── state.js            # 状态解析：阶段推断、会话指针与 slug 格式校验
 │   ├── artifact.js         # 产物写入：受控文档更新与路径安全限制
 │   ├── archive.js          # 归档处理：任务完结检查、目录归档迁移与 Git 干净度校验

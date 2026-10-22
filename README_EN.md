@@ -184,7 +184,8 @@ Configure via the Web UI (**Settings → Plugins → Trellis Workflow**) or in `
 |---|---|---|---|
 | `allowlist` | `string[]` | `[]` | **Project Allowlist**: Absolute paths of enabled workspace roots. Empty disables interception |
 | `enforceReadonlyPlanning` | `boolean` | `false` | **Read-Only Planning**: Strips code modification tools during planning stages when enabled |
-| `skipKeywords` | `string[]` | `['no-trellis']` | **Skip Keywords**: Suppresses workflow interception for turns containing these words |
+| `injectSpecIndex` | `boolean` | `true` | **Inject Spec Index**: when the project carries `.trellis/spec/`, appends a compact spec index (layered `index.md` paths plus a read-first constraint) to the system prompt, so the model aligns with the engineering specs before proposing or writing code. Only the index is injected, never spec bodies |
+| `skipKeywords` | `string[]` | `['no-trellis']` | **Skip Keywords**: Suppresses the per-turn breadcrumb and interception when the user message contains one of these words. The session-level prompt sections (`injectSpecIndex` / `enforceReadonlyPlanning`) are not suppressed per turn — turn them off with their own switches |
 | `injectStep` | `number` | `1` | Breadcrumb prompt injection step index (default: first step of turn) |
 | `inline` | `boolean` | `false` | Enables codex-inline style phase dispatch |
 
@@ -199,6 +200,7 @@ dsh-trellis/
 │   ├── task.js             # Task engine: step state machine, verification gates, and audits
 │   ├── skills.js           # Skills provider: provisions standard workflow skills into workspace
 │   ├── breadcrumb.js       # Context builder: extracts focused steps and formats prompts
+│   ├── spec.js             # Spec index: walks .trellis/spec, renders the index and assembles the trellis:spec-index section
 │   ├── readonly.js         # Authorization logic: undecided / planning / authorized states
 │   ├── state.js            # State resolution: stage inference, session pointers, slug checks
 │   ├── artifact.js         # Sandboxed writes: whitelisted artifact updates and security checks

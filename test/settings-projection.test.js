@@ -45,7 +45,14 @@ function isVolatilePath(schema, path) {
 }
 
 /** Every field the Plugins-page card renders. */
-const FIELDS = ['allowlist', 'injectStep', 'skipKeywords', 'inline', 'enforceReadonlyPlanning']
+const FIELDS = [
+  'allowlist',
+  'injectStep',
+  'skipKeywords',
+  'inline',
+  'enforceReadonlyPlanning',
+  'injectSpecIndex',
+]
 
 test('the entry carries a Config schema describe() can read', () => {
   assert.equal(typeof SCHEMA.toJSON, 'function', 'dsh-settings requires schema.toJSON')
