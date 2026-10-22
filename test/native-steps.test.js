@@ -15,6 +15,8 @@ import {
   findActiveStep,
   formatStepPrompt,
   formatStepReminder,
+  getStagePractices,
+  formatPracticesPrompt,
   buildBreadcrumbMessage,
 } from '../lib/breadcrumb.js'
 import { assertSafeArtifactPath, ALLOWED_ARTIFACTS, updateTaskArtifact } from '../lib/artifact.js'
@@ -167,6 +169,46 @@ test('formatStepPrompt and formatStepReminder produce concise, native guidance',
   const reminder = formatStepReminder({ id: 'step-2', title: '3D 场景数据绑定' })
   assert.match(reminder, /\[当前执行步骤\] 步骤 \[#step-2\] 正在推进中/)
   assert.ok(reminder.length < prompt.length)
+})
+
+test('getStagePractices returns disciplines for issue analyze/fix and detects blocked', () => {
+  const analyzeRules = getStagePractices('issue', 'analyze')
+  assert.ok(analyzeRules.some((r) => r.includes('反馈闭环硬门禁') && r.includes('稳定跑红')))
+  assert.ok(analyzeRules.some((r) => r.includes('可证伪假说矩阵')))
+  assert.ok(analyzeRules.some((r) => r.includes('警惕测试水泥效应')))
+
+  const fixRules = getStagePractices('issue', 'fix')
+  assert.ok(fixRules.some((r) => r.includes('接缝不变量测试')))
+  assert.ok(fixRules.some((r) => r.includes('最小根因修复')))
+
+  const blockedRules = getStagePractices('issue', 'fix', { isBlocked: true })
+  assert.ok(blockedRules.some((r) => r.includes('升阶警告') && r.includes('trellis-break-loop')))
+
+  const fullPrompt = formatPracticesPrompt(analyzeRules, false)
+  assert.match(fullPrompt, /\[当前阶段工程规范\]/)
+  assert.match(fullPrompt, /反馈闭环硬门禁/)
+
+  const reminderPrompt = formatPracticesPrompt(analyzeRules, true)
+  assert.match(reminderPrompt, /\[当前阶段工程规范\] 当前阶段工程规范（见上文）正在生效/)
+  assert.ok(reminderPrompt.length < fullPrompt.length)
+})
+
+test('buildBreadcrumbMessage embeds practicesPrompt', () => {
+  const fake = (msg) => msg
+  const msg = buildBreadcrumbMessage(
+    {
+      sourceKind: 'trellis',
+      text: 'Original text',
+      source: 'project',
+      projectRoot: '/proj',
+      activeTask: '.trellis/tasks/issue-01-01-demo',
+      phase: 'in_progress',
+      practicesPrompt: '[当前阶段工程规范]\n- 测试不变量',
+    },
+    fake,
+  )
+  assert.match(msg.content[0].text, /当前阶段工程规范/)
+  assert.match(msg.content[0].text, /测试不变量/)
 })
 
 test('buildBreadcrumbMessage embeds stepInfo', () => {
