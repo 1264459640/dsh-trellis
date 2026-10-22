@@ -225,3 +225,20 @@
     hover 规则必须用 `!important`，并且**不要**把会被伪类改写的属性写死在内联样式里
     （例如 `▶` 的可见性交给 CSS，内联只给 `busy` 的 `opacity:0.5`）。
 
+## 展开看板的宿主布局隔离（issue-10-22-claude-board-expand）
+
+32. **全窗口 modal 不能依赖 slot 祖先的定位上下文**：Claude 主题会给 header actions 设置
+    `transform: translateY(-50%)`，使内部 `position: fixed` 元素相对该容器而非 viewport 定位。
+    `z-index` 再大也不能脱离 containing block 或祖先裁切。仅 expanded modal 经
+    `renderExpandedModal` / `react-dom.createPortal` 挂到 `document.body`；popover 仍留在
+    TaskChip root 内做锚定和 outside-click 判断。禁止用手工移动 React DOM 节点代替 portal。
+33. **使用宿主 React 实例与能力守卫**：当前 Web shell 的 `staticModules` 已提供 `react-dom`
+    平台 seed，无需插件 inject 或额外安装。最小 carrier 可能缺少它，同步 require 失败可捕获；
+    portal 或 `document.body` 缺失时只保留旧的 inline 渲染（防崩溃降级，**不保证修复该 carrier
+    的祖先定位问题**）。主题颜色仍通过 body 继承的全局 token 读取，不复制主题状态。
+34. **颜色单测不能代替布局回归**：`test/client-portal.test.js` 覆盖 portal/fallback 和两座位
+    的真实调用点；`scripts/verify-modal-browser.mjs` 是 opt-in Chromium 检查，需设置
+    `DSH_BROWSER_TEST_TOOLS`（包含 playwright/esbuild/react/react-dom 的 package.json）和可选
+    `DSH_BROWSER_EXECUTABLE`。断言 overlay 的 viewport 几何、modal 居中、点击命中、关闭交互、
+    transform/overflow/contain 隔离。离线 fixture 通过不等于用户现有 GUI 已加载新版本或人工验收。
+

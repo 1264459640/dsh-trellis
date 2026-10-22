@@ -7,7 +7,7 @@ export const palettes = JSON.parse(readFileSync(new URL('../fixtures/theme-palet
 
 // Execute the current bundle, not a hand-maintained copy of its components.
 // Only hooks/element creation are stubbed: these tests inspect initial render styles.
-export function loadClient(source = clientSource) {
+export function loadClient(source = clientSource, options = {}) {
   const react = {
     Fragment: 'fragment',
     createElement(type, props, ...children) {
@@ -18,11 +18,14 @@ export function loadClient(source = clientSource) {
     useEffect() {},
     useMemo: (fn) => fn(),
     useRef: (current) => ({ current }),
+    useCallback: (fn) => fn,
+    ...options.react,
   }
   let client
   const window = { __ModuleLoader__: { load({ factory }) {
     client = factory((id) => {
       if (id === 'react') return react
+      if (id === 'react-dom' && options.dom !== undefined) return options.dom
       if (id === '@deepseek-ai/dsh-client-ui-primitives') return {}
       throw new Error('Unexpected client dependency: ' + id)
     })
@@ -30,7 +33,7 @@ export function loadClient(source = clientSource) {
   const marker = 'exports.apply = apply;'
   if (!source.includes(marker)) throw new Error('Client export marker missing')
   vm.runInNewContext(source.replace(marker,
-    'exports.themeTest = { TB, TW_CSS, KanbanBoard, KanbanExpandedModal, StepList, KANBAN_POPOVER_STYLE, zh };\n' + marker), { window })
+    'exports.themeTest = { TB, TW_CSS, KanbanBoard, KanbanExpandedModal, StepList, TaskChip, HeroTaskChip, renderExpandedModal, KANBAN_POPOVER_STYLE, zh };\n' + marker), { window, ...options.globals })
   return client.themeTest
 }
 
