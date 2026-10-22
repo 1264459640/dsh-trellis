@@ -12,6 +12,28 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.3 — 2026-10-22
+
+## 修复
+
+- **修复 Claude 主题下已有对话看板展开位置与裁切异常**（issue-10-22-claude-board-expand）：定位发现 Claude 主题为已有对话头部区域增加了 `transform: translateY(-50%)`，导致嵌套在宿主 Header Seat 内部的大看板 `position: fixed` 脱离视口基准，从而被挤压至右上角并产生容器溢出裁切；新开对话因使用底部输入区 Seat 未受该样式影响。现通过宿主提供的 `react-dom.createPortal` 将展开大看板挂载至 `document.body`，彻底脱离宿主座位的定位上下文与裁切限制；紧凑看板保留原锚定与外部点击关闭交互；环境缺失 Portal 时安全回退至内联渲染。
+
+## 测试
+
+- **补充跨宿主挂载座位与 Portal 隔离测试**：新增 `test/client-portal.test.js`，覆盖 Header/Hero 真实调用点、Portal 挂载目标、无 DOM/无 Portal 时的安全降级回退以及遮罩层关闭行为；新增真实浏览器隔离验证脚本 `scripts/verify-modal-browser.mjs`，覆盖明暗主题、祖先 `transform`/`contain`/`overflow` 干扰下的视口居中与遮罩覆盖；全量 164 项自动化测试全部通过。
+
+---
+
+## Fixed
+
+- **Fix expanded kanban layout and clipping under Claude theme** (issue-10-22-claude-board-expand): resolved an issue where Claude theme's `transform: translateY(-50%)` on the session header actions established an unwanted containing block for `position: fixed` elements, causing the expanded modal in existing sessions to misalign to the top-right and clip against the container. The expanded modal now renders via `react-dom.createPortal` directly to `document.body`, escaping transform, clipping, and stacking contexts from host seats; compact popovers remain anchored to their root, and carriers without portal support gracefully fall back to inline rendering.
+
+## Tests
+
+- **Add host mount seat and portal regression test suite**: added `test/client-portal.test.js` covering real Header/Hero call sites, portal target routing, safe inline fallback when DOM/portal APIs are missing, and backdrop dismissals; added standalone browser verification script `scripts/verify-modal-browser.mjs` verifying viewport centering and full coverage across light/dark themes and ancestor `transform`/`contain`/`overflow` styles; all 164 test cases pass.
+
+---
+
 ## v0.4.2 — 2026-10-21
 
 ## 功能
