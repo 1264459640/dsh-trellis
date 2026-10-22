@@ -1,6 +1,6 @@
 {
   "title": "大看板：强化任务类型区分 + 已完成分组可折叠",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "quick",
