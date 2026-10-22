@@ -199,6 +199,12 @@
 25. **一个强调色原则**：品牌色只表示「当前会话 / 进行中 / 已完成步骤」；**类型不做彩色徽章**
     （功能 / 缺陷 / 重构 用无彩文字），红只表示阻塞、琥珀只表示待验证。旧实现里类型徽章
     与阶段状态点撞色（功能=蓝、缺陷=橙），是「看着廉价」的主要来源，禁止回退。
+    > **更正记录（feat-10-22-board-type-done-fold）**：本条原要求类型「用无彩文字」，但实测
+    > 大看板里类型列与相邻阶段列同为 12px 灰字，用户反馈「任务类型区分不明显」。现行口径：
+    > **仍禁止彩色**，但允许**中性描边徽标（`TB.color.borderStrong` 描边 + `TB.color.textSecondary`
+    > 文字）+ 每类一个单色图标**（feat=`sparkles` / issue=`bug` / refactor=`refresh`，见
+    > `TYPE_ICON` / `TypeBadge`）提高辨识度；不得新增色相。`workType` 缺失时回退纯文字，
+    > 不渲染空胶囊。英文 locale 下类型列需 ≥88px，否则 `Refactor` 被 ellipsis 截断。
 26. **状态点只表达阶段，激活另有信号**：点色 = 阶段（灰环规划 / 蓝进行中 / 绿完成 / 红阻塞 /
     琥珀待验证）；「绑定到本会话」用**呼吸光晕 `.tw-live` + 「当前」标签**表达，不复用点色，
     二者正交可叠加。
@@ -241,4 +247,16 @@
     `DSH_BROWSER_TEST_TOOLS`（包含 playwright/esbuild/react/react-dom 的 package.json）和可选
     `DSH_BROWSER_EXECUTABLE`。断言 overlay 的 viewport 几何、modal 居中、点击命中、关闭交互、
     transform/overflow/contain 隔离。离线 fixture 通过不等于用户现有 GUI 已加载新版本或人工验收。
+
+35. **大看板「已完成」分组默认折叠（feat-10-22-board-type-done-fold）**：大看板三层分组里
+    「已完成 · 归档」默认折叠（只留 `aria-expanded=false` 的标题按钮 + 数量 + chevron），
+    点击展开/收起；折叠状态**仅内存**（`doneOpen`），不持久化。搜索框有内容时**强制展开**
+    （`doneExpanded = doneOpen || q !== ''`），且此时按钮点击必须早退、不得静默翻转内存态，
+    否则清空搜索后会出现「莫名展开」。进行中 / 规划中分组保持非交互标题。折叠开关的
+    `<button>` 内只能含 phrasing content（标题用 `SectionLabel` 的 `as: 'span'`），展开内容
+    包一层带 `id` 的 `role="group"` 容器并由按钮 `aria-controls` 指向。
+    > **测试有效性告警**：`useState` 桩若写成「丢初始值、只回测试传入值」，则「默认折叠」
+    > 断言的是测试自己的入参而不是组件默认值（改 `useState(true)` 仍全绿 = 假绿灯）。桩必须
+    > `init` 优先、仅在用例显式覆盖时替换；并必须补「再收起」方向断言，否则
+    > `setDoneOpen(true)`（收不回来）同样测不出来。
 

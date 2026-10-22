@@ -272,6 +272,103 @@ test('StepList renders an empty hint without steps', () => {
   assert.ok(texts(client.StepList({ t, steps: [] })).includes(zh.noSteps))
 })
 
+// ---- feat-10-22: type badges + foldable completed group ------------------
+const doneTask = { ...tasks[0], slug: 'theme-done', title: 'Done task', status: 'completed', phase: 'completed', archived: true }
+// Scripted hooks: KanbanExpandedModal calls useState(query) then useState(doneOpen).
+// Only explicitly supplied values override; otherwise the component's own initial
+// value is used — so "folded by default" really tests the component default.
+function renderModal({ query, doneOpen } = {}) {
+  const sets = []
+  const overrides = { 0: query, 1: doneOpen }
+  let i = 0
+  const c = loadClient(undefined, {
+    react: {
+      useState: (init) => {
+        const idx = i++
+        const value = overrides[idx] === undefined ? init : overrides[idx]
+        return [value, (v) => sets.push([idx, v])]
+      },
+    },
+  })
+  const tree = c.KanbanExpandedModal({
+    board: { tasks: [...tasks, doneTask], currentTask: null }, t: (k) => c.zh[k] || k, selected: null,
+    filter: 'all', busy: false, onSelect() {}, onActivate() {}, onDeactivate() {}, onFilterChange() {}, onClose() {},
+  })
+  return { tree, sets }
+}
+const doneToggle = (tree) => flat(tree).find((n) => n.type === 'button' && 'aria-expanded' in n.props)
+
+test('expanded board rows show a distinct type badge per work type', () => {
+  const badges = flat(renderViews(client).board).filter((n) => n.props && n.props['data-work-type'])
+  const icons = {}
+  for (const b of badges) {
+    const svg = flat(b).find((n) => n.type === 'svg')
+    assert.ok(svg, 'badge has an icon')
+    icons[b.props['data-work-type']] = JSON.stringify(svg.children)
+  }
+  assert.deepEqual(Object.keys(icons).sort(), ['feat', 'issue', 'refactor'])
+  assert.equal(new Set(Object.values(icons)).size, 3, 'each type has its own glyph')
+  for (const b of badges) {
+    assert.equal(b.props.style.color, client.TB.color.textSecondary, 'badge text stays neutral')
+    assert.equal(b.props.style.border, '1px solid ' + client.TB.color.borderStrong, 'badge border stays neutral')
+  }
+})
+
+test('a task without a work type falls back to plain text, not an empty pill', () => {
+  const untyped = { ...tasks[2], slug: 'theme-untyped', workType: null }
+  const c = loadClient()
+  const tree = c.KanbanExpandedModal({
+    board: { tasks: [untyped], currentTask: null }, t: (k) => c.zh[k] || k, selected: null,
+    filter: 'all', busy: false, onSelect() {}, onActivate() {}, onDeactivate() {}, onFilterChange() {}, onClose() {},
+  })
+  for (const n of flat(tree)) {
+    assert.notEqual(n.props && n.props['data-work-type'], '', 'no badge for an untyped task')
+  }
+})
+
+test('completed group is folded by default and toggles both ways', () => {
+  const { tree, sets } = renderModal()
+  const toggle = doneToggle(tree)
+  assert.ok(toggle)
+  assert.equal(toggle.props['aria-expanded'], false, 'component default must be folded')
+  assert.ok(texts(toggle).includes(zh.colArchive) && texts(toggle).includes('1'))
+  assert.ok(!texts(tree).includes('Done task'), 'completed rows hidden while folded')
+  toggle.props.onClick()
+  assert.deepEqual(sets, [[1, true]], 'click expands')
+  const open = renderModal({ doneOpen: true }).tree
+  assert.equal(doneToggle(open).props['aria-expanded'], true)
+  assert.ok(texts(open).includes('Done task'))
+  const collapse = renderModal({ doneOpen: true })
+  collapse.tree && doneToggle(collapse.tree).props.onClick()
+  assert.deepEqual(collapse.sets, [[1, false]], 'click again folds it back')
+})
+
+test('a search query reveals the completed group even when folded', () => {
+  const { tree, sets } = renderModal({ query: 'done' })
+  assert.equal(doneToggle(tree).props['aria-expanded'], true)
+  assert.ok(texts(tree).includes('Done task'))
+  // While searching the group is force-expanded: a click must not flip the
+  // in-memory fold state (that would surprise the user after clearing search).
+  doneToggle(tree).props.onClick()
+  assert.deepEqual(sets, [], 'click while searching is a no-op')
+})
+
+test('the done toggle is accessible: phrasing content only, aria-controls wired', () => {
+  const folded = doneToggle(renderModal().tree)
+  assert.equal(folded.props['aria-controls'], undefined, 'nothing to control while folded')
+  assert.ok(!flat(folded).some((n) => n.type === 'div'), 'button may not contain flow content')
+
+  const open = renderModal({ doneOpen: true }).tree
+  const expanded = doneToggle(open)
+  const bodyId = expanded.props['aria-controls']
+  assert.equal(bodyId, 'trellis-kanban-done-group')
+  assert.ok(!flat(expanded).some((n) => n.type === 'div'), 'button may not contain flow content')
+  const body = flat(open).find((n) => n.props && n.props.id === bodyId)
+  assert.ok(body, 'aria-controls points at the expanded body')
+  assert.equal(body.props.role, 'group')
+  assert.equal(body.props['aria-label'], zh.colArchive)
+})
+
 test('expanded board details show the full step checklist for the selection', () => {
   const tree = renderViews(client, tasks[0].slug).board
   const aside = flat(tree).find((n) => n.type === 'aside')
