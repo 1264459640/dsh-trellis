@@ -1,0 +1,73 @@
+{
+  "title": "修复 Claude 主题下看板展开异常并提升兼容性",
+  "status": "completed",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "已完成现象记录与根因分析：expanded modal 直接挂在 TaskChip 宿主座位内，position:fixed 在 Claude 已有对话的 containing/stacking context 下失去 viewport 定位并可能被裁切；新对话使用不同 seat 所以正常。拟将 expanded modal 通过 React portal 或兼容的 body-level host 脱离宿主上下文，并补布局回归测试。",
+  "steps": [
+    {
+      "id": "confirm-runtime",
+      "title": "确认宿主 portal 能力与客户端模块加载契约",
+      "status": "completed",
+      "spec": "验证当前 ModuleLoader 对可选 react-dom/宿主 portal API 的行为，确定不引入未经声明的硬依赖。",
+      "acceptance": [
+        "缺少 portal 依赖时 bundle 仍可编译和加载",
+        "记录实际可用的 portal 获取方式"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "已核对已安装宿主 makeRequire：seed.has(spec) 优先，否则同步 throw；Web frontend staticModules 中明确提供 react-dom。浏览器脚本运行修复前失败：overlay=(1608,6,101,48)，modal 横向仅53px，atBody=false，与截图右上裁切一致。"
+    },
+    {
+      "id": "implement-portal",
+      "title": "将 expanded modal 迁移到 body-level portal",
+      "status": "completed",
+      "spec": "保持 popover 在 TaskChip root 内；expanded modal 优先通过 React portal 挂到 document.body，并提供 document/portal 能力缺失时的安全降级。补充必要的层级和指针样式。",
+      "acceptance": [
+        "modal 不再受 header/input seat 的 transform、overflow、contain 影响",
+        "Esc、遮罩、关闭按钮和内部交互保持可用",
+        "board 空态和展开刷新行为不变"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "新增23行客户端改动；body portal + portal/DOM缺失inline fallback。真实Edge浏览器fixture由修复前overlay(1608,6,101,48)失败变为(0,0,1733,827)通过；modal=(226.5,24,1280,779)居中。明暗主题、header/hero、contain/transform/overflow、搜索与三种关闭交互均通过。"
+    },
+    {
+      "id": "add-regression-tests",
+      "title": "补充跨挂载上下文与 fallback 回归测试",
+      "status": "completed",
+      "spec": "增加 portal 目标、fallback、popover/modal 挂载职责分离的测试；保留主题对比度和组件树测试。",
+      "acceptance": [
+        "覆盖 body portal 分支和无 portal 分支",
+        "覆盖已有对话 seat 与 blank seat 的挂载契约",
+        "测试可稳定复现并防止 fixed modal 回到宿主 root"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "新增12项portal回归测试及opt-in真实Chromium脚本；全量164/164通过，专项48/48通过。浏览器复现原始失败后同命令修复通过，覆盖light/dark×header/hero×祖先contain/overflow/transform，搜索、Ctrl+K、关闭、同DOM主题切换和展开状态卸载清理。"
+    },
+    {
+      "id": "browser-verify",
+      "title": "执行全量检查并完成主题场景验收",
+      "status": "completed",
+      "spec": "运行语法检查、客户端专项测试和全量 node --test；在 Claude 主题已有/新对话中验证展开层几何和关闭交互。",
+      "acceptance": [
+        "node --check 通过",
+        "node --test 全部通过",
+        "Claude 主题已有与新对话均可正常展开且覆盖 viewport"
+      ],
+      "verification": "human",
+      "verificationNotes": "2026-10-22 用户明确回复“验收通过，归档”，确认当前GUI人工验收通过并授权归档。此前自动化：node --check通过，全量node --test 164/164通过，真实Edge隔离浏览器8场景布局及关闭/搜索/主题切换/卸载清理通过。",
+      "verified": true,
+      "verifiedBy": "human"
+    }
+  ]
+}
