@@ -12,6 +12,26 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.5 — 2026-10-24
+
+## 功能
+
+- **插件配置面板提升至插件详情页外层**（feat-10-24-bundle-settings-ui）：
+  - 新增 `plugins.bundle.config` 插槽注册（key 设为裸包名 `@banana-peeljj12/dsh-trellis`），将 Trellis 配置表单（生效白名单、注入步数、只读保护、跳过关键词等）直接呈现在插件详情页最外层（标题与图标下方），无需再展开「包含的组件 → trellis-workflow」；
+  - 同步保留原 `plugins.row.config` 插槽，双入口共用同一个 `TrellisConfigController` 与单一 `store` 状态实例，无状态分叉与重复保存；
+  - 完善客户端行为测试体系：引入基于真实 bundle 的 `loadBundle` 运行沙箱，严格断言双座位的精确 key、防单座重复注册、控制器 face 单例引用，并通过配置项 id 集合精确比对杜绝假绿灯。
+
+---
+
+## Features
+
+- **Top-Level Bundle Settings Page** (feat-10-24-bundle-settings-ui):
+  - Registered the `plugins.bundle.config` slot (keyed by bare package name `@banana-peeljj12/dsh-trellis`), rendering the Trellis configuration form (allowlist, inject step, readonly planning, skip keywords, etc.) directly on the bundle's top-level page under the header, eliminating the need to expand "Included Components → trellis-workflow";
+  - Retained the existing `plugins.row.config` slot as a backward-compatible entry point, with both seats sharing a single `TrellisConfigController` and `store` instance to prevent state divergence;
+  - Hardened client test coverage: introduced a VM-based `loadBundle` test harness running real bundle code with shell-faithful slot mocks, asserting exact seat keys, single registration per slot, singleton controller faces, and exact configuration field ID set matching.
+
+---
+
 ## v0.4.4 — 2026-10-22
 
 ## 功能
