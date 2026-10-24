@@ -75,11 +75,11 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 为避免非预期介入，插件默认不会拦截未授权的目录。请在 Web 端或配置文件中添加生效路径：
 
-1. 打开 DSH Web 客户端，进入左下角 **设置 → 插件 → @banana-peeljj12/dsh-trellis**（设置表单直接位于插件详情页最外层，无需再展开「包含的组件」）；
+1. 打开 DSH Web 客户端，点击左侧边栏的 **「插件」** 图标，在 **「已安装」** 分区点击 **@banana-peeljj12/dsh-trellis** 进入详情页（配置表单直接位于详情页最外层，无需再展开「包含的组件」）；
 2. 在 **白名单项目 (allowlist)** 中添加需要启用该工作流的项目根目录绝对路径——既可手动输入，
    也可点击 **浏览…** 按钮弹出系统文件夹选择器直接选取，保存后即时生效。
 
-> **提示**：若希望在方案定稿前限制模型修改源码，可在该设置页同时开启 **规划期只读保护 (enforceReadonlyPlanning)** 开关。
+> **提示**：若希望在方案定稿前限制模型修改源码，可在该详情页同时开启 **规划期只读保护 (enforceReadonlyPlanning)** 开关。
 
 ### 3. 开始使用
 
@@ -176,7 +176,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 
 ## 配置项参考
 
-可在 Web 设置面板（**设置 → 插件 → @banana-peeljj12/dsh-trellis**，进入详情页即可见）或 `~/.dsh/settings.yaml` 中进行配置：
+可在左侧 **「插件」** 页（进入 **@banana-peeljj12/dsh-trellis** 详情页最外层即可见）或 `~/.dsh/settings.yaml` 中进行配置：
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
