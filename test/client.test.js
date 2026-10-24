@@ -74,7 +74,11 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
   // removed `settingsScope` service must not come back.
   assert.match(source, /ctx\.slots\.inject\('plugins\.row\.config'/)
   assert.match(source, /key: ROW_CONFIG_KEY/)
-  assert.match(source, /const ROW_CONFIG_KEY = '@banana-peeljj12\/dsh-trellis#trellis-workflow'/)
+  // One package-name literal, both seat keys derived from it: a drifted copy
+  // fails silently in the plugin manager (nothing renders, no error).
+  assert.match(source, /const PKG = '@banana-peeljj12\/dsh-trellis'/)
+  assert.match(source, /const BUNDLE_CONFIG_KEY = PKG/)
+  assert.match(source, /const ROW_CONFIG_KEY = PKG \+ '#trellis-workflow'/)
   assert.doesNotMatch(source, /settings\.plugins\.tab/)
   assert.doesNotMatch(source, /settingsScope/)
 
@@ -113,6 +117,207 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
     const count = source.split(key).length - 1
     assert.equal(count, 2, `expected exactly 2 occurrences of ${key} (zh + en), got ${count}`)
   }
+})
+
+/**
+ * Run the real client bundle and hand back its internals.
+ *
+ * The slots service is modelled the way the shell behaves: `inject` fires its
+ * callback only for a slot the host DECLARED, and `register` throws on an
+ * undeclared slot name (the shell's own "registering into an undeclared slot"
+ * error). Structural string matches cannot see either behaviour, so the seat
+ * tests below drive `apply()` instead of grepping for call shapes.
+ */
+function loadBundle({ primitives = {}, react = {} } = {}) {
+  const source = readFileSync(clientPath, 'utf8')
+  const registrations = []
+  const declared = new Set([
+    'plugins.bundle.config',
+    'plugins.row.config',
+    'conversation.session.header.utilities',
+    'conversation.input.dock',
+  ])
+  const makeReact = {
+    Fragment: 'fragment',
+    createElement(type, props, ...children) {
+      if (typeof type === 'function') return type({ ...(props || {}), children })
+      return { type, props: props || {}, children: children.flat(Infinity) }
+    },
+    useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
+    useEffect() {},
+    useMemo: (fn) => fn(),
+    useRef: (current) => ({ current }),
+    useCallback: (fn) => fn,
+    ...react,
+  }
+  const ctx = {
+    effect(fn) {
+      const dispose = fn()
+      return typeof dispose === 'function' ? dispose : () => {}
+    },
+    locale: { register: () => () => {}, bind: () => (key) => key },
+    slots: {
+      inject(name, register) {
+        if (!declared.has(name)) return () => {}
+        return register()
+      },
+      register(options, component) {
+        if (!declared.has(options.name)) throw new Error('undeclared slot: ' + options.name)
+        registrations.push({ options, component })
+        return () => {}
+      },
+    },
+    configForms: {
+      // Empty namespaces: the entry is not served, so the controller stops at
+      // its "unavailable" state and no SettingsFormModel is built.
+      describe: () => ({
+        subscribe: () => () => {},
+        ensure: () => {},
+        getSnapshot: () => ({ view: { namespaces: [] } }),
+      }),
+      get: () => assert.fail('no entry should be fetched while nothing is served'),
+    },
+  }
+  let client
+  const window = {
+    __ModuleLoader__: {
+      load({ factory }) {
+        client = factory((id) => {
+          if (id === 'react') return makeReact
+          if (id === '@deepseek-ai/dsh-client-ui-primitives') return primitives
+          if (id === 'react-dom') return {}
+          throw new Error('Unexpected client dependency: ' + id)
+        })
+      },
+    },
+  }
+  const marker = 'exports.apply = apply;'
+  if (!source.includes(marker)) throw new Error('client export marker missing')
+  vm.runInNewContext(
+    source.replace(marker, 'exports.__test = { TrellisConfigCard };\n' + marker),
+    { window },
+  )
+  return { client, ctx, registrations, declare: (name) => declared.add(name), undeclare: (name) => declared.delete(name) }
+}
+
+const configSeat = (bundle, name) => bundle.registrations.find((r) => r.options.name === name)
+const configSeats = (bundle, name) => bundle.registrations.filter((r) => r.options.name === name)
+
+test('config form takes BOTH seats — bundle page (outer) and row — off one controller', () => {
+  const bundle = loadBundle()
+  bundle.client.apply(bundle.ctx)
+
+  // Exactly one registration per seat: a duplicated seat would paint the form
+  // twice (and, with two controllers, diverge in staged edits), so a `find`
+  // here could not tell the correct wiring from a doubled one.
+  assert.equal(configSeats(bundle, 'plugins.bundle.config').length, 1)
+  assert.equal(configSeats(bundle, 'plugins.row.config').length, 1)
+
+  const outer = configSeat(bundle, 'plugins.bundle.config')
+  const row = configSeat(bundle, 'plugins.row.config')
+  assert.ok(outer, 'the bundle seat must be registered')
+  assert.ok(row, 'the row seat must stay registered')
+
+  // Host contract: the bundle seat is keyed by the BARE package name
+  // (`renderSlot(..., { entryKey: pkg.name })`, `ledger.bundles.has(pkg.name)`),
+  // the row seat by `<package>#<row id>`. A `#` on the bundle key silently
+  // renders nothing, so the exact strings are asserted, not a regex shape.
+  assert.equal(outer.options.key, '@banana-peeljj12/dsh-trellis')
+  assert.equal(row.options.key, '@banana-peeljj12/dsh-trellis#trellis-workflow')
+  assert.equal(outer.options.locale, row.options.locale)
+
+  // Same component, same controller face: the two entry points must not be
+  // able to diverge in staged edits or in the write path, so the injected hook
+  // has to be the SAME store object, and the actions the same model.
+  assert.equal(outer.component, row.component)
+  const outerFace = outer.options.inject()
+  const rowFace = row.options.inject()
+  assert.equal(outerFace.hooks.trellisConfig, rowFace.hooks.trellisConfig)
+  for (const action of ['edit', 'resetField', 'save', 'discard']) {
+    assert.equal(typeof outerFace[action], 'function', action + ' must be injected')
+    assert.equal(typeof rowFace[action], 'function', action + ' must be injected')
+  }
+})
+
+test('an undeclared bundle seat degrades silently and keeps the row seat', () => {
+  const bundle = loadBundle()
+  bundle.undeclare('plugins.bundle.config')
+  // The stub is the shell's rule: registering into an undeclared slot throws.
+  // Assert it here so the guard below cannot pass for the wrong reason.
+  assert.throws(
+    () => bundle.ctx.slots.register({ name: 'plugins.bundle.config' }, () => {}),
+    /undeclared slot/,
+  )
+  // Must not throw: the shell only declares this seat from 0.1.7 on, and a
+  // bare `slots.register` would throw "registering into an undeclared slot".
+  bundle.client.apply(bundle.ctx)
+
+  assert.equal(configSeat(bundle, 'plugins.bundle.config'), undefined)
+  assert.ok(configSeat(bundle, 'plugins.row.config'), 'the row seat must survive')
+})
+
+test('the shipped card renders the form for a page and the one-liner for a summary', () => {
+  const bundle = loadBundle({ primitives: { SettingsForm: 'SettingsForm', SettingsValueField: 'SettingsValueField' } })
+  const empty = { text: '', overridden: false, invalid: false }
+  const state = {
+    available: true,
+    writable: true,
+    dirty: false,
+    invalid: false,
+    saving: false,
+    failed: false,
+    served: ['trellis-workflow'],
+    allowlist: empty,
+    injectStep: empty,
+    skipKeywords: empty,
+    inline: empty,
+    enforceReadonlyPlanning: empty,
+    injectSpecIndex: empty,
+  }
+  const props = {
+    t: (key) => key,
+    useTrellisConfig: (select) => select(state),
+    edit() {},
+    resetField() {},
+    save() {},
+    discard() {},
+  }
+
+  // The bundle page asks for `view: 'page'`; a row summary asks for
+  // `view: 'summary'` and must not paint the whole form inline.
+  const page = bundle.client.__test.TrellisConfigCard({ ...props, view: 'page' })
+  assert.equal(page.type, 'SettingsForm')
+
+  // Every configuration field must be on the page, BY NAME. A count would let
+  // a dropped field pass (the card renders seven nodes for six fields), so the
+  // ids are compared as a set: dropping or renaming any field fails here.
+  const fieldIds = []
+  const collect = (node) => {
+    if (!node || typeof node !== 'object') return
+    if (typeof node.props?.id === 'string' && node.props.id.startsWith('trellis-config-')) fieldIds.push(node.props.id)
+    for (const child of node.children || []) collect(child)
+  }
+  collect(page)
+  assert.deepEqual(fieldIds.sort(), [
+    'trellis-config-allowlist',
+    'trellis-config-inject-step',
+    'trellis-config-inline',
+    'trellis-config-readonly',
+    'trellis-config-skip-keywords',
+    'trellis-config-spec-index',
+  ])
+
+  const summary = bundle.client.__test.TrellisConfigCard({ ...props, view: 'summary' })
+  assert.equal(summary, 'desc')
+
+  // An entry the host has not served yet must explain itself instead of
+  // rendering an empty form.
+  const unavailable = bundle.client.__test.TrellisConfigCard({
+    ...props,
+    view: 'page',
+    useTrellisConfig: (select) => select({ ...state, available: false, served: [] }),
+  })
+  assert.notEqual(unavailable.type, 'SettingsForm')
 })
 
 test('kanban keeps inline bind and an explicit unbind action (feat-10-20, design v2)', () => {

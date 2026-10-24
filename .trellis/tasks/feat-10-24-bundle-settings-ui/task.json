@@ -1,0 +1,49 @@
+{
+  "title": "将插件设置移动到设置页外层",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "quick",
+    "stage": "check",
+    "execution_lane": "quick"
+  },
+  "steps": [
+    {
+      "id": "1",
+      "title": "在 lib/client.js 中注册 plugins.bundle.config 插槽",
+      "status": "completed",
+      "acceptance": [
+        "plugins.bundle.config 插槽注册逻辑就绪，key 为 @banana-peeljj12/dsh-trellis",
+        "node --check lib/client.js 语法检查通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "lib/client.js 新增 BUNDLE_CONFIG_KEY 与 ctx.slots.inject('plugins.bundle.config') 注册，与 plugins.row.config 共用同一 controller；node --check lib/client.js exit 0；test/client.test.js 新增 bundle-seat 断言全绿。"
+    },
+    {
+      "id": "2",
+      "title": "运行项目自动化测试回归",
+      "status": "completed",
+      "acceptance": [
+        "npm test 单元测试全数通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "npm test：tests 200 / pass 200 / fail 0。"
+    },
+    {
+      "id": "3",
+      "title": "Web UI 插件详情页外层设置渲染验收",
+      "status": "completed",
+      "acceptance": [
+        "在 Web UI 插件详情页外层看到 Trellis 设置面板，保存功能正常"
+      ],
+      "verification": "human",
+      "verified": true,
+      "verifiedBy": "human",
+      "verificationNotes": "用户重启 DSH 后在「设置 → 插件 → @banana-peeljj12/dsh-trellis」确认：设置表单已出现在插件详情页最外层，无需展开「包含的组件」；组件行未重复渲染完整表单。"
+    }
+  ]
+}
