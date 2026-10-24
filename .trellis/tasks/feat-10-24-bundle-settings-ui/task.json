@@ -1,6 +1,6 @@
 {
   "title": "将插件设置移动到设置页外层",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "quick",
