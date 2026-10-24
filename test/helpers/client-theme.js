@@ -22,7 +22,8 @@ export function loadClient(source = clientSource, options = {}) {
     ...options.react,
   }
   let client
-  const window = { __ModuleLoader__: { load({ factory }) {
+  // options.window adds browser globals (addEventListener, …) beside the loader.
+  const window = { ...options.window, __ModuleLoader__: { load({ factory }) {
     client = factory((id) => {
       if (id === 'react') return react
       if (id === 'react-dom' && options.dom !== undefined) return options.dom

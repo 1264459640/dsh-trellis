@@ -145,6 +145,29 @@
     > ③ **`TB.color.ink` 已删除**：纯黑 CTA 在暗色主题下消失，主按钮改为固定深蓝 `TB.color.brandSolid`
     >    + 白字（与阶段节点同一显式配对，见第 23 条），不再依赖主题 token 反转。
 
+## 看板质感约定（feat-10-24-task-picker-kanban-polish 沉淀）
+
+20a. **尺寸只走 token 阶梯**：字号 `TB.T = {xs 11, sm 12, md 13, lg 15}`，圆角
+     `TB.R = {lg 10 浮层/弹窗, md 8 卡片, sm 6 行/按钮/输入, xs 4 Kbd/小标签, pill}`。看板 region 内
+     禁止 `fontSize: <数字>` / `borderRadius: <数字>` / 半像素字号字面量（`test/client-polish.test.js`
+     读源码与渲染树双重断言）。阴影用「1px 描边 + 两层浅投影」，不用单层大扩散阴影。
+20b. **不叠卡**：当前任务卡是一张 `surfaceRaised` + 1px `border` 的卡片，步骤区与操作区用
+     1px 分隔线（`data-divider`）隔开，**禁止**在卡内再嵌带底色/内描边的子卡片。
+20c. **大看板表格必须有表头**，表头与行共用同一个 `GRID_COLUMNS` 常量（防列漂移）；筛选用
+     分段控件（`well` 轨道 + 选中段 `surfaceRaised` + `TB.S.segment`）。
+20d. **焦点契约**：popover 拿到 board 后把焦点移入（有列表 → `.tw-list`，否则 → 卡片 `.tw-primary`；
+     焦点已在内部则不动）；焦点在 popover 内时按 **Esc** 关闭并把焦点还给 chip，焦点在别处或外部点击
+     关闭时**不抢焦点**。大看板列表 `tabIndex=0`（行 `tabIndex=-1`，整张表只占一个 Tab 位），↑↓ 只在
+     **可见行**（筛选 + 折叠后）间移动，并通过 `aria-activedescendant` 指向选中行的 `id` 让读屏器播报；
+     选中行不可见时不设该属性。Enter 不绑定（绑定只在详情栏）。表头只在有可见行时渲染。
+     测试 harness 必须 stub `fetch` / `window` 让所有 effect 跑完，**禁止**用 try/catch 吞 effect 异常（假绿灯）。
+20e. **动效克制**：入场只做淡入 + ≤4px 位移，禁止 `scale()`；所有新动效必须进
+     `prefers-reduced-motion` 关闭列表。
+20f. **vm 测试的跨 realm 坑**：bundle 在 `vm.runInNewContext` 中执行，组件内部创建的对象/数组
+     原型属于另一个 realm，`assert.deepEqual`（strict）会报「same structure but not reference-equal」。
+     比较前先 `JSON.parse(JSON.stringify(x))` 归一化；`loadClient` 的 `globals` 不能覆盖 `window`
+     （模块加载器挂在其上）。
+
 ## 目录选择服务调用约定（feat-09-11-allowlist-folder-picker 沉淀）
 
 21. **设置面板需要「选择目录」时，优先用官方目录服务，不自绘浏览器**：
@@ -208,6 +231,11 @@
 26. **状态点只表达阶段，激活另有信号**：点色 = 阶段（灰环规划 / 蓝进行中 / 绿完成 / 红阻塞 /
     琥珀待验证）；「绑定到本会话」用**呼吸光晕 `.tw-live` + 「当前」标签**表达，不复用点色，
     二者正交可叠加。
+    > **更正记录（feat-10-24-task-picker-kanban-polish）**：「呼吸光晕」改为**静态 2px 品牌色 20% 光环**
+    > （`Dot` 内联 `boxShadow`，`data-live="true"`）+ `.tw-live` **只播一次** 0.6s 入场脉冲，禁止
+    > `infinite` 循环（用户反馈「不够稳重」）。状态点/图标/步骤环用降饱和的
+    > `TB.color.successSoft / warnSoft / dangerSoft`（原色 80% 混 label-secondary），**文字仍用 `*Text`**；
+    > 已完成进度条用中性 `TB.color.doneFill`，绿色只留在状态点与完成勾。
 27. **选中态 = 一层淡底，不叠装饰**：列表行用 `TB.color.hover`、大看板表格行用
     `TB.color.brandTint`（品牌色 9%）。禁止再叠加描边 / 竖条 / 角点 / 抬升阴影。
 28. **行内动作按需显现，且一行只有一个**：`▶`（绑定）默认 `opacity:0`，在 hover / 选中 /
@@ -225,7 +253,7 @@
     > 展示用索引与推进语义必须分开：清单高亮用 `currentStepIndex(steps)`，而「推进任务」
     > 的 prompt 仍只能用宿主算好的 `task.activeStep`（见第 12 条），客户端不得自行推导
     > 验证门禁与 attention 优先级。
-31. **`ensureStyles()` 的边界**：交互态（hover / focus-visible / 入场动画 / 呼吸光晕 /
+31. **`ensureStyles()` 的边界**：交互态（hover / focus-visible / 入场动画 / 绑定任务的一次性入场脉冲（见第 26 条更正）/
     reduced-motion）统一放在注入的 `.tw-*` 样式表里，颜色与结构仍写内联样式（对比度测试读的
     就是内联 `style.background`）；因为内联 `background:transparent` 会盖掉 CSS 的 hover 底色，
     hover 规则必须用 `!important`，并且**不要**把会被伪类改写的属性写死在内联样式里

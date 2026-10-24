@@ -95,7 +95,9 @@ test('design v2 drops colored type badges and v1 selection tokens', () => {
 // are checked on their actual ancestor backgrounds, including selected rows.
 const readable = (text) =>
   tasks.some((task) => text === task.title) ||
-  ['功能', '缺陷', '重构', '当前', '阻塞', '待验证', '解除绑定', '推进任务', '激活任务', '人工'].includes(text) ||
+  ['功能', '缺陷', '重构', '当前', '阻塞', '待验证', '解除绑定', '推进任务', '激活任务', '人工',
+    // feat-10-24: table header and segmented filter labels.
+    '任务', '类型', '阶段', '进度', '步骤', '全部'].includes(text) ||
   /(?:Completed|Current|Pending) step$/.test(text) ||
   /^验收：/.test(text) ||
   /^\d+\/\d+(?: 步骤)?$/.test(text) ||
@@ -108,6 +110,11 @@ for (const [mode, palette] of Object.entries({ fallback: {}, light: palettes.lig
         const text = color(palette['--dsw-alias-label-primary'] || '#0f172a', palette)
         const entries = textColors(tree, palette, base, text).filter(({ text }) => readable(text))
         assert.ok(entries.length >= 8, 'Expected titles, meta and step text, got ' + entries.length)
+        if (view === 'board') {
+          for (const label of ['任务', '类型', '阶段', '进度', '全部']) {
+            assert.ok(entries.some((e) => e.text === label), 'contrast matrix covers ' + label)
+          }
+        }
         for (const { text, foreground, background } of entries) {
           const ratio = contrast(foreground, background)
           assert.ok(ratio >= 4.5, `${text}: contrast ${ratio.toFixed(2)} < 4.5:1`)

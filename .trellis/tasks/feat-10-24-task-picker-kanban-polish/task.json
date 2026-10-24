@@ -1,0 +1,58 @@
+{
+  "title": "打磨任务选取下拉与看板 UI",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "让任务选取下拉和看板更精致、稳重：视觉层次、配色与状态色、字体排版、交互细节。",
+  "steps": [
+    {
+      "id": "1",
+      "title": "收敛 TB token 与交互样式表",
+      "status": "completed",
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "TB.T 4 档 / TB.R 5 档；源码+渲染树断言；mutation 全杀"
+    },
+    {
+      "id": "2",
+      "title": "Chip / popover / 大看板样式与结构调整",
+      "status": "completed",
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "表头中英、无嵌套子卡、done 进度 doneFill（行+详情）、对比度矩阵含表头"
+    },
+    {
+      "id": "3",
+      "title": "焦点管理与表格键盘导航",
+      "status": "completed",
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "打开聚焦列表/主按钮、Esc 内部还焦、↑↓ 仅可见行、aria-activedescendant"
+    },
+    {
+      "id": "4",
+      "title": "测试与独立审查",
+      "status": "completed",
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "npm test 222/222；两轮独立审查 passed 无 blocking，should-fix 已修"
+    },
+    {
+      "id": "5",
+      "title": "真实 GUI 观感验收",
+      "status": "completed",
+      "verification": "human",
+      "verified": true,
+      "verifiedBy": "human",
+      "verificationNotes": "用户在重启 DSH 后于真实 GUI 验收通过（2026-10-24）。"
+    }
+  ]
+}
