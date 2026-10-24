@@ -1,0 +1,71 @@
+{
+  "title": "移除组件设置页，保留统一配置入口",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "quick",
+    "stage": "check",
+    "execution_lane": "quick"
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "title": "移除组件级配置座位注册",
+      "status": "completed",
+      "spec": "lib/client.js：删除 plugins.row.config 的 inject/register 片段与 ROW_CONFIG_KEY，修正双座位注释；保留 plugins.bundle.config、PKG 派生、controller 与表单组件。",
+      "acceptance": [
+        "lib/client.js 不再出现 plugins.row.config",
+        "ROW_CONFIG_KEY 已删除",
+        "plugins.bundle.config 注册保持 1 处且 key 为裸包名"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "git diff 确认删除 11 行注册块与 ROW_CONFIG_KEY；Select-String 仅剩 3 处说明性注释；npm test 222 项全绿。"
+    },
+    {
+      "id": "s2",
+      "title": "改写配置座位测试为单入口",
+      "status": "completed",
+      "spec": "test/client.test.js：把双座位断言改为外层唯一、组件级零注册；保留同一 controller/hook 与四个动作断言；未声明外层座位时 apply 不抛错且不恢复组件级入口。",
+      "acceptance": [
+        "测试断言 plugins.bundle.config 注册数 1、plugins.row.config 注册数 0",
+        "注入的 edit/resetField/save/discard 仍存在",
+        "未声明外层座位时不抛错且组件级仍为 0"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "两个行为测试改写为单入口；plugins.row.config 仍保留在 stub 已声明集合中，确保“可用也不注册”的断言非假绿灯。"
+    },
+    {
+      "id": "s3",
+      "title": "同步规范与文档的单入口口径",
+      "status": "completed",
+      "spec": ".trellis/spec/trellis-workflow/web-ui/index.md 第 36–38 条与 README 配置说明：改为仅外层配置页，并记录本次覆盖决定。",
+      "acceptance": [
+        "web-ui 规范中双座位要求已改为单入口并附更正记录",
+        "README/README_EN 若提到组件级配置页则同步更新",
+        "不再有要求双入口的有效条款"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "web-ui/index.md 36–38 改写并加更正记录；CHANGELOG v0.4.5 中英文条目同步；README/README_EN 原本只描述外层入口，无需改动（已 grep 核对）。"
+    },
+    {
+      "id": "s4",
+      "title": "跑通项目测试与质量门",
+      "status": "completed",
+      "spec": "执行 package.json 中的测试与 lint 脚本，确认无红项。",
+      "acceptance": [
+        "npm test 全绿",
+        "lint/type 检查（若配置）通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "npm test: tests 222 / pass 222 / fail 0（改动前后各跑一次）。package.json 仅配置 node --test，无独立 lint 脚本。"
+    }
+  ]
+}
