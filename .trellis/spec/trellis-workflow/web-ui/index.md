@@ -288,20 +288,26 @@
     > `init` 优先、仅在用例显式覆盖时替换；并必须补「再收起」方向断言，否则
     > `setDoneOpen(true)`（收不回来）同样测不出来。
 
-## 插件设置的双座位与外层渲染（feat-10-24-bundle-settings-ui）
+## 插件设置的单座位与外层渲染（feat-10-24-bundle-settings-ui / feat-10-24-remove-component-settings）
 
-36. **插件的配置卡片要占两个座位，key 形态不同且写错是静默失败**：
-    - `plugins.bundle.config`：key = **裸包名**（`readFileSync('package.json').name`，本项目
-      `<scope>/<pkg>`）。宿主派发为 `renderSlot('plugins.bundle.config', { view: 'page' },
-      { entryKey: pkg.name })`，并用 `ledger.bundles.has(pkg.name)` 判「是否已配置」——
-      **key 带 `#<row id>` 就永不命中，整段配置区静默不渲染**（无报错、无日志）。
-    - `plugins.row.config`：key = `<包名>#<patch 行 id>`（本项目 `#trellis-workflow`），由插件
-      列表页对那一行派发；行详情页与 bundle 页是**互斥视图**，两处都拿 `view: 'page'`，
-      因此不需要「靠 `view === 'summary'` 防重复渲染」这类防线。
-    - 两个座位**必须共用同一个 controller / 同一个 store**（`inject: () => controller.inject()`
-      各调一次，但返回同一 `hooks.<name>` 引用），否则两个入口的草稿与写通道会分叉。
-    - 包名只能有一处字面量（`const PKG = ...`，两个 key 从它派生）：两份字面量漂移同样是
-      静默失效。
+36. **插件的配置卡片只占一个座位：`plugins.bundle.config`，key = 裸包名**
+    （`readFileSync('package.json').name`，本项目 `<scope>/<pkg>`）。宿主派发为
+    `renderSlot('plugins.bundle.config', { view: 'page' }, { entryKey: pkg.name })`，并用
+    `ledger.bundles.has(pkg.name)` 判「是否已配置」——**key 带 `#<row id>` 就永不命中，
+    整段配置区静默不渲染**（无报错、无日志）。
+    - **`plugins.row.config`（`<包名>#<row id>`）不再注册**：两个座位渲染的是同一个表单，
+      用户在「插件详情页」与「包含的组件 → trellis-workflow 行详情页」看到两层重复设置。
+      单入口后，组件行详情页不再有 Trellis 配置内容；该行本身（宿主框架）不受影响。
+    - **座位 key 的包名只能有一处字面量**（`const PKG = ...`，key 从它派生）：两份字面量漂移同样
+      静默失效。（loader `id:` 与本项目 `package.json` 的 `name` 是另一处必然存在的同名字面量，
+      不在此约束内——按字面 grep 包名会命中多处，别把它当违规。）
+    - **不得在「外层座位不可用」时回退注册组件座位**：单入口是产品决定，防御性兜底会
+      把两层设置重新引回来（`test/client.test.js` 用两条断言守住：`configSeats()` 计数与
+      stub 记录的 `injected` 注入尝试都不得含 `plugins.row.config`）。
+    > **更正记录（feat-10-24-remove-component-settings）**：本条原要求「两个座位必须共用
+    > 同一个 controller / store」，并保留 `plugins.row.config` 作为组件行入口。用户反馈
+    > 设置页出现两层，现改为**仅外层单座位**；共用 controller 的要求随之失去意义
+    > （只有一个座位），但「一个 controller + 一个 store」仍是控制器实现的既定形态。
 37. **座位注册一律走 `ctx.slots.inject(name, cb)`**（回归第 1 条）：宿主未声明该座位时
     `inject` 静默不回调、其余座位照常注册；裸 `slots.register` 会抛
     「registering into an undeclared slot」。
@@ -309,10 +315,13 @@
     `loadBundle()` 用 `vm.runInNewContext` 执行真实 bundle，stub 出与 shell 同语义的
     `ctx.slots`（`register` 对未声明座位 **throw**、`inject` 只对已声明座位回调）、
     `locale`、`configForms`（`describe()` 返回空 namespaces 让 controller 停在 unavailable，
-    `get()` 一旦被调就 `assert.fail`）、`effect`；再断言两座位的 `options.key` 精确值、
-    `component` 同一引用、两次 `inject().hooks.*` 同一引用、同座位 `registrations.length === 1`。
+    `get()` 一旦被调就 `assert.fail`）、`effect`；再断言外层座位的 `options.key` 精确值、
+    组件座位 `registrations.length === 0`、`inject().hooks.*` 与四个动作（`edit` /
+    `resetField` / `save` / `discard`）齐全、同座位 `registrations.length === 1`。
     字符串切片/计数类断言（如「`indexOf` 自己 < `indexOf(register)`」）恒真，属假绿灯，
     实测会漏掉「裸 register / 第二 controller / 座位名写错」三类退化。
     渲染完整性用 **id 集合精确断言**，不用 `children.length >= N`：卡片实际 child 数多于字段数
     （字段外面还有容器节点），少渲染一个字段仍能通过 `>= N`。
+    > 注意 `plugins.row.config` 必须在 stub 的已声明座位集合里保留：注册数断言要证明的是
+    > 「即使座位可用也不注册」，座位未声明时该断言会因 `inject` 不回调而恒真（假绿灯）。
 

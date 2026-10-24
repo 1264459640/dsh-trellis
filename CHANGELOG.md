@@ -12,13 +12,53 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.6 — 2026-10-24
+
+## 功能
+
+- **看板与任务选择浮层质感重构（Polish UI）**（feat-10-24-task-picker-kanban-polish）：
+  - **设计系统阶梯统一**：字号全面收敛为 11/12/13/15（`TB.T`），圆角收敛为 5 档（`TB.R`），阴影精简为 1px 细线描边 + 双层浅投影，杜绝零散字号与裸数字样式；
+  - **当前卡片去嵌套（不叠卡）**：当前任务卡精简为单一连续表面，步骤清单与操作按钮通过 1px 细分隔线区分，消除卡内嵌卡；头部 Chip 增加静止细描边；
+  - **色彩克制与降噪**：状态点、图标与步骤环改用降饱和色调（`successSoft` / `warnSoft` / `dangerSoft`），完成进度条改用中性底色，仅状态点与勾选保留纯绿；
+  - **动效稳重化**：绑定任务取消无限循环呼吸灯，改为 2px 静态光环 + 仅播一次的 0.6s 入场微脉冲；弹窗仅保留淡入与 ≤4px 微位移，严禁 `scale()` 缩放；
+  - **大看板交互与无障碍对齐**：大看板增加严格对齐的表头（共用 `GRID_COLUMNS` 常量），新增分段式类型筛选控件，支持键盘上下方向键行导航与 `aria-activedescendant` 无障碍读屏播报；
+  - **焦点契约完善**：浮层打开时焦点自动移入列表（或主操作卡片），按 Esc 关闭时主动归还焦点至 Chip，外部点击关闭不抢焦点。
+
+## 修复
+
+- **移除组件设置页，配置只保留插件详情页外层入口**（feat-10-24-remove-component-settings）：
+  - 删除 `plugins.row.config` 插槽注册与 `ROW_CONFIG_KEY`：0.4.5 起两个入口渲染同一张表单，用户会在「插件详情页」与「包含的组件 → trellis-workflow 行详情页」看到同一份设置出现两次，现已收敛为**仅外层单一入口**；
+  - 配置项、`TrellisConfigController` 与保存通道完全不变，已有配置数据无需迁移；宿主未声明外层座位时**不回退**注册组件座位（单入口是产品决定，不做防御性兜底）；
+  - 客户端行为测试改为单入口断言：外层座位恰好注册一次、组件座位注册数为 0（座位在 stub 中已声明且可用）、注入 face 的 `edit` / `resetField` / `save` / `discard` 齐全；变异测试确认用例可 falsify。
+
+---
+
+## Features
+
+- **Task Picker Popover and Kanban Board UI Polish** (feat-10-24-task-picker-kanban-polish):
+  - **Unified design system tokens**: Typography scale strictly unified to 11/12/13/15 (`TB.T`), radius to 5 tiers (`TB.R`), and shadows refined to a 1px hairline plus two subtle drops; eliminated unscaled font sizes and inline magic numbers;
+  - **Un-nested current task card**: Simplified the active task card into a single continuous surface separated by 1px dividers rather than nested sub-cards; added a subtle resting border to the session chip;
+  - **Desaturated and calmer color scheme**: Softened state dot, icon, and step ring colors (`successSoft` / `warnSoft` / `dangerSoft`); progress bar uses a neutral fill (`doneFill`), leaving green only for active success dots and checkmarks;
+  - **Restrained animations**: Replaced infinite breathing loops on bound tasks with a static 2px halo and a one-time 0.6s entry pulse; modal transitions use fade and ≤4px nudges without `scale()`;
+  - **Board grid alignment and accessibility**: Added strict column headers sharing the row grid (`GRID_COLUMNS`), segmented task type filter, keyboard arrow-key navigation, and `aria-activedescendant` accessibility announcements;
+  - **Polished focus contract**: Focus moves into the list or CTA when the popover opens, Esc returns focus to the trigger chip, and outside clicks dismiss without stealing focus.
+
+## Fixed
+
+- **Removed the per-component settings page; configuration lives only on the bundle page** (feat-10-24-remove-component-settings):
+  - Dropped the `plugins.row.config` registration and `ROW_CONFIG_KEY`. Since 0.4.5 both seats painted the same form, so the same settings appeared twice (bundle detail page and "Included Components → trellis-workflow" row detail page). The outer seat is now the single entry;
+  - Configuration fields, `TrellisConfigController`, and the save path are untouched, and no stored configuration needs migration. When the host does not declare the bundle seat the plugin does **not** fall back to the component seat (single entry is a product decision, not a defensive default);
+  - Client behaviour tests now assert the single entry: exactly one bundle-seat registration, zero component-seat registrations while that slot is declared and available, and a complete injected face (`edit` / `resetField` / `save` / `discard`). Mutation checks confirm the tests can fail.
+
+---
+
 ## v0.4.5 — 2026-10-24
 
 ## 功能
 
 - **插件配置面板提升至插件详情页外层**（feat-10-24-bundle-settings-ui）：
   - 新增 `plugins.bundle.config` 插槽注册（key 设为裸包名 `@banana-peeljj12/dsh-trellis`），将 Trellis 配置表单（生效白名单、注入步数、只读保护、跳过关键词等）直接呈现在插件详情页最外层（标题与图标下方），无需再展开「包含的组件 → trellis-workflow」；
-  - 同步保留原 `plugins.row.config` 插槽，双入口共用同一个 `TrellisConfigController` 与单一 `store` 状态实例，无状态分叉与重复保存；
+  - 同步保留原 `plugins.row.config` 插槽，双入口共用同一个 `TrellisConfigController` 与单一 `store` 状态实例，无状态分叉与重复保存（该组件座位已在 v0.4.6 移除，见上）；
   - 完善客户端行为测试体系：引入基于真实 bundle 的 `loadBundle` 运行沙箱，严格断言双座位的精确 key、防单座重复注册、控制器 face 单例引用，并通过配置项 id 集合精确比对杜绝假绿灯。
 
 ---
@@ -27,7 +67,7 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 - **Top-Level Bundle Settings Page** (feat-10-24-bundle-settings-ui):
   - Registered the `plugins.bundle.config` slot (keyed by bare package name `@banana-peeljj12/dsh-trellis`), rendering the Trellis configuration form (allowlist, inject step, readonly planning, skip keywords, etc.) directly on the bundle's top-level page under the header, eliminating the need to expand "Included Components → trellis-workflow";
-  - Retained the existing `plugins.row.config` slot as a backward-compatible entry point, with both seats sharing a single `TrellisConfigController` and `store` instance to prevent state divergence;
+  - Retained the existing `plugins.row.config` slot as a backward-compatible entry point, with both seats sharing a single `TrellisConfigController` and `store` instance to prevent state divergence (that component seat was removed in v0.4.6, above);
   - Hardened client test coverage: introduced a VM-based `loadBundle` test harness running real bundle code with shell-faithful slot mocks, asserting exact seat keys, single registration per slot, singleton controller faces, and exact configuration field ID set matching.
 
 ---

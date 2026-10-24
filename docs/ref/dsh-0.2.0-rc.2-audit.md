@@ -92,7 +92,7 @@ true   ^0.2.0-rc.2     ← 新声明
 | 面 | 结论 | 关键证据 |
 |---|---|---|
 | `dsh.client.inject` 的 6 个包 | 全部存在，包名无需替换 | 两版 `exports` 映射一致；`dsh.client` 的 `inject` / `platform` 契约未变 |
-| `plugins.row.config` 席位 | 未变 | `dsh-client-ui-plugin-manager/lib/types/client/slot-contract.d.ts` **整文件逐字节相同**；仍 `keyed` / `scope: root` / `{ view, form? }` |
+| 插件配置席位（`plugins.bundle.config` / `plugins.row.config`） | 未变 | `dsh-client-ui-plugin-manager/lib/types/client/slot-contract.d.ts` **整文件逐字节相同**；仍 `keyed` / `scope: root` / `{ view, form? }`。本插件自 v0.4.6 起只注册外层 `plugins.bundle.config`，`plugins.row.config` 仍由宿主声明但插件不再占用 |
 | `conversation.session.header.utilities` | 未变 | `slots.d.ts` 对应段与 owner props 双版本相同；`sessionId` 标准套件所在包逐字节相同 |
 | `conversation.input.dock` | 未变 | `InputZone = { session, input }` 未变；header 在 blank 时自隐藏的断言逐行相同 ⇒ hero 双席位互斥仍成立 |
 | `rowConfigKey(<包名>, <行 id>)` | 未变 | 实现逐字节相同；`declaredRows` 的 `rowId: row.id` 逐行相同，`include:` 前缀只进 `entryId` |
@@ -107,7 +107,8 @@ true   ^0.2.0-rc.2     ← 新声明
 
 ### 与上一版（v0.3.5）的两条"踩坑"关系
 
-v0.3.5 记录过两个 id 体系：席位 key 用 patch 的**裸 id**，而配置表单的 `entryId` 是带 `include:` 前缀的合成 id。本次审计确认 0.2.0-rc.2 中该分工**完全未变**，因此 `lib/client.js` 的 `ROW_CONFIG_KEY`（裸 id）与 `entryIdOf`（后缀匹配）都必须**保持原样**——不要为了"适配"而改动它们。
+v0.3.5 记录过两个 id 体系：席位 key 用 patch 的**裸 id**，而配置表单的 `entryId` 是带 `include:` 前缀的合成 id。本次审计确认 0.2.0-rc.2 中该分工**完全未变**，因此 `entryIdOf`（后缀匹配）必须**保持原样**——不要为了"适配"而改动它。
+> **更新（v0.4.6, feat-10-24-remove-component-settings）**：`lib/client.js` 的 `ROW_CONFIG_KEY` 已随组件座位一并删除，此处不再要求保留该常量；席位 key 仍取裸包名（`BUNDLE_CONFIG_KEY = PKG`），这条分工只对**仍存在的**席位生效。若将来重新引入组件座位，key 形态才是 `<包名>#<patch 裸行 id>`。
 
 ---
 
@@ -144,7 +145,7 @@ v0.3.5 记录过两个 id 体系：席位 key 用 patch 的**裸 id**，而配�
 ### 6.2 仍需真实 GUI 或真实 LLM 回合（当前未验证）
 
 1. 桌面版**真实 entry 激活**（L3）：安装后需完整退出并重启桌面版才发生；重启前只能确认到 L1（文件就位）与 L2（`--dump-config` 合成树已含该行并按 id 合入用户 config）。
-2. 设置卡片在真实 GUI 中的**渲染与保存**（`plugins.row.config` 席位 + `SettingsForm`）。
+2. 设置卡片在真实 GUI 中的**渲染与保存**（`plugins.bundle.config` 席位 + `SettingsForm`；v0.4.6 前写作 `plugins.row.config`）。
 3. 「浏览…」文件夹选择按钮（`uiWorkspace.pickDirectory` → Electron 目录对话框）。
 4. 会话头部 chip 与 hero chip **恰好各出现一次**（依赖 `session.blank` / `conversationPhase` 运行时状态）。
 5. kanban 弹窗 `sidebarRight.openResource` 的 store 前置条件（0.2.0 对「无 on-screen session / store 未铸造」会 fail loud）。

@@ -69,16 +69,20 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
   const source = readFileSync(clientPath, 'utf8')
 
   // 0.1.7 migration: the entry's configuration registers into the Plugins
-  // list's `plugins.row.config` seat under the key that page dispatches for
-  // this bundle's row. The removed `settings.plugins.tab` seat and the
-  // removed `settingsScope` service must not come back.
-  assert.match(source, /ctx\.slots\.inject\('plugins\.row\.config'/)
-  assert.match(source, /key: ROW_CONFIG_KEY/)
-  // One package-name literal, both seat keys derived from it: a drifted copy
-  // fails silently in the plugin manager (nothing renders, no error).
+  // page's OUTER `plugins.bundle.config` seat, keyed by the bare package name.
+  // The removed `settings.plugins.tab` seat and the removed `settingsScope`
+  // service must not come back, and neither may the per-component
+  // `plugins.row.config` seat: it repeated the same form one level deeper
+  // (feat-10-24-remove-component-settings).
+  assert.match(source, /ctx\.slots\.inject\('plugins\.bundle\.config'/)
+  assert.match(source, /key: BUNDLE_CONFIG_KEY/)
+  assert.doesNotMatch(source, /(?:inject|register)\(\s*['"]plugins\.row\.config['"]/)
+  assert.doesNotMatch(source, /ROW_CONFIG_KEY/)
+  // The package-name literal must be the single source for the seat key: a
+  // drifted copy fails silently in the plugin manager (nothing renders, no
+  // error).
   assert.match(source, /const PKG = '@banana-peeljj12\/dsh-trellis'/)
   assert.match(source, /const BUNDLE_CONFIG_KEY = PKG/)
-  assert.match(source, /const ROW_CONFIG_KEY = PKG \+ '#trellis-workflow'/)
   assert.doesNotMatch(source, /settings\.plugins\.tab/)
   assert.doesNotMatch(source, /settingsScope/)
 
@@ -131,6 +135,7 @@ test('settings card lives on the Plugins page and browses via uiWorkspace (0.1.7
 function loadBundle({ primitives = {}, react = {} } = {}) {
   const source = readFileSync(clientPath, 'utf8')
   const registrations = []
+  const injected = []
   const declared = new Set([
     'plugins.bundle.config',
     'plugins.row.config',
@@ -158,6 +163,10 @@ function loadBundle({ primitives = {}, react = {} } = {}) {
     locale: { register: () => () => {}, bind: () => (key) => key },
     slots: {
       inject(name, register) {
+        // Every attempt is recorded, declared or not: the single-entry invariant
+        // must hold even when the bundle seat is unavailable, and a non-empty
+        // list proves `apply()` actually reached `ctx.slots.inject`.
+        injected.push(name)
         if (!declared.has(name)) return () => {}
         return register()
       },
@@ -197,49 +206,50 @@ function loadBundle({ primitives = {}, react = {} } = {}) {
     source.replace(marker, 'exports.__test = { TrellisConfigCard };\n' + marker),
     { window },
   )
-  return { client, ctx, registrations, declare: (name) => declared.add(name), undeclare: (name) => declared.delete(name) }
+  return { client, ctx, registrations, injected, declare: (name) => declared.add(name), undeclare: (name) => declared.delete(name) }
 }
 
 const configSeat = (bundle, name) => bundle.registrations.find((r) => r.options.name === name)
 const configSeats = (bundle, name) => bundle.registrations.filter((r) => r.options.name === name)
 
-test('config form takes BOTH seats — bundle page (outer) and row — off one controller', () => {
+test('config form takes exactly ONE seat — the bundle page (outer) — off one controller', () => {
   const bundle = loadBundle()
   bundle.client.apply(bundle.ctx)
 
-  // Exactly one registration per seat: a duplicated seat would paint the form
-  // twice (and, with two controllers, diverge in staged edits), so a `find`
-  // here could not tell the correct wiring from a doubled one.
+  // Exactly one registration on the bundle seat: a duplicated seat would paint
+  // the form twice (and, with two controllers, diverge in staged edits), so a
+  // `find` here could not tell the correct wiring from a doubled one.
   assert.equal(configSeats(bundle, 'plugins.bundle.config').length, 1)
-  assert.equal(configSeats(bundle, 'plugins.row.config').length, 1)
+  // The per-component seat must stay EMPTY. `plugins.row.config` is declared by
+  // the stub shell above, so a stray registration would be accepted silently —
+  // only the count catches the "two settings pages" regression
+  // (feat-10-24-remove-component-settings).
+  assert.equal(configSeats(bundle, 'plugins.row.config').length, 0)
+  // Same invariant on the inject attempts: a registration that never gets a
+  // `slots.inject` wrapper would be dead code, and an attempt on the row seat
+  // means the component entry is still wired in some branch.
+  assert.ok(bundle.injected.includes('plugins.bundle.config'), 'apply() must inject the bundle seat')
+  assert.ok(!bundle.injected.includes('plugins.row.config'), 'the component seat must not be injected at all')
 
   const outer = configSeat(bundle, 'plugins.bundle.config')
-  const row = configSeat(bundle, 'plugins.row.config')
   assert.ok(outer, 'the bundle seat must be registered')
-  assert.ok(row, 'the row seat must stay registered')
 
   // Host contract: the bundle seat is keyed by the BARE package name
-  // (`renderSlot(..., { entryKey: pkg.name })`, `ledger.bundles.has(pkg.name)`),
-  // the row seat by `<package>#<row id>`. A `#` on the bundle key silently
-  // renders nothing, so the exact strings are asserted, not a regex shape.
+  // (`renderSlot(..., { entryKey: pkg.name })`, `ledger.bundles.has(pkg.name)`).
+  // A `#` on the bundle key silently renders nothing, so the exact string is
+  // asserted, not a regex shape.
   assert.equal(outer.options.key, '@banana-peeljj12/dsh-trellis')
-  assert.equal(row.options.key, '@banana-peeljj12/dsh-trellis#trellis-workflow')
-  assert.equal(outer.options.locale, row.options.locale)
 
-  // Same component, same controller face: the two entry points must not be
-  // able to diverge in staged edits or in the write path, so the injected hook
-  // has to be the SAME store object, and the actions the same model.
-  assert.equal(outer.component, row.component)
+  // The injected face is the read/write channel: dropping a seat must not drop
+  // any of the actions, or saving would silently stop working.
   const outerFace = outer.options.inject()
-  const rowFace = row.options.inject()
-  assert.equal(outerFace.hooks.trellisConfig, rowFace.hooks.trellisConfig)
+  assert.ok(outerFace.hooks.trellisConfig, 'the shared config store must be injected')
   for (const action of ['edit', 'resetField', 'save', 'discard']) {
     assert.equal(typeof outerFace[action], 'function', action + ' must be injected')
-    assert.equal(typeof rowFace[action], 'function', action + ' must be injected')
   }
 })
 
-test('an undeclared bundle seat degrades silently and keeps the row seat', () => {
+test('an undeclared bundle seat degrades silently and registers no fallback seat', () => {
   const bundle = loadBundle()
   bundle.undeclare('plugins.bundle.config')
   // The stub is the shell's rule: registering into an undeclared slot throws.
@@ -253,7 +263,13 @@ test('an undeclared bundle seat degrades silently and keeps the row seat', () =>
   bundle.client.apply(bundle.ctx)
 
   assert.equal(configSeat(bundle, 'plugins.bundle.config'), undefined)
-  assert.ok(configSeat(bundle, 'plugins.row.config'), 'the row seat must survive')
+  // No silent fallback onto the component seat: the single-entry decision must
+  // not be undone by a defensive "register the other one too" branch.
+  assert.equal(configSeat(bundle, 'plugins.row.config'), undefined)
+  // Non-vacuous: the bundle seat WAS attempted (only unregistered because the
+  // host declared nothing), and the component seat was never even attempted.
+  assert.ok(bundle.injected.includes('plugins.bundle.config'), 'apply() must still try the bundle seat')
+  assert.ok(!bundle.injected.includes('plugins.row.config'), 'no fallback seat may be attempted')
 })
 
 test('the shipped card renders the form for a page and the one-liner for a summary', () => {
