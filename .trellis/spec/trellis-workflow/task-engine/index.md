@@ -129,6 +129,10 @@
 - 安全边界别只信"文件名/字符集"校验：路径穿越要结合 `path.relative` 强约束为直接子段。
 - 删除类操作（模板修剪、归档移动）用 `node:fs` 时必须以**硬编码相对路径 + 沙箱策略 fail-closed**
   双保险，绝不允许"扫描并删除用户内容"的宽松实现；`dsh-fs` 无 delete/move 原语是已知边界。
+- **宿主工具上下文与底层执行参数不能混用**（issue-10-25-artifact-task-binding）：宿主工具的会话 ID 在
+  `exec.agent.session.id`，底层任务函数常用 `exec.sessionId`。产物默认目标解析必须兼容宿主形态，
+  否则会把“有当前会话”误当作“无会话”，回退 canonical 指针并覆盖旧任务。回归测试应通过真实
+  注册工具调用，构造 canonical 旧任务与当前会话新任务并存，断言返回 slug、实际文件及绑定均正确。
 - `trellis_artifact_update` 的默认 slug 跟随**会话绑定任务**，不一定是本次正在推进的任务
   （证据：feat-09-07 曾把 design.md 误写入绑定任务 trellis-right-phase-panel，靠 `git checkout`
   还原）。写产物时若会话绑定任务 ≠ 目标任务，必须显式传 `slug`，否则会污染其他任务目录。

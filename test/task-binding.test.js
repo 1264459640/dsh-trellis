@@ -104,6 +104,26 @@ async function mount(t, fs, config = {}) {
   return { call, summary, request }
 }
 
+test('artifact tool writes PRD to the creating session, not the canonical old task', async (t) => {
+  const fs = memoryFs()
+  const { call } = await mount(t, fs)
+  // A legacy/project pointer must not override the live session's new binding.
+  await createTaskRecord(fs, ROOT, createArgs(OLD))
+  assert.equal((await call('trellis_task_create', createArgs(NEW))).ok, true)
+  const result = await call('trellis_artifact_update', { artifact: 'prd.md', content: '# New PRD' })
+  assert.equal(result.ok, true)
+  assert.equal(result.slug, NEW)
+  assert.equal(await fs.readText(await fs.resolve(`${ROOT}/.trellis/tasks/${NEW}/prd.md`)), '# New PRD')
+  assert.equal(await fs.stat(await fs.resolve(`${ROOT}/.trellis/tasks/${OLD}/prd.md`)), undefined)
+  assert.equal(await active(fs), NEW)
+
+  // An explicit target still wins without changing the session binding.
+  const explicit = await call('trellis_artifact_update', { slug: OLD, artifact: 'prd.md', content: '# Explicit PRD' })
+  assert.equal(explicit.slug, OLD)
+  assert.equal(await fs.readText(await fs.resolve(`${ROOT}/.trellis/tasks/${OLD}/prd.md`)), '# Explicit PRD')
+  assert.equal(await active(fs), NEW)
+})
+
 test('explicit old-task update does not change the newly-created binding or another session', async () => {
   const fs = memoryFs()
   await seed(fs)
