@@ -12,6 +12,26 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.4.7 — 2026-10-25
+
+## 修复
+
+- **兼容宿主工具调用上下文中的会话 ID，避免产物写入错误任务**（issue-10-25-artifact-task-binding）：
+  - 修复 `trellis_artifact_update` 在缺省 `slug` 时的目标任务解析逻辑：除底层直接调用的 `exec.sessionId` 外，增加对宿主原生工具执行上下文 `exec.agent.session.id` 的提取兼容；
+  - 杜绝在有当前活动会话时因参数层级不同而误判定为“无会话”，进而错误回退至项目级 canonical 任务指针并覆盖历史旧任务产物（如 `prd.md`）；
+  - 补全基于真实注册工具调用的确定性回归测试，严格断言新任务生成产物目标目录准确、显式 `slug` 不受影响且会话绑定保持不变。
+
+---
+
+## Fixed
+
+- **Support Host Tool Execution Context for Session ID Resolution in Artifact Updates** (issue-10-25-artifact-task-binding):
+  - Fixed default target task resolution in `trellis_artifact_update` when `slug` is omitted: in addition to low-level `exec.sessionId`, now properly extracts the session ID from the host's native tool execution context (`exec.agent.session.id`);
+  - Prevents erroneously falling back to the project-level canonical task pointer and overwriting an older task's artifacts (e.g. `prd.md`) when an active session is present;
+  - Added deterministic regression tests using registered tool mounts, strictly asserting that artifacts write to the newly created task directory, explicit `slug` overrides remain honored, and session bindings stay intact.
+
+---
+
 ## v0.4.6 — 2026-10-24
 
 ## 功能
