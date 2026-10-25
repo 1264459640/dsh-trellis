@@ -1,0 +1,59 @@
+{
+  "title": "修复创建任务后 PRD 写入其他任务",
+  "status": "completed",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "fix-note",
+    "execution_lane": "standard"
+  },
+  "description": "排查创建任务、会话绑定和产物写入链路，复现并修复新任务 PRD 被写入其他任务的问题。",
+  "steps": [
+    {
+      "id": "step-1",
+      "title": "补充产物工具会话绑定回归测试",
+      "status": "completed",
+      "spec": "在旧 canonical 任务与当前会话新任务并存时，通过已注册 artifact 工具无 slug 写入 PRD。",
+      "acceptance": [
+        "测试断言返回 slug 是当前会话新任务",
+        "测试断言 PRD 写入新任务且未写入旧任务"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verificationNotes": "新增回归测试已证明修复前会将 PRD 目标解析为 canonical 旧任务。",
+      "verified": true,
+      "verifiedBy": "ai"
+    },
+    {
+      "id": "step-2",
+      "title": "修复 artifact 工具会话 ID 归一化",
+      "status": "completed",
+      "spec": "兼容 exec.sessionId 与 exec.agent.session.id，未传 slug 时始终按当前会话 pointer 解析。",
+      "acceptance": [
+        "宿主执行上下文写入当前会话绑定任务",
+        "显式 slug 与无 session canonical fallback 行为不变"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verificationNotes": "针对 task-binding 与 native-steps 的 4 个相关测试全部通过。",
+      "verified": true,
+      "verifiedBy": "ai"
+    },
+    {
+      "id": "step-3",
+      "title": "运行回归与全量测试",
+      "status": "completed",
+      "spec": "执行目标测试、相关测试和全量测试，确认业务不变量与安全边界。",
+      "acceptance": [
+        "目标回归测试通过",
+        "相关 artifact/task-binding 测试通过",
+        "全量测试通过或记录与本改动无关的既有失败"
+      ],
+      "verification": "ai",
+      "verify": true,
+      "verificationNotes": "node --test 全量通过，223/223，0 failed。",
+      "verified": true,
+      "verifiedBy": "ai"
+    }
+  ]
+}
