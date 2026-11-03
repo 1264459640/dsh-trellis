@@ -157,3 +157,11 @@
    写回旧 Spec。
 6. **不要回退为目录扫描**：自定义 files 只支持明确文件，不新增 root 递归扫描、多 root 或
    目录注入；需要目录内新文件时由 Skill 显式加入 files。
+7. **Web 配置视图是同一份语义的第二个入口**（feat-11-03-doc-config-ui）：会话顶部
+   `conversation.view` 的「项目文档」经 `/api/doc-config` 读 / 校验 / 写 `.trellis/doc.json`。
+   - 校验必须复用 `normalizeDocFile` / `validateDocFile`，预算必须复用 `planDocBudget`；
+     不得在路由或客户端复制规则（预览与真实注入同源）。
+   - 写盘前**整组校验**：任一 files 项无效即拒绝保存（与「显式配置失败不降级」一致），
+     不允许把坏配置写进项目。
+   - 保存成功后必须失效 `trellis:spec-index` 的 TTL 缓存（`specIndexCache.delete(root)`），
+     保证下一轮装配立即读到新配置。

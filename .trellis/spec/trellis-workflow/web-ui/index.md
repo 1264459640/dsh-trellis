@@ -325,3 +325,26 @@
     > 注意 `plugins.row.config` 必须在 stub 的已声明座位集合里保留：注册数断言要证明的是
     > 「即使座位可用也不注册」，座位未声明时该断言会因 `inject` 不回调而恒真（假绿灯）。
 
+## 项目文档视图与 doc.json 写接口（feat-11-03-doc-config-ui 沉淀）
+
+39. **项目级文档编辑是一级 `conversation.view`，不是设置页**：
+    - 注册 `{ name:'conversation.view', id:'trellis-workflow:docs', order:20, locale, label: () => t('viewDocs') }`
+      + `DocConfigView`；座位是 `list` / `session` 作用域，组件由框架注入标准 prop `sessionId`
+      与绑定 locale 的 `t`，会话切换按 key 重挂载，不订阅 `sessions.list`；
+    - `label` 用 thunk，语言切换无需重新注册；
+    - `package.json` 的 `dsh.client.inject` 必须含声明方 `@deepseek-ai/dsh-client-ui-conversation`
+      （否则无加载顺序保证），注册一律用 `ctx.slots.inject(...)` 包裹（见第 1 / 37 条）；
+    - 宿主只为**非 blank 会话**渲染 `conversation.view`，新会话首条消息前没有该标签，属宿主行为。
+40. **`POST /trellis-workflow/api/doc-config` 的读写契约**：
+    - 三个 action：`read`（磁盘快照）、`preview`（校验草稿 + 预算，不写盘）、`save`（校验 →
+      写盘 → 回读快照）；
+    - 项目根只来自 `sessions.get(sessionId).header.cwd` → `matchAllowlist`，请求体不可指定；
+      先过 `isTrustedApiRequest`；sandbox 拒绝返回 403；
+    - 响应只含**项目相对路径**，禁止回传项目根或绝对路径；
+    - `save` 成功后必须 `specIndexCache.delete(root)`，否则 5s TTL 会让用户以为「保存没生效」。
+41. **预览与注入共用 `planDocBudget`**：预算 / 截断 / 仅路径的判定只允许一份实现
+    （`lib/spec.js`），`renderDocBodies` 与 Web 预览都消费它；新增预算规则时两处自动同步，
+    禁止在路由或客户端复制第二份算法。
+42. **编辑器四态**：未配置（可一键载入 `.trellis/spec` 索引）、已配置、配置无效、未纳管
+    （allowlist 外）。未纳管只给说明，不给编辑 / 保存入口；配置无效时不假装回退旧 Spec。
+

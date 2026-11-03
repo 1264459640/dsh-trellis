@@ -34,7 +34,7 @@ export function loadClient(source = clientSource, options = {}) {
   const marker = 'exports.apply = apply;'
   if (!source.includes(marker)) throw new Error('Client export marker missing')
   vm.runInNewContext(source.replace(marker,
-    'exports.themeTest = { TB, TW_CSS, KanbanBoard, KanbanExpandedModal, StepList, TaskChip, HeroTaskChip, renderExpandedModal, KANBAN_POPOVER_STYLE, zh };\n' + marker), { window, ...options.globals })
+    'exports.themeTest = { TB, TW_CSS, KanbanBoard, KanbanExpandedModal, StepList, TaskChip, HeroTaskChip, renderExpandedModal, KANBAN_POPOVER_STYLE, zh, DocConfigView, docStatusMeta, docErrorRows, apply };\n' + marker), { window, ...options.globals })
   return client.themeTest
 }
 

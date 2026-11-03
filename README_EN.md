@@ -211,6 +211,7 @@ A project can declare the Markdown files Trellis should read in `.trellis/doc.js
 - Without `.trellis/doc.json`, the legacy `.trellis/spec/` scan is preserved (index only, no bodies). Once explicitly configured, unlisted legacy Specs are no longer injected.
 - An invalid explicit config produces a short repair diagnostic instead of silently falling back to the legacy tree.
 - Add any new long-lived injected document to `files`. Existing Docs projects can use the migration branch of `trellis-spec-bootstrap`; new projects use its initialization branch.
+- **Visual editor**: switch to **"Project docs"** in the conversation's top-level view bar (next to Chat / Trajectory / Git) to view and edit the current project's `.trellis/doc.json`: add, remove and reorder files, see each file's injection status (full body / truncated to 8KB / path only) and the 32KB budget, and seed a first draft from the existing `.trellis/spec` index when nothing is configured. A save takes effect on the very next injection — no restart.
 
 ---
 

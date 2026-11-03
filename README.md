@@ -209,6 +209,7 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 - 未配置 `.trellis/doc.json` 时继续扫描 `.trellis/spec/`（只注入索引，不注入正文）；显式配置后未列入 `files` 的旧 Spec 不再注入。
 - 显式配置无效时不会静默回退旧 Spec，而是注入一条简短修复提示。
 - 新增需长期注入的文档时，必须同步加入 `files`。已有 Docs 的项目可运行 `trellis-spec-bootstrap` 的迁移分支；新项目使用其初始化分支。
+- **可视化配置**：在会话顶部视图栏切到 **「项目文档」**（与「对话 / 轨迹 / Git」同级），即可查看和编辑当前项目的 `.trellis/doc.json`：增删/排序文件、查看每个文件的注入状态（完整 / 将截断至 8KB / 仅保留路径）与 32KB 预算占用；未配置时可一键载入现有 `.trellis/spec` 索引作为初稿。保存后下一次注入立即生效，无需重启。
 
 ---
 

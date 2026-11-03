@@ -5,9 +5,15 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   DOC_CONFIG_ERROR_INSTRUCTION,
+  MAX_DOC_FILE_BYTES,
+  MAX_DOC_TOTAL_BYTES,
+  evaluateDocConfig,
   formatDocFilesInstruction,
+  planDocBudget,
+  readDocConfigSnapshot,
   readProjectDocConfig,
   resolveSpecIndexInstruction,
+  saveProjectDocConfig,
 } from '../lib/spec.js'
 
 function mockFs() {
@@ -26,6 +32,11 @@ function mockFs() {
     },
     async readText(t) {
       return statSync(t.targetKey).isFile() ? readFileSync(t.targetKey, 'utf8') : ''
+    },
+    async writeText(t, content) {
+      mkdirSync(path.dirname(t.targetKey), { recursive: true })
+      writeFileSync(t.targetKey, content, 'utf8')
+      return { operation: 'update' }
     },
     async listDir(t) {
       return readdirSync(t.targetKey, { withFileTypes: true }).map((entry) => ({
@@ -271,4 +282,218 @@ test('Windows path-case variants dedupe to one injected file', async () => {
 test('the invalid-config diagnostic is fixed and contains no filesystem detail', () => {
   assert.match(DOC_CONFIG_ERROR_INSTRUCTION, /\.trellis\/doc\.json/)
   assert.doesNotMatch(DOC_CONFIG_ERROR_INSTRUCTION, /E:\/|C:\//)
+})
+
+// --- budget planning: the single source of truth for prompt + preview -------
+
+test('planDocBudget keeps full bodies under both budgets in configured order', () => {
+  const a = 'a'.repeat(1000)
+  const b = 'b'.repeat(2000)
+  const plan = planDocBudget([
+    { path: 'a.md', text: a },
+    { path: 'b.md', text: b },
+  ])
+  assert.equal(plan.usedBytes, 3000)
+  assert.deepEqual(plan.entries.map((entry) => entry.status), ['full', 'full'])
+  assert.equal(plan.entries[0].text, a)
+  assert.equal(plan.entries[1].bytes, 2000)
+})
+
+test('planDocBudget clamps one file to the per-file budget', () => {
+  const big = 'x'.repeat(MAX_DOC_FILE_BYTES + 10)
+  const plan = planDocBudget([{ path: 'big.md', text: big }])
+  assert.equal(plan.entries[0].status, 'truncated')
+  assert.equal(plan.entries[0].limit, MAX_DOC_FILE_BYTES)
+  assert.ok(Buffer.byteLength(plan.entries[0].text, 'utf8') <= MAX_DOC_FILE_BYTES)
+  assert.equal(plan.entries[0].bytes, MAX_DOC_FILE_BYTES + 10)
+})
+
+test('planDocBudget degrades to path-only once fewer than 512B remain', () => {
+  const chunk = 'y'.repeat(MAX_DOC_FILE_BYTES)
+  const full = planDocBudget([
+    { path: '1.md', text: chunk },
+    { path: '2.md', text: chunk },
+    { path: '3.md', text: chunk },
+    { path: '4.md', text: chunk },
+    { path: '5.md', text: 'z'.repeat(100) },
+  ])
+  assert.deepEqual(full.entries.map((entry) => entry.status), ['full', 'full', 'full', 'full', 'over-budget'])
+  assert.equal(full.usedBytes, MAX_DOC_TOTAL_BYTES)
+
+  // Exactly 512B left: the next file still gets a 512B slice.
+  const edge = planDocBudget([
+    { path: '1.md', text: chunk },
+    { path: '2.md', text: chunk },
+    { path: '3.md', text: chunk },
+    { path: '4.md', text: 'w'.repeat(MAX_DOC_FILE_BYTES - 512) },
+    { path: '5.md', text: 'q'.repeat(1024) },
+  ])
+  assert.equal(edge.entries[3].status, 'full')
+  assert.equal(edge.entries[4].status, 'truncated')
+  assert.equal(edge.entries[4].limit, 512)
+
+  // 511B left: a sliver is not worth injecting.
+  const sliver = planDocBudget([
+    { path: '1.md', text: chunk },
+    { path: '2.md', text: chunk },
+    { path: '3.md', text: chunk },
+    { path: '4.md', text: 'w'.repeat(MAX_DOC_FILE_BYTES - 511) },
+    { path: '5.md', text: 'q'.repeat(10) },
+  ])
+  assert.equal(sliver.entries[4].status, 'over-budget')
+})
+
+test('planDocBudget marks unreadable files without spending budget', () => {
+  const plan = planDocBudget([
+    { path: 'gone.md', text: null },
+    { path: 'ok.md', text: 'ok' },
+  ])
+  assert.deepEqual(plan.entries.map((entry) => entry.status), ['unreadable', 'full'])
+  assert.equal(plan.usedBytes, 2)
+})
+
+// --- Web config snapshot / validation / write ------------------------------
+
+test('readDocConfigSnapshot reports absent with the legacy index to seed from', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, '.trellis/spec/guides/index.md')
+    seed(root, '.trellis/spec/core/task-engine/index.md')
+    const snapshot = await readDocConfigSnapshot(mockFs(), root)
+    assert.equal(snapshot.state, 'absent')
+    assert.deepEqual(snapshot.files, [])
+    assert.deepEqual(snapshot.legacy, [
+      '.trellis/spec/guides/index.md',
+      '.trellis/spec/core/task-engine/index.md',
+    ])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('readDocConfigSnapshot reports configured files, statuses and budget', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(100))
+    seed(root, 'docs/big.md', 'b'.repeat(MAX_DOC_FILE_BYTES + 50))
+    writeConfig(root, { root: 'docs', files: ['docs/a.md', 'docs/big.md'] })
+    const snapshot = await readDocConfigSnapshot(mockFs(), root)
+    assert.equal(snapshot.state, 'configured')
+    assert.equal(snapshot.root, 'docs')
+    assert.deepEqual(snapshot.files.map((file) => file.status), ['full', 'truncated'])
+    assert.equal(snapshot.files[0].bytes, 100)
+    assert.ok(snapshot.budget.usedBytes > 100)
+    assert.equal(snapshot.legacy, null)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('readDocConfigSnapshot reports invalid without falling back to the legacy scan', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, '.trellis/spec/guides/index.md')
+    writeConfig(root, '{not json')
+    const snapshot = await readDocConfigSnapshot(mockFs(), root)
+    assert.equal(snapshot.state, 'invalid')
+    assert.equal(snapshot.root, null)
+    assert.equal(snapshot.legacy, null)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('evaluateDocConfig rejects every offending entry with its own reason', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md')
+    const result = await evaluateDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['', 'C:/abs.md', '../escape.md', 'docs/a.txt', 'docs/missing.md', 'docs/a.md', 'docs/a.md'],
+    })
+    assert.equal(result.ok, false)
+    assert.equal(result.rootError, null)
+    assert.deepEqual(
+      result.details.map((detail) => detail.reason),
+      ['empty', 'outside', 'outside', 'not-markdown', 'missing', 'duplicate'],
+    )
+    assert.deepEqual(
+      result.details.map((detail) => detail.index),
+      [0, 1, 2, 3, 4, 6],
+    )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('evaluateDocConfig validates the root field and rejects an empty list', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md')
+    const badRoot = await evaluateDocConfig(mockFs(), root, { root: '../outside', files: ['docs/a.md'] })
+    assert.equal(badRoot.ok, false)
+    assert.equal(badRoot.rootError, 'bad-root')
+
+    const empty = await evaluateDocConfig(mockFs(), root, { root: '', files: [] })
+    assert.equal(empty.ok, false)
+    assert.equal(empty.listError, 'empty')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('evaluateDocConfig normalizes a valid draft and plans the real budget', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(4096))
+    const result = await evaluateDocConfig(mockFs(), root, { root: ' docs/ ', files: ['./docs/a.md'] })
+    assert.equal(result.ok, true)
+    assert.equal(result.value.root, 'docs')
+    assert.equal(result.value.files[0].path, 'docs/a.md')
+    assert.equal(result.value.files[0].status, 'full')
+    assert.equal(result.value.budget.usedBytes, 4096)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('saveProjectDocConfig writes stable JSON and preserves unknown fields', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', '# A\n')
+    seed(root, '.trellis/doc.json', JSON.stringify({ root: 'old', files: ['docs/a.md'], extra: { keep: true } }))
+    const result = await saveProjectDocConfig(mockFs(), root, { root: 'docs', files: ['docs/a.md'] })
+    assert.equal(result.ok, true)
+    assert.equal(result.value.state, 'configured')
+    assert.equal(result.value.root, 'docs')
+
+    const text = readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8')
+    assert.ok(!text.startsWith('\uFEFF'), 'the saved file must not carry a BOM')
+    assert.ok(text.endsWith('\n'), 'the saved file must end with a newline')
+    assert.match(text, /"files": \[\n\s+"docs\/a\.md"\n\s+\]/)
+    const parsed = JSON.parse(text)
+    assert.deepEqual(parsed.extra, { keep: true })
+    assert.equal(parsed.root, 'docs')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('saveProjectDocConfig omits an empty root and never writes a rejected draft', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md')
+    const saved = await saveProjectDocConfig(mockFs(), root, { root: '', files: ['docs/a.md'] })
+    assert.equal(saved.ok, true)
+    const parsed = JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8'))
+    assert.equal('root' in parsed, false)
+
+    const rejected = await saveProjectDocConfig(mockFs(), root, { root: '', files: ['docs/missing.md'] })
+    assert.equal(rejected.ok, false)
+    assert.deepEqual(rejected.details.map((detail) => detail.reason), ['missing'])
+    const after = JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8'))
+    assert.deepEqual(after.files, ['docs/a.md'])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })
