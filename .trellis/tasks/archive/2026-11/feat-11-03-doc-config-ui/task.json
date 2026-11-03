@@ -1,0 +1,100 @@
+{
+  "title": "项目级文档注入配置 UI（doc.json 可视化编辑）",
+  "status": "completed",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "title": "抽出唯一预算算法 planDocBudget 并重构 renderDocBodies",
+      "status": "completed",
+      "spec": "lib/spec.js：新增纯函数 planDocBudget(entries)，renderDocBodies 改为消费它；输出必须与现有实现逐字节一致。",
+      "acceptance": [
+        "现有 renderDocBodies 断言全部通过（无文本改动）",
+        "新增边界单测：8192 单文件、32768 总量、剩余 511/512 切片"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "node --test test/spec.test.js test/doc-config.test.js 全绿（planDocBudget 边界 8192/32768/511/512 有单测；renderDocBodies 输出未变）。"
+    },
+    {
+      "id": "s2",
+      "title": "新增 doc.json 快照 / 校验 / 写盘三个能力",
+      "status": "completed",
+      "spec": "lib/spec.js：readDocConfigSnapshot、evaluateDocConfig、saveProjectDocConfig；校验复用 normalizeDocFile/validateDocFile，写盘保持 UTF-8 无 BOM、2 空格缩进、末尾换行。",
+      "acceptance": [
+        "六类校验错误（empty/not-markdown/outside/missing/duplicate/bad-root）各有单测",
+        "写盘格式与未知字段保留有断言",
+        "absent 时返回 .trellis/spec 旧索引清单"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "doc-config.test.js 覆盖快照三态、六类校验错误、写盘格式（无 BOM、2 空格、末尾换行、未知字段保留）。"
+    },
+    {
+      "id": "s3",
+      "title": "新增 doc-config 路由并在保存后失效 spec 缓存",
+      "status": "completed",
+      "spec": "lib/index.js：POST /trellis-workflow/api/doc-config（read/preview/save）；复用 trust-fence、会话 cwd→allowlist、sandboxPolicy；保存后 specIndexCache.delete(root)。",
+      "acceptance": [
+        "mount 测试：403/404/400/405 各路径符合契约",
+        "save 后立即 waterfall system-prompt/assemble 能读到新正文（证明缓存已失效）",
+        "响应只含项目相对路径"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "doc-config-route.test.js 覆盖 403/404/405/400；保存后立即 waterfall 读到新正文（证明 spec 索引缓存已失效）；响应只含相对路径。"
+    },
+    {
+      "id": "s4",
+      "title": "注册会话顶部「项目文档」视图并实现 DocConfigView",
+      "status": "completed",
+      "spec": "lib/client.js：用 slots.inject 包裹注册 conversation.view（id/order/label/locale）；新增 DocConfigView（四态、清单增删与上下移、root 编辑、预算条、防抖 preview、保存、错误行内展示，中英双语）；package.json 的 dsh.client.inject 增加 @deepseek-ai/dsh-client-ui-conversation。",
+      "acceptance": [
+        "vm 测试断言 conversation.view 注册项的 id/order/label/locale",
+        "vm 测试覆盖四态渲染、增删排序、preview/save 请求体、保存按钮禁用条件",
+        "无裸字号/裸圆角（client-polish 通过）"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "client-doc-config.test.js 用真实 bundle 跑 apply() 断言 conversation.view 注册；四态渲染、状态徽章、保存禁用条件均有渲染断言；package.json 注入声明方已校验；全量 client-polish 通过。"
+    },
+    {
+      "id": "s5",
+      "title": "同步 README 与项目 spec 约定",
+      "status": "completed",
+      "spec": "README.md / README_EN.md 增加顶部视图入口说明；.trellis/spec/trellis-workflow/web-ui 与 task-engine 记录 conversation.view 注册、写接口契约与单入口约定。",
+      "acceptance": [
+        "文档不再暗示 doc.json 只能手改",
+        "写接口的请求/响应与安全边界与实现一致",
+        "新视图入口描述与顶部标签一致"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "README 中英与 web-ui / task-engine spec 已同步：顶部视图入口、doc-config 契约、planDocBudget 单一实现、缓存失效与四态。"
+    },
+    {
+      "id": "s6",
+      "title": "全量回归与真实 GUI 验收",
+      "status": "completed",
+      "spec": "node --test 全绿；真实 GUI 中切到「项目文档」→ 编辑并保存 → 下一条消息的 trellis:spec-index 反映新配置。",
+      "acceptance": [
+        "node --test 全绿",
+        "GUI 顶部出现「项目文档」标签，保存后注入内容确实变化"
+      ],
+      "verification": "human",
+      "verified": true,
+      "verifiedBy": "human",
+      "verificationNotes": "用户验收通过：重启后顶部出现「项目文档」标签，编辑保存后下一轮注入内容发生变化。"
+    }
+  ]
+}
