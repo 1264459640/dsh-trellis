@@ -289,6 +289,8 @@ test('the shipped card renders the form for a page and the one-liner for a summa
     inline: empty,
     enforceReadonlyPlanning: empty,
     injectSpecIndex: empty,
+    docFileBudgetKB: empty,
+    docTotalBudgetKB: empty,
   }
   const props = {
     t: (key) => key,
@@ -316,6 +318,8 @@ test('the shipped card renders the form for a page and the one-liner for a summa
   collect(page)
   assert.deepEqual(fieldIds.sort(), [
     'trellis-config-allowlist',
+    'trellis-config-doc-file-budget',
+    'trellis-config-doc-total-budget',
     'trellis-config-inject-step',
     'trellis-config-inline',
     'trellis-config-readonly',

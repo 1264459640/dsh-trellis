@@ -182,7 +182,9 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
 |---|---|---|---|
 | `allowlist` | `string[]` | `[]` | **生效白名单**：允许插件接入的项目根目录绝对路径列表。为空时不介入任何项目 |
 | `enforceReadonlyPlanning` | `boolean` | `false` | **规划期只读保护**：开启后，方案定稿前在运行时移除代码修改工具 |
-| `injectSpecIndex` | `boolean` | `true` | **注入项目文档**：项目配置 `.trellis/doc.json` 时注入 `files` 列出的文档**正文**（单文件上限 8KB、总上限 32KB，超出部分截断并标注路径）；未配置时兼容扫描 `.trellis/spec/` 只注入索引 |
+| `injectSpecIndex` | `boolean` | `true` | **注入项目文档**：项目配置 `.trellis/doc.json` 时注入 `files` 列出的文档**正文**（上限由下面的注入预算控制，超出部分截断并标注路径）；未配置时兼容扫描 `.trellis/spec/` 只注入索引 |
+| `docFileBudgetKB` | `number` | `8` | **单文件注入预算（KB）**：单个文档正文最多注入多少 KB，硬顶 128KB；项目可在 `.trellis/doc.json` 的 `budgets.fileKB` 逐项目覆盖 |
+| `docTotalBudgetKB` | `number` | `32` | **正文合计注入预算（KB）**：全部文档正文合计最多注入多少 KB，硬顶 512KB；项目可在 `.trellis/doc.json` 的 `budgets.totalKB` 逐项目覆盖 |
 | `skipKeywords` | `string[]` | `['no-trellis']` | **跳过关键词**：用户消息包含这些词时，该轮跳过面包屑注入与拦截（系统提示词段的 `injectSpecIndex` / `enforceReadonlyPlanning` 属会话级，不受单轮关键词抑制，请用各自开关关闭） |
 | `injectStep` | `number` | `1` | 面包屑提示词的注入步数，默认仅在每轮交互第 1 步注入 |
 | `inline` | `boolean` | `false` | 是否开启 codex-inline 风格的阶段解析模式 |
@@ -199,17 +201,19 @@ dsh plugin --profile web add @banana-peeljj12/dsh-trellis@latest
   "files": [
     ".trellis/spec/guides/index.md",
     ".trellis/spec/trellis-workflow/task-engine/index.md"
-  ]
+  ],
+  "budgets": { "fileKB": 16, "totalKB": 64 }
 }
 ```
 
 - `files`：运行时注入白名单。每项必须是项目根相对的 Markdown 完整路径；支持多个文件，按配置顺序注入并去重。**注入的是正文**，不是路径。
-- **注入预算**：单文件最多 8KB、全部文件正文合计最多 32KB（UTF-8 字节）。超出的部分会截断，并标注「已截断 / 超出预算，请 read <路径>」，模型可据此补读；读取失败的文件同样标注路径。
+- `budgets`（可选）：本项目自己的注入预算，单位 KB，只写想覆盖的那一项即可。优先级 **`doc.json` 的 `budgets` > 插件设置 `docFileBudgetKB` / `docTotalBudgetKB` > 内置默认 8KB / 32KB**；单文件硬顶 128KB、合计硬顶 512KB，超出的值会被夹紧。写 `0`、负数或非数字视为未设置，自动回退上一级。
+- **注入预算**：单文件与合计各有一档上限（默认 8KB / 32KB，UTF-8 字节）。超出的部分会截断，并标注「已截断 / 超出预算，请 read <路径>」，模型可据此补读；读取失败的文件同样标注路径。提示词头会回显本次真实生效的两个上限。
 - `root`：仅供 `trellis-spec-bootstrap`、`trellis-update-spec` 等 Skill 作为文档发现与沉淀的默认根目录，不拼接或过滤 `files`，也不改变运行时注入结果。
 - 未配置 `.trellis/doc.json` 时继续扫描 `.trellis/spec/`（只注入索引，不注入正文）；显式配置后未列入 `files` 的旧 Spec 不再注入。
 - 显式配置无效时不会静默回退旧 Spec，而是注入一条简短修复提示。
 - 新增需长期注入的文档时，必须同步加入 `files`。已有 Docs 的项目可运行 `trellis-spec-bootstrap` 的迁移分支；新项目使用其初始化分支。
-- **可视化配置**：在会话顶部视图栏切到 **「项目文档」**（与「对话 / 轨迹 / Git」同级），即可查看和编辑当前项目的 `.trellis/doc.json`：增删/排序文件、查看每个文件的注入状态（完整 / 将截断至 8KB / 仅保留路径）与 32KB 预算占用；未配置时可一键载入现有 `.trellis/spec` 索引作为初稿。保存后下一次注入立即生效，无需重启。
+- **可视化配置**：在会话顶部视图栏切到 **「项目文档」**（与「对话 / 轨迹 / Git」同级），即可查看和编辑当前项目的 `.trellis/doc.json`：增删/排序文件、在「注入预算」里直接改本项目的单文件 / 合计上限（留空 = 继承插件设置，非法值就地标红且不能保存）、查看每个文件的注入状态（完整 / 将截断至 生效上限 / 仅保留路径）与预算占用；未配置时可一键载入现有 `.trellis/spec` 索引作为初稿。保存后下一次注入立即生效，无需重启。
 
 ---
 

@@ -84,7 +84,7 @@
    因此"项目带 `.trellis/spec/`"这一事实不能只靠面包屑传递。
    - **装配期注入**：`system-prompt/assemble` 在命中 allowlist 后追加 `trellis:spec-index` 段
      （`lib/spec.js` + `appendSpecInstruction`），分两条分支：
-     存在 `.trellis/doc.json` 时按 `files` 注入**正文**（`renderDocBodies`；单文件 8KB、总量 32KB，
+     存在 `.trellis/doc.json` 时按 `files` 注入**正文**（`renderDocBodies`；上限由 `resolveDocBudget` 决定的生效预算控制——插件设置 `docFileBudgetKB` / `docTotalBudgetKB` 可被项目的 `budgets` 覆盖，默认 8KB/32KB、硬顶 128KB/512KB，
      超限截断并标注「已截断/超出预算 + read 路径」）；无配置时仍走 `.trellis/spec/**` **索引**
      （路径 + 先读约束，不注入正文）。
    - **与只读策略解耦**：spec 索引是领域知识而非写保护，由独立开关 `injectSpecIndex`（默认 true）控制，
@@ -143,7 +143,10 @@
 
 1. **`.trellis/doc.json` 的 `files` 是运行时注入白名单**：每项必须是项目根相对的
    Markdown 完整路径；支持多个文件，按配置顺序注入**正文**，归一化后去重。目录永远不进入提示词。
-   正文受双预算约束（`MAX_DOC_FILE_BYTES = 8KB`、`MAX_DOC_TOTAL_BYTES = 32KB`）：超限必须截断并
+   正文受双预算约束（默认单文件 8KB、合计 32KB，可用插件设置 `docFileBudgetKB` / `docTotalBudgetKB`
+   调整，项目还可用 `.trellis/doc.json` 的 `budgets: { fileKB, totalKB }` 覆盖）：
+   优先级 **`doc.json` 的 `budgets` > 插件设置 > 内置默认**，硬顶 128KB / 512KB，非法值逐级回退；
+   KB→字节换算与夹紧只允许在 `lib/spec.js` 的 `resolveDocBudget` 一处发生。超限必须截断并
    标注「已截断/超出预算 + read 路径」，读取失败同样标注路径；禁止静默省略或悄悄降级为纯路径。
 2. **无配置时保留旧扫描**：不存在 `.trellis/doc.json` 时继续扫描 `.trellis/spec/**/*.md`。
    显式配置后只认 files，不回退旧目录；任一 files 项无效时整组配置无效，并注入固定诊断

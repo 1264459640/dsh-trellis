@@ -55,7 +55,7 @@ function mockFs() {
  * return a caller that performs one real HTTP-shaped request against it.
  * @param {{ cwd: string, allowlist?: string[], sessionId?: string }} options
  */
-async function mountRoute({ cwd, allowlist = [cwd], sessionId = 'sess-1' }) {
+async function mountRoute({ cwd, allowlist = [cwd], sessionId = 'sess-1', config = {} }) {
   const root = new Context()
   let handler = null
   root.provide('fs', mockFs())
@@ -75,7 +75,7 @@ async function mountRoute({ cwd, allowlist = [cwd], sessionId = 'sess-1' }) {
       }
     },
   })
-  root.plugin(plugin, { allowlist })
+  root.plugin(plugin, { allowlist, ...config })
   await new Promise((resolve) => setTimeout(resolve, 250))
   assert.ok(handler, 'the API prefix route was not registered')
   return { root, call: (request) => invoke(handler, request) }
@@ -224,3 +224,120 @@ test('save writes doc.json and the next assembly reads it without waiting for th
     rmSync(root, { recursive: true, force: true })
   }
 })
+// --- injection budgets (feat-11-03-configurable-inject-budget) -------------
+
+test('doc-config rejects a budgets payload that is neither an object nor null', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', '# A\n')
+    const { call } = await mountRoute({ cwd: root })
+    for (const budgets of ['16', 16, ['16'], true]) {
+      const response = await call({
+        body: { sessionId: 'sess-1', action: 'preview', root: 'docs', files: ['docs/a.md'], budgets },
+      })
+      assert.equal(response.status, 400, `budgets=${JSON.stringify(budgets)} must be rejected`)
+      assert.equal(response.body.ok, false)
+    }
+    // null / absent are both "inherit the settings default".
+    const absent = await call({ body: { sessionId: 'sess-1', action: 'preview', root: 'docs', files: ['docs/a.md'] } })
+    assert.equal(absent.status, 200)
+    assert.equal(absent.body.value.budgets, null)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('preview reports budget validation before anything is written', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', '# A\n')
+    const { call } = await mountRoute({ cwd: root })
+    const response = await call({
+      body: {
+        sessionId: 'sess-1',
+        action: 'preview',
+        root: 'docs',
+        files: ['docs/a.md'],
+        budgets: { fileKB: '129', totalKB: 'abc' },
+      },
+    })
+    assert.equal(response.status, 400)
+    assert.deepEqual(response.body.budgetErrors, { file: 'too-large', total: 'bad-number' })
+    assert.equal(existsSync(path.join(root, '.trellis', 'doc.json')), false)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('a saved budget override reaches the very next assembly', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'x'.repeat(6000))
+    const { root: ctx, call } = await mountRoute({ cwd: root })
+
+    const saved = await call({
+      body: {
+        sessionId: 'sess-1',
+        action: 'save',
+        root: 'docs',
+        files: ['docs/a.md'],
+        budgets: { fileKB: '4', totalKB: '' },
+      },
+    })
+    assert.equal(saved.status, 200)
+    assert.deepEqual(JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8')).budgets, {
+      fileKB: 4,
+    })
+
+    const assembled = await ctx.waterfall('system-prompt/assemble', { tools: [], sections: [] }, {}, (base) => base)
+    const section = assembled.sections.find((item) => item.name === SPEC_INDEX_SECTION)
+    assert.ok(section, 'the saved config must be injected on the very next assembly')
+    assert.match(section.text, /单文件上限 4KB，正文合计上限 32KB/)
+    assert.match(section.text, /正文已截断，仅注入前 4KB/)
+
+    // Clearing both fields removes the override and the header falls back.
+    const cleared = await call({
+      body: {
+        sessionId: 'sess-1',
+        action: 'save',
+        root: 'docs',
+        files: ['docs/a.md'],
+        budgets: { fileKB: '', totalKB: '' },
+      },
+    })
+    assert.equal(cleared.status, 200)
+    assert.equal('budgets' in JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8')), false)
+    const afterClear = await ctx.waterfall('system-prompt/assemble', { tools: [], sections: [] }, {}, (base) => base)
+    const clearedSection = afterClear.sections.find((item) => item.name === SPEC_INDEX_SECTION)
+    assert.match(clearedSection.text, /单文件上限 8KB，正文合计上限 32KB/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('the settings budget drives the header and is part of the memo key', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'x'.repeat(6000))
+    seed(root, '.trellis/doc.json', JSON.stringify({ files: ['docs/a.md'] }))
+
+    const small = await mountRoute({ cwd: root, config: { docFileBudgetKB: 2, docTotalBudgetKB: 8 } })
+    const headSmall = await small.root.waterfall('system-prompt/assemble', { tools: [], sections: [] }, {}, (base) => base)
+    const smallSection = headSmall.sections.find((item) => item.name === SPEC_INDEX_SECTION)
+    assert.match(smallSection.text, /单文件上限 2KB，正文合计上限 8KB/)
+
+    // A second mount with a DIFFERENT budget must not reuse the first text:
+    // the memo key carries the budget, not just the project root.
+    const large = await mountRoute({ cwd: root, config: { docFileBudgetKB: 16, docTotalBudgetKB: 32 } })
+    const headLarge = await large.root.waterfall('system-prompt/assemble', { tools: [], sections: [] }, {}, (base) => base)
+    const largeSection = headLarge.sections.find((item) => item.name === SPEC_INDEX_SECTION)
+    assert.match(largeSection.text, /单文件上限 16KB，正文合计上限 32KB/)
+
+    const read = await large.call({ body: { sessionId: 'sess-1', action: 'read' } })
+    assert.deepEqual(read.body.value.budgetDefaults, { fileKB: 16, totalKB: 32 })
+    assert.equal(read.body.value.budget.fileMax, 16384)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+

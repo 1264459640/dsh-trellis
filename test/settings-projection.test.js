@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import z from '@deepseek-ai/schemastery'
 
-import { SCHEMA } from '../lib/meta.js'
+import { SCHEMA, unwrapVolatileConfig } from '../lib/meta.js'
 
 /**
  * The plugin's Config must stay *describable* by dsh-settings.
@@ -52,6 +52,8 @@ const FIELDS = [
   'inline',
   'enforceReadonlyPlanning',
   'injectSpecIndex',
+  'docFileBudgetKB',
+  'docTotalBudgetKB',
 ]
 
 test('the entry carries a Config schema describe() can read', () => {
@@ -69,4 +71,15 @@ test('every config field is volatile, so describe() lists the entry', () => {
 
 test('the schema survives the plainSchema reconstruction describe() performs', () => {
   assert.equal(new z(SCHEMA.toJSON()).type, 'object')
+})
+
+test('the injection budget fields default to 8KB / 32KB', () => {
+  // Volatile fields resolve to a cosmokit volatile wrapper; unwrap before
+  // comparing (the same helper lib/index.js consumes at runtime).
+  const resolved = unwrapVolatileConfig(SCHEMA({}))
+  assert.equal(resolved.docFileBudgetKB, 8)
+  assert.equal(resolved.docTotalBudgetKB, 32)
+  const form = volatileForm(SCHEMA)
+  assert.ok(form.dict.docFileBudgetKB, 'docFileBudgetKB must be editable through the form')
+  assert.ok(form.dict.docTotalBudgetKB, 'docTotalBudgetKB must be editable through the form')
 })

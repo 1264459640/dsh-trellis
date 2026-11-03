@@ -6,8 +6,10 @@ import path from 'node:path'
 import {
   SPEC_ROOT_PREFIX,
   SPEC_INDEX_SECTION,
-  MAX_DOC_FILE_BYTES,
-  MAX_DOC_TOTAL_BYTES,
+  DEFAULT_DOC_BUDGET,
+  resolveDocBudget,
+  parseBudgetDraft,
+  formatBudgetKB,
   compareSpecPaths,
   listProjectSpecs,
   formatSpecIndexInstruction,
@@ -15,6 +17,10 @@ import {
   renderDocBodies,
 } from '../lib/spec.js'
 import { READONLY_SECTION, appendReadonlyInstruction } from '../lib/readonly.js'
+
+/** Built-in (unconfigured) byte budget — what the old constants used to be. */
+const DEFAULT_FILE_BYTES = DEFAULT_DOC_BUDGET.fileBytes
+const DEFAULT_TOTAL_BYTES = DEFAULT_DOC_BUDGET.totalBytes
 
 /** Minimal dsh-fs stand-in over a real directory (resolve/stat/listDir only). */
 function mockFs(root) {
@@ -318,7 +324,7 @@ test('renderDocBodies clamps one file to the per-file budget on a line boundary'
     assert.match(text, /正文已截断，仅注入前 8KB/)
     assert.match(text, /read big\.md/)
     const block = text.split('## 文件：big.md\n')[1].split('\n\n（正文已截断')[0]
-    assert.ok(Buffer.byteLength(block, 'utf8') <= MAX_DOC_FILE_BYTES, 'the body must respect the per-file cap')
+    assert.ok(Buffer.byteLength(block, 'utf8') <= DEFAULT_FILE_BYTES, 'the body must respect the per-file cap')
     assert.ok(!block.includes('\uFFFD'), 'a cut must not leave a broken multi-byte character')
     assert.ok(block.endsWith('\n'), 'the cut must land on a line boundary')
   } finally {
@@ -329,13 +335,13 @@ test('renderDocBodies clamps one file to the per-file budget on a line boundary'
 test('renderDocBodies stops at the total budget and marks the rest path-only', async () => {
   const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-total-'))
   try {
-    const exact = 'x'.repeat(MAX_DOC_FILE_BYTES - 1) + '\n'
+    const exact = 'x'.repeat(DEFAULT_FILE_BYTES - 1) + '\n'
     const files = [0, 1, 2, 3, 4].map((i) => `f${i}.md`)
     for (const file of files) writeFileSync(path.join(root, file), exact)
     const text = await renderDocBodies(mockFs(root), root, files)
     assert.match(text, /## 文件：f4\.md\n（超出注入预算，未注入正文；完整内容请 read f4\.md）/)
     assert.equal((text.match(/超出注入预算/g) || []).length, 1, 'only the file past the budget degrades')
-    assert.ok(text.length > MAX_DOC_TOTAL_BYTES, 'the first four files are still injected in full')
+    assert.ok(text.length > DEFAULT_TOTAL_BYTES, 'the first four files are still injected in full')
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

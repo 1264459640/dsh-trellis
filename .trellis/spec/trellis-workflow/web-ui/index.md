@@ -348,3 +348,4 @@
 42. **编辑器四态**：未配置（可一键载入 `.trellis/spec` 索引）、已配置、配置无效、未纳管
     （allowlist 外）。未纳管只给说明，不给编辑 / 保存入口；配置无效时不假装回退旧 Spec。
 
+43. **注入预算可配置（feat-11-03-configurable-inject-budget）**：预算不再写死，解析与夹紧只在 `lib/spec.js` 的 `resolveDocBudget`（KB→字节、优先级 `doc.json budgets > 插件设置 docFileBudgetKB/docTotalBudgetKB > 内置 8/32`、硬顶 128KB/512KB、非法值逐级回退）。「项目文档」视图的预算输入框写的就是 `doc.json` 的 `budgets`：留空=继承（保存时删键），非法=行内报错并禁用保存，草稿预算随 preview/save 一起提交；快照回显**夹紧后**的值，否则输入框会展示一个自己校验不过的数字。缓存键必须含预算（`root\0fileKB:totalKB`），保存后整根失效（`invalidateSpecIndex`）。

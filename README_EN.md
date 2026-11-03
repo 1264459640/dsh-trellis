@@ -184,7 +184,9 @@ Configure via the Web UI (sidebar **Plugins** icon → **@banana-peeljj12/dsh-tr
 |---|---|---|---|
 | `allowlist` | `string[]` | `[]` | **Project Allowlist**: Absolute paths of enabled workspace roots. Empty disables interception |
 | `enforceReadonlyPlanning` | `boolean` | `false` | **Read-Only Planning**: Strips code modification tools during planning stages when enabled |
-| `injectSpecIndex` | `boolean` | `true` | **Inject project docs**: when `.trellis/doc.json` exists, injects the document **bodies** listed in `files` (8KB per file / 32KB total; anything cut is truncated and marked with its path); without it, the legacy `.trellis/spec/` index scan is preserved |
+| `injectSpecIndex` | `boolean` | `true` | **Inject project docs**: when `.trellis/doc.json` exists, injects the document **bodies** listed in `files` (caps come from the two injection-budget keys below; anything cut is truncated and marked with its path); without it, the legacy `.trellis/spec/` index scan is preserved |
+| `docFileBudgetKB` | `number` | `8` | **Per-file injection budget (KB)**: how many KB of one document body may be injected, hard cap 128KB; a project can override it via `budgets.fileKB` in `.trellis/doc.json` |
+| `docTotalBudgetKB` | `number` | `32` | **Total body injection budget (KB)**: how many KB of bodies may be injected in total, hard cap 512KB; a project can override it via `budgets.totalKB` in `.trellis/doc.json` |
 | `skipKeywords` | `string[]` | `['no-trellis']` | **Skip Keywords**: Suppresses the per-turn breadcrumb and interception when the user message contains one of these words. The session-level prompt sections (`injectSpecIndex` / `enforceReadonlyPlanning`) are not suppressed per turn — turn them off with their own switches |
 | `injectStep` | `number` | `1` | Breadcrumb prompt injection step index (default: first step of turn) |
 | `inline` | `boolean` | `false` | Enables codex-inline style phase dispatch |
@@ -201,17 +203,19 @@ A project can declare the Markdown files Trellis should read in `.trellis/doc.js
   "files": [
     ".trellis/spec/guides/index.md",
     ".trellis/spec/trellis-workflow/task-engine/index.md"
-  ]
+  ],
+  "budgets": { "fileKB": 16, "totalKB": 64 }
 }
 ```
 
 - `files`: the runtime injection whitelist. Every entry is a project-relative Markdown file path. Multiple files are supported, injected in order, and deduplicated. **Bodies are injected**, not paths.
-- **Budgets**: at most 8KB per file and 32KB of bodies in total (UTF-8 bytes). Anything over the budget is truncated and marked `truncated / over budget — read <path>` so the model can fetch the rest; unreadable files are marked with their path too.
+- `budgets` (optional): this project's own injection budget in KB — write only the field you want to override. Precedence: **`budgets` in `doc.json` > the `docFileBudgetKB` / `docTotalBudgetKB` settings > built-in 8KB / 32KB**, with hard caps of 128KB per file and 512KB in total (out-of-range values are clamped). `0`, negative numbers or non-numbers count as "not configured" and fall through to the next source.
+- **Budgets**: per-file and total caps (default 8KB / 32KB, UTF-8 bytes). Anything over the budget is truncated and marked `truncated / over budget — read <path>` so the model can fetch the rest; unreadable files are marked with their path too. The prompt header echoes the caps actually in effect.
 - `root`: Skill metadata only. `trellis-spec-bootstrap` and `trellis-update-spec` use it as the default documentation root for discovery and updates. It neither prefixes nor filters `files`, and changing it never changes runtime injection.
 - Without `.trellis/doc.json`, the legacy `.trellis/spec/` scan is preserved (index only, no bodies). Once explicitly configured, unlisted legacy Specs are no longer injected.
 - An invalid explicit config produces a short repair diagnostic instead of silently falling back to the legacy tree.
 - Add any new long-lived injected document to `files`. Existing Docs projects can use the migration branch of `trellis-spec-bootstrap`; new projects use its initialization branch.
-- **Visual editor**: switch to **"Project docs"** in the conversation's top-level view bar (next to Chat / Trajectory / Git) to view and edit the current project's `.trellis/doc.json`: add, remove and reorder files, see each file's injection status (full body / truncated to 8KB / path only) and the 32KB budget, and seed a first draft from the existing `.trellis/spec` index when nothing is configured. A save takes effect on the very next injection — no restart.
+- **Visual editor**: switch to **"Project docs"** in the conversation's top-level view bar (next to Chat / Trajectory / Git) to view and edit the current project's `.trellis/doc.json`: add, remove and reorder files, edit the project's own "Injection budget" (per-file / total KB — blank inherits the plugin setting, an invalid value is marked inline and blocks saving), see each file's injection status (full body / truncated to the effective cap / path only) and budget usage, and seed a first draft from the existing `.trellis/spec` index when nothing is configured. A save takes effect on the very next injection — no restart.
 
 ---
 

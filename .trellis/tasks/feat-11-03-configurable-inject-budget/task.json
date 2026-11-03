@@ -1,0 +1,136 @@
+{
+  "title": "注入预算可由用户自定义（设置全局默认 + doc.json 逐项目覆盖）",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "目前 .trellis/doc.json 正文注入的字节预算硬编码为单文件 8KB / 合计 32KB（lib/spec.js MAX_DOC_FILE_BYTES / MAX_DOC_TOTAL_BYTES）。希望：插件设置表单提供全局默认预算（volatile 字段），并允许项目 .trellis/doc.json 逐项目覆盖；提示词头部说明与 Web「项目文档」视图的预算进度条需随之动态化。",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "spec.js 预算核心：常量 + resolveDocBudget + parseBudgetDraft",
+      "status": "completed",
+      "spec": "按 design.md「预算解析：唯一实现」与「草稿校验」实现。",
+      "acceptance": [
+        "resolveDocBudget/parseBudgetDraft 均导出且为纯函数",
+        "夹紧：10240KB → 128KB(单文件)/512KB(合计)",
+        "非法值（0/负数/字符串/NaN/Infinity）逐级回退到内置 8/32",
+        "parseBudgetDraft: ''=继承，'0'/'abc'→bad-number，'129'→too-large(单文件)，'128' 通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/doc-config.test.js: resolveDocBudget 优先级/夹紧/非法回退 2 用例 + parseBudgetDraft 用例全绿；node --test 308 pass"
+    },
+    {
+      "id": "s2",
+      "title": "spec.js 注入链路接预算并动态化文案",
+      "status": "completed",
+      "spec": "planDocBudget(entries, budget = DEFAULT_DOC_BUDGET)；renderDocBodies/resolveSpecIndexInstruction 接预算。",
+      "acceptance": [
+        "planDocBudget 不传 budget 时行为不变",
+        "提示词头显示生效值",
+        "截断分支判据改为 entry.limit < budget.fileBytes"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/doc-config.test.js: planDocBudget honours an explicit budget / renderDocBodies echoes the effective budget；旧 spec.test.js 断言未改亦通过"
+    },
+    {
+      "id": "s3",
+      "title": "spec.js 配置读写链路：budgets 透传/校验/保存",
+      "status": "completed",
+      "spec": "budgets 透传/校验/保存链路。",
+      "acceptance": [
+        "未配置 budgets 的项目快照 budget = 设置默认",
+        "草稿 fileKB=16 时 value.budget.fileMax=16384",
+        "非法草稿预算返回 ok:false + budgetErrors 且不写盘",
+        "两项留空保存后 doc.json 无 budgets 键；只写一项只保留该项"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/doc-config.test.js: evaluateDocConfig applies the draft budget / readDocConfigSnapshot echoes / saveProjectDocConfig 写单键与删键 3 用例全绿"
+    },
+    {
+      "id": "s4",
+      "title": "meta.js 两字段 + index.js 接线（assemble/缓存键/路由）",
+      "status": "completed",
+      "spec": "meta.js 两字段 + index.js assemble/缓存键/路由。",
+      "acceptance": [
+        "settings schema 默认 8/32 且 volatile",
+        "缓存键含 fileKB:totalKB，改设置后不命中旧文本",
+        "budgets 既非对象也非 null → 400 bad request"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/doc-config-route.test.js: budgets 载荷 400 / preview budgetErrors / 保存后立即生效 / 设置预算驱动 header 且 memo key 含预算；test/settings-projection 默认值 8/32"
+    },
+    {
+      "id": "s5",
+      "title": "client.js 设置卡片两个数字字段 + 中英文案",
+      "status": "completed",
+      "spec": "client.js 设置卡片两字段 + 中英文案。",
+      "acceptance": [
+        "设置卡片渲染两个数字输入且 id 稳定",
+        "edit/reset 走 docFileBudgetKB / docTotalBudgetKB",
+        "projection 暴露两字段"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/client.test.js 字段 id 精确集合断言；settings-projection FIELDS 全等断言通过"
+    },
+    {
+      "id": "s6",
+      "title": "client.js 项目文档视图预算编辑区块",
+      "status": "completed",
+      "spec": "DocConfigView 预算编辑区块。",
+      "acceptance": [
+        "输入框初值来自 value.budgets，缺失为空",
+        "改动触发 preview 请求体包含 budgets",
+        "too-large/bad-number 时保存禁用",
+        "进度条与截断文案随服务端 fileMax/totalMax 变化"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "test/client-doc-config.test.js 新增 4 用例全绿：输入渲染与 placeholder、超顶拦保存、preview/save 载荷含 budgets、硬编码 8KB/32KB 已清除"
+    },
+    {
+      "id": "s7",
+      "title": "测试补齐与全量回归",
+      "status": "completed",
+      "spec": "测试补齐与全量回归。",
+      "acceptance": [
+        "node --test 全量通过",
+        "新增用例覆盖夹紧/回退/优先级/留空删键/视图校验/缓存失效",
+        "无通过删断言凑绿的改动"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "node --test → tests 308 / pass 308 / fail 0"
+    },
+    {
+      "id": "s8",
+      "title": "README 中英与规范文档同步",
+      "status": "completed",
+      "spec": "README 中英与规范文档同步。",
+      "acceptance": [
+        "README 中英配置表含两字段与默认值",
+        "文档写明优先级与硬顶 128KB/512KB",
+        "视图预算编辑与校验行为有说明"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "README.md / README_EN.md 配置表新增 docFileBudgetKB / docTotalBudgetKB，doc.json 示例加 budgets 并写明优先级、硬顶与视图编辑行为"
+    }
+  ]
+}

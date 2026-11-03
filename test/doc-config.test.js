@@ -5,16 +5,23 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   DOC_CONFIG_ERROR_INSTRUCTION,
-  MAX_DOC_FILE_BYTES,
-  MAX_DOC_TOTAL_BYTES,
+  DEFAULT_DOC_BUDGET,
   evaluateDocConfig,
+  formatBudgetKB,
   formatDocFilesInstruction,
+  parseBudgetDraft,
   planDocBudget,
   readDocConfigSnapshot,
   readProjectDocConfig,
+  renderDocBodies,
+  resolveDocBudget,
   resolveSpecIndexInstruction,
   saveProjectDocConfig,
 } from '../lib/spec.js'
+
+/** Built-in (unconfigured) byte budget — what the old constants used to be. */
+const DEFAULT_FILE_BYTES = DEFAULT_DOC_BUDGET.fileBytes
+const DEFAULT_TOTAL_BYTES = DEFAULT_DOC_BUDGET.totalBytes
 
 function mockFs() {
   const target = (p) => ({ targetKey: path.resolve(p), displayPath: p })
@@ -300,16 +307,16 @@ test('planDocBudget keeps full bodies under both budgets in configured order', (
 })
 
 test('planDocBudget clamps one file to the per-file budget', () => {
-  const big = 'x'.repeat(MAX_DOC_FILE_BYTES + 10)
+  const big = 'x'.repeat(DEFAULT_FILE_BYTES + 10)
   const plan = planDocBudget([{ path: 'big.md', text: big }])
   assert.equal(plan.entries[0].status, 'truncated')
-  assert.equal(plan.entries[0].limit, MAX_DOC_FILE_BYTES)
-  assert.ok(Buffer.byteLength(plan.entries[0].text, 'utf8') <= MAX_DOC_FILE_BYTES)
-  assert.equal(plan.entries[0].bytes, MAX_DOC_FILE_BYTES + 10)
+  assert.equal(plan.entries[0].limit, DEFAULT_FILE_BYTES)
+  assert.ok(Buffer.byteLength(plan.entries[0].text, 'utf8') <= DEFAULT_FILE_BYTES)
+  assert.equal(plan.entries[0].bytes, DEFAULT_FILE_BYTES + 10)
 })
 
 test('planDocBudget degrades to path-only once fewer than 512B remain', () => {
-  const chunk = 'y'.repeat(MAX_DOC_FILE_BYTES)
+  const chunk = 'y'.repeat(DEFAULT_FILE_BYTES)
   const full = planDocBudget([
     { path: '1.md', text: chunk },
     { path: '2.md', text: chunk },
@@ -318,14 +325,14 @@ test('planDocBudget degrades to path-only once fewer than 512B remain', () => {
     { path: '5.md', text: 'z'.repeat(100) },
   ])
   assert.deepEqual(full.entries.map((entry) => entry.status), ['full', 'full', 'full', 'full', 'over-budget'])
-  assert.equal(full.usedBytes, MAX_DOC_TOTAL_BYTES)
+  assert.equal(full.usedBytes, DEFAULT_TOTAL_BYTES)
 
   // Exactly 512B left: the next file still gets a 512B slice.
   const edge = planDocBudget([
     { path: '1.md', text: chunk },
     { path: '2.md', text: chunk },
     { path: '3.md', text: chunk },
-    { path: '4.md', text: 'w'.repeat(MAX_DOC_FILE_BYTES - 512) },
+    { path: '4.md', text: 'w'.repeat(DEFAULT_FILE_BYTES - 512) },
     { path: '5.md', text: 'q'.repeat(1024) },
   ])
   assert.equal(edge.entries[3].status, 'full')
@@ -337,7 +344,7 @@ test('planDocBudget degrades to path-only once fewer than 512B remain', () => {
     { path: '1.md', text: chunk },
     { path: '2.md', text: chunk },
     { path: '3.md', text: chunk },
-    { path: '4.md', text: 'w'.repeat(MAX_DOC_FILE_BYTES - 511) },
+    { path: '4.md', text: 'w'.repeat(DEFAULT_FILE_BYTES - 511) },
     { path: '5.md', text: 'q'.repeat(10) },
   ])
   assert.equal(sliver.entries[4].status, 'over-budget')
@@ -375,7 +382,7 @@ test('readDocConfigSnapshot reports configured files, statuses and budget', asyn
   const root = tempRoot()
   try {
     seed(root, 'docs/a.md', 'a'.repeat(100))
-    seed(root, 'docs/big.md', 'b'.repeat(MAX_DOC_FILE_BYTES + 50))
+    seed(root, 'docs/big.md', 'b'.repeat(DEFAULT_FILE_BYTES + 50))
     writeConfig(root, { root: 'docs', files: ['docs/a.md', 'docs/big.md'] })
     const snapshot = await readDocConfigSnapshot(mockFs(), root)
     assert.equal(snapshot.state, 'configured')
@@ -496,4 +503,295 @@ test('saveProjectDocConfig omits an empty root and never writes a rejected draft
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
+})
+
+// --- injection budgets (feat-11-03-configurable-inject-budget) -------------
+
+test('resolveDocBudget prefers the doc.json override, then settings, then the built-in default', () => {
+  assert.deepEqual(resolveDocBudget(), { fileBytes: 8192, totalBytes: 32768 })
+  assert.deepEqual(resolveDocBudget({ fileKB: 16, totalKB: 64 }), { fileBytes: 16384, totalBytes: 65536 })
+  // Each field falls through independently.
+  assert.deepEqual(resolveDocBudget({ fileKB: 16, totalKB: 64 }, { fileKB: 4 }), {
+    fileBytes: 4096,
+    totalBytes: 65536,
+  })
+  assert.deepEqual(resolveDocBudget({ totalKB: 64 }, { fileKB: 4 }), { fileBytes: 4096, totalBytes: 65536 })
+  assert.deepEqual(resolveDocBudget(null, { totalKB: 128 }), { fileBytes: 8192, totalBytes: 131072 })
+})
+
+test('resolveDocBudget clamps to the hard caps and treats junk as "not configured"', () => {
+  // 10MB-ish inputs clamp to the hard caps instead of blowing the prompt up.
+  assert.deepEqual(resolveDocBudget({ fileKB: 10240, totalKB: 10240 }), {
+    fileBytes: 128 * 1024,
+    totalBytes: 512 * 1024,
+  })
+  // Junk in the override falls back to the settings value ...
+  assert.deepEqual(resolveDocBudget({ fileKB: 16 }, { fileKB: 0 }), { fileBytes: 16384, totalBytes: 32768 })
+  // ... and junk in the settings value falls back to the built-in default.
+  for (const junk of [0, -5, '16', Number.NaN, Number.POSITIVE_INFINITY, null]) {
+    assert.deepEqual(resolveDocBudget({ fileKB: junk, totalKB: junk }), { fileBytes: 8192, totalBytes: 32768 })
+  }
+  // Below the floor clamps up; fractional KB floors to whole KB.
+  assert.deepEqual(resolveDocBudget({ fileKB: 0.5 }), { fileBytes: 1024, totalBytes: 32768 })
+  assert.deepEqual(resolveDocBudget({ fileKB: 16.9 }), { fileBytes: 16384, totalBytes: 32768 })
+})
+
+test('parseBudgetDraft accepts blank as inherit and reports bad or oversized input', () => {
+  assert.deepEqual(parseBudgetDraft(null), { ok: true, budgets: {} })
+  assert.deepEqual(parseBudgetDraft({ fileKB: '', totalKB: '   ' }), { ok: true, budgets: {} })
+  assert.deepEqual(parseBudgetDraft({ fileKB: '16' }), { ok: true, budgets: { fileKB: 16 } })
+  assert.deepEqual(parseBudgetDraft({ fileKB: 16, totalKB: 64 }), { ok: true, budgets: { fileKB: 16, totalKB: 64 } })
+  assert.deepEqual(parseBudgetDraft({ fileKB: '128', totalKB: '512' }), {
+    ok: true,
+    budgets: { fileKB: 128, totalKB: 512 },
+  })
+  assert.deepEqual(parseBudgetDraft({ fileKB: '129' }), { ok: false, errors: { file: 'too-large', total: null } })
+  assert.deepEqual(parseBudgetDraft({ totalKB: '513' }), { ok: false, errors: { file: null, total: 'too-large' } })
+  for (const bad of ['0', 'abc', '-1', '1.5', '']) {
+    const result = parseBudgetDraft({ fileKB: bad })
+    if (bad === '') assert.equal(result.ok, true, 'blank inherits')
+    else assert.deepEqual(result.errors, { file: 'bad-number', total: null }, `fileKB=${bad} must be rejected`)
+  }
+})
+
+test('planDocBudget honours an explicit budget', () => {
+  const text = 'x'.repeat(6000)
+  const plan = planDocBudget([{ path: 'a.md', text }], { fileBytes: 2048, totalBytes: 1024 * 1024 })
+  assert.equal(plan.entries[0].limit, 2048)
+  assert.equal(plan.entries[0].status, 'truncated')
+  assert.equal(plan.usedBytes, 2048)
+
+  const totalOnly = planDocBudget(
+    [
+      { path: 'a.md', text: 'a'.repeat(1200) },
+      { path: 'b.md', text: 'b'.repeat(1000) },
+    ],
+    { fileBytes: 8192, totalBytes: 2000 },
+  )
+  assert.equal(totalOnly.entries[1].status, 'truncated')
+  assert.equal(totalOnly.usedBytes, 2000)
+})
+
+test('renderDocBodies echoes the effective budget in its header and markers', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/big.md', 'x'.repeat(9000) + '\n')
+    const text = await renderDocBodies(mockFs(), root, ['docs/big.md'], { budget: { fileBytes: 4096, totalBytes: 65536 } })
+    assert.match(text, /单文件上限 4KB，正文合计上限 64KB/)
+    assert.match(text, /正文已截断，仅注入前 4KB/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('evaluateDocConfig applies the draft budget and reports budget errors', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(5000))
+    const overridden = await evaluateDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '4' },
+    })
+    assert.equal(overridden.ok, true)
+    assert.deepEqual(overridden.value.budgets, { fileKB: 4 })
+    assert.equal(overridden.value.budget.fileMax, 4096)
+    assert.equal(overridden.value.files[0].status, 'truncated')
+    assert.deepEqual(overridden.value.budgetDefaults, { fileKB: 8, totalKB: 32 })
+
+    const inherited = await evaluateDocConfig(mockFs(), root, { root: 'docs', files: ['docs/a.md'] })
+    assert.equal(inherited.value.budgets, null, 'blank budgets are not persisted')
+    assert.equal(inherited.value.budget.fileMax, 8192)
+
+    const settingsBudget = await evaluateDocConfig(
+      mockFs(),
+      root,
+      { root: 'docs', files: ['docs/a.md'] },
+      { budget: { fileKB: 16, totalKB: 64 } },
+    )
+    assert.equal(settingsBudget.value.budget.fileMax, 16384)
+    assert.deepEqual(settingsBudget.value.budgetDefaults, { fileKB: 16, totalKB: 64 })
+
+    const badBudget = await evaluateDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '129' },
+    })
+    assert.equal(badBudget.ok, false)
+    assert.deepEqual(badBudget.budgetErrors, { file: 'too-large', total: null })
+    assert.deepEqual(badBudget.details, [])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('readDocConfigSnapshot echoes the stored budget and the settings default', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(5000))
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 4 } })
+    const snapshot = await readDocConfigSnapshot(mockFs(), root, { budget: { fileKB: 16, totalKB: 64 } })
+    assert.deepEqual(snapshot.budgets, { fileKB: 4 })
+    assert.deepEqual(snapshot.budgetDefaults, { fileKB: 16, totalKB: 64 })
+    assert.equal(snapshot.budget.fileMax, 4096, 'the project override wins over the setting')
+    assert.equal(snapshot.budget.totalMax, 65536, 'the untouched total inherits the setting')
+    assert.equal(snapshot.files[0].status, 'truncated')
+
+    // A junk stored budget is reported as "not overridden", matching what the
+    // resolver will honour.
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 'huge', totalKB: 0 } })
+    const junk = await readDocConfigSnapshot(mockFs(), root, { budget: { fileKB: 16 } })
+    assert.equal(junk.budgets, null)
+    assert.equal(junk.budget.fileMax, 16384)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('saveProjectDocConfig writes a single override and drops the key when both fields are blank', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', '# A\n')
+    const first = await saveProjectDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '16' },
+    })
+    assert.equal(first.ok, true)
+    const firstParsed = JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8'))
+    assert.deepEqual(firstParsed.budgets, { fileKB: 16 })
+    assert.deepEqual(first.value.budgets, { fileKB: 16 })
+
+    const second = await saveProjectDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '16', totalKB: '64' },
+    })
+    assert.equal(second.ok, true)
+    assert.deepEqual(JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8')).budgets, {
+      fileKB: 16,
+      totalKB: 64,
+    })
+
+    const cleared = await saveProjectDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '', totalKB: '' },
+    })
+    assert.equal(cleared.ok, true)
+    const clearedParsed = JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8'))
+    assert.equal('budgets' in clearedParsed, false, 'blank inputs must remove the override')
+    assert.deepEqual(clearedParsed.files, ['docs/a.md'])
+    assert.equal(cleared.value.budgets, null)
+
+    const rejected = await saveProjectDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { totalKB: '513' },
+    })
+    assert.equal(rejected.ok, false)
+    assert.deepEqual(rejected.budgetErrors, { file: null, total: 'too-large' })
+    assert.equal('budgets' in JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8')), false)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('a files-only save neither drops nor resurrects a stored budget override', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', '# A\n')
+    seed(root, 'docs/b.md', '# B\n')
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 4 } })
+
+    // No `budgets` key in the draft at all = "not decided" → keep the override.
+    const saved = await saveProjectDocConfig(mockFs(), root, { root: 'docs', files: ['docs/b.md'] })
+    assert.equal(saved.ok, true)
+    const parsed = JSON.parse(readFileSync(path.join(root, '.trellis', 'doc.json'), 'utf8'))
+    assert.deepEqual(parsed.budgets, { fileKB: 4 })
+    assert.deepEqual(parsed.files, ['docs/b.md'])
+    assert.equal(saved.value.budget.fileMax, 4096, 'the preserved override stays in effect')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('a preview that says nothing about budgets mirrors the stored override', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(5000))
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 4 } })
+
+    const silent = await evaluateDocConfig(mockFs(), root, { root: 'docs', files: ['docs/a.md'] })
+    assert.equal(silent.ok, true)
+    assert.equal(silent.value.budget.fileMax, 4096, 'preview must match the injection, not the setting')
+    assert.equal(silent.value.budgets, null, 'but it must not claim the override as its own draft')
+
+    // An explicit clear switches the preview to the settings default.
+    const cleared = await evaluateDocConfig(mockFs(), root, {
+      root: 'docs',
+      files: ['docs/a.md'],
+      budgets: { fileKB: '', totalKB: '' },
+    })
+    assert.equal(cleared.value.budget.fileMax, 8192)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('resolveDocBudget never lets the per-file cap exceed the total cap', () => {
+  // 128/8 would otherwise render 「单文件上限 128KB，正文合计上限 8KB」.
+  assert.deepEqual(resolveDocBudget({ fileKB: 128, totalKB: 8 }), { fileBytes: 8192, totalBytes: 8192 })
+  assert.deepEqual(resolveDocBudget({ fileKB: 64, totalKB: 16 }), { fileBytes: 16384, totalBytes: 16384 })
+  assert.deepEqual(resolveDocBudget({ fileKB: 16, totalKB: 64 }), { fileBytes: 16384, totalBytes: 65536 })
+})
+
+test('the snapshot echoes a CLAMPED override so the editor cannot prefill an invalid row', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(5000))
+    // Hand-written values the resolver honours but the input validator would
+    // otherwise reject: 1024KB clamps to the 128KB hard cap AND to the 64KB
+    // total; 4.5KB floors. The echo must be the value actually injected.
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 1024 } })
+    const clamped = await readDocConfigSnapshot(mockFs(), root, { budget: { fileKB: 16, totalKB: 64 } })
+    assert.deepEqual(clamped.budgets, { fileKB: 64 })
+    assert.equal(clamped.budget.fileMax, 64 * 1024)
+    assert.equal(parseBudgetDraft({ fileKB: String(clamped.budgets.fileKB) }).ok, true, 'the prefill must validate')
+
+    writeConfig(root, { root: 'docs', files: ['docs/a.md'], budgets: { fileKB: 4.5 } })
+    const floored = await readDocConfigSnapshot(mockFs(), root)
+    assert.deepEqual(floored.budgets, { fileKB: 4 })
+    assert.equal(floored.budget.fileMax, 4096)
+    assert.equal(parseBudgetDraft({ fileKB: String(floored.budgets.fileKB) }).ok, true)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('file entries carry the limit that was actually applied', async () => {
+  const root = tempRoot()
+  try {
+    seed(root, 'docs/a.md', 'a'.repeat(6000))
+    seed(root, 'docs/b.md', 'b'.repeat(6000))
+    writeConfig(root, { root: 'docs', files: ['docs/a.md', 'docs/b.md'], budgets: { totalKB: 10 } })
+    const snapshot = await readDocConfigSnapshot(mockFs(), root)
+    assert.deepEqual(snapshot.files.map((file) => file.status), ['full', 'truncated'])
+    assert.equal(snapshot.files[1].limit, 10240 - 6000, 'the second file is cut by what is left of the total')
+    assert.equal(snapshot.files[1].injectedBytes, 4240)
+
+    const preview = await evaluateDocConfig(mockFs(), root, { root: 'docs', files: ['docs/a.md', 'docs/b.md'] })
+    assert.equal(preview.value.files[1].limit, snapshot.files[1].limit, 'preview and snapshot agree on the applied limit')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('formatBudgetKB floors instead of rounding up and keeps sub-KB in bytes', () => {
+  assert.equal(formatBudgetKB(8192), '8KB')
+  assert.equal(formatBudgetKB(4096), '4KB')
+  assert.equal(formatBudgetKB(5000), '4.8KB')
+  assert.equal(formatBudgetKB(1000), '1000B')
+  assert.equal(formatBudgetKB(1100), '1KB')
+  assert.equal(formatBudgetKB(0), '0B')
 })
