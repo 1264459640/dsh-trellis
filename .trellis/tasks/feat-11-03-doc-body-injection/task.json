@@ -1,6 +1,6 @@
 {
   "title": "doc.json 注入改为正文（预算截断）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
