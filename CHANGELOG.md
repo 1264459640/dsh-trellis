@@ -12,6 +12,26 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.5.1 — 2026-11-03
+
+## 功能
+
+- **规范文档注入预算支持自定义配置**：
+  - 原先规范文档注入模型的上限是写死的（单文件 8KB、总计 32KB），较长的文档会被截断；
+  - 现在允许在插件设置或「项目规范」界面中自由设置大小（单位为 KB），并设有安全上下限，防止内容过长撑爆上下文；
+  - 界面会直观展示预算占用情况，修改保存后即时生效。
+
+---
+
+## Features
+
+- **Configurable Spec Document Injection Budget**:
+  - Replaced the hardcoded injection limits (8KB per file / 32KB total) with user-configurable settings;
+  - Budget can now be adjusted in settings or the Project Specs view, with built-in min/max limits to prevent context overflow;
+  - Displays real-time budget usage and applies changes immediately upon saving.
+
+---
+
 ## v0.5.0 — 2026-11-03
 
 ## 功能
