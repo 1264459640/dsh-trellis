@@ -1,6 +1,6 @@
 {
   "title": "注入预算可由用户自定义（设置全局默认 + doc.json 逐项目覆盖）",
-  "status": "in_progress",
+  "status": "completed",
   "work": {
     "type": "feat",
     "mode": "standard",
