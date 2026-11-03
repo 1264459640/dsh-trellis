@@ -12,6 +12,46 @@ dsh-trellis 各版本发布日志汇总，同时作为后续 Release Notes 的**
 
 ---
 
+## v0.5.0 — 2026-11-03
+
+## 功能
+
+- **支持自定义工程规范文档路径，正文按预算直接注入提示词**（feat-11-03-doc-body-injection / feat-11-02-custom-doc-index-setup-spec）：
+  - **打破目录限制**：针对旧版必须将规范存放在固定内置目录、无法直接复用项目既有架构文档与开发指南的痛点，新增自定义规范文档路径能力，项目可自由指定已有文档作为工程规范；
+  - **正文直接感知**：改变旧版仅向模型提供路径索引、模型容易跳过查阅导致规范失效的问题，将自定义规范的正文直接装配至上下文提示词中，让模型在编写代码前无需手动查阅即可直观遵循规约；
+  - **双层预算与安全兜底**：避免长文档无节制注入冲垮上下文或造成 Token 浪费，设置单文件 8KB、总计 32KB 的预算上限，按行边界安全截断并保留补读指引；未配置自定义路径时平滑兼容原内置目录扫描。
+
+- **新增项目级工程规范可视化编辑视图**（feat-11-03-doc-config-ui）：
+  - **降低配置门槛**：针对自定义规范路径手动编辑配置文件易出错、写错路径或格式时缺乏即时反馈的痛点，在会话顶栏新增“项目规范”独立一级视图（与对话、轨迹、Git 并列）；
+  - **预算与状态透明化**：可视化展示各文档的实际读取状态与预算占用进度条，清晰呈现完整、截断、超限等状态，消除注入黑盒；
+  - **就地校验与即时生效**：提供文档相对路径的即时合法性检查（拦截非法路径与不存在的文件），支持一键导入既有规范初稿；保存后即时生效无需重启。
+
+## 修复
+
+- **跨平台任务产物保存异常修复**（issue-artifact-path-join）：
+  - **多平台路径兼容**：修复 Windows 与跨盘符等特殊环境下，路径拼接逻辑可能将相对路径误解析到驱动器根目录、导致安全检查误判“越权”并阻断保存的问题，确保任务产物在所有操作系统下稳定落盘。
+
+---
+
+## Features
+
+- **Custom Spec Document Paths with Budgeted Content Injection** (feat-11-03-doc-body-injection / feat-11-02-custom-doc-index-setup-spec):
+  - **Eliminate directory lock-in**: Overcame the limitation where specs were forced into a fixed internal directory; projects can now designate their own existing documentation, style guides, and architecture files as governing specs;
+  - **Direct prompt-level awareness**: Addressed the issue where models frequently skipped checking path-only indexes; document bodies are now directly assembled into the prompt context so models adhere to conventions without manual tool calls;
+  - **Two-tier budget caps**: Prevented context blowup and token waste by enforcing hard caps (8KB per file, 32KB total) with safe line-boundary truncation and follow-up read notes; cleanly falls back to legacy directory scanning when unconfigured.
+
+- **Project-Level Spec Configuration Visual View** (feat-11-03-doc-config-ui):
+  - **Streamlined configuration workflow**: Solved the pain point of hand-editing config files without validation feedback by adding a top-level "Project Specs" view in the conversation header alongside Chat, Trajectory, and Git;
+  - **Transparent budget and status metering**: Displays live budget usage progress bars and file resolution statuses (full, truncated, over-budget, missing), eliminating opacity around prompt injection;
+  - **In-place validation and instant reload**: Validates path syntax and file existence on the fly with one-click migration from legacy specs; changes take effect immediately upon saving without requiring a reload.
+
+## Fixed
+
+- **Cross-Platform Task Artifact Resolution** (issue-artifact-path-join):
+  - **Multi-platform path compatibility**: Fixed an issue where path resolution on Windows or multi-drive setups could inadvertently reset relative paths back to the drive root, triggering false-positive directory escape security checks and failing artifact writes.
+
+---
+
 ## v0.4.7 — 2026-10-25
 
 ## 修复
