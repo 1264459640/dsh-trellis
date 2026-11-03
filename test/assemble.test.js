@@ -237,3 +237,91 @@ test('the spec index is memoized: a second assembly does no fs work', async () =
     rmSync(root, { recursive: true, force: true })
   }
 })
+function seedDocFile(root, rel, content = `# ${rel}\n`) {
+  const abs = path.join(root, rel)
+  mkdirSync(path.dirname(abs), { recursive: true })
+  writeFileSync(abs, content)
+}
+
+function writeDocConfig(root, value) {
+  seedDocFile(root, '.trellis/doc.json', typeof value === 'string' ? value : JSON.stringify(value))
+}
+
+test('assemble injects the configured files as bodies in order', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-assemble-docfiles-'))
+  try {
+    seedSpec(root, ['guides/index.md'])
+    seedDocFile(root, 'docs/a.md', '# A body\n')
+    seedDocFile(root, 'docs/b.md', '# B body\n')
+    writeDocConfig(root, { root: 'docs', files: ['docs/b.md', 'docs/a.md'] })
+    const assemble = await mountAssembler({ cwd: root })
+    const out = await assemble()
+    const section = out.sections.find((s) => s.name === SPEC_INDEX_SECTION)
+    assert.ok(section, 'trellis:spec-index must be injected')
+    assert.match(section.text, /## 文件：docs\/b\.md/)
+    assert.match(section.text, /## 文件：docs\/a\.md/)
+    assert.ok(section.text.indexOf('## 文件：docs/b.md') < section.text.indexOf('## 文件：docs/a.md'))
+    assert.match(section.text, /# B body/)
+    assert.match(section.text, /# A body/)
+    assert.doesNotMatch(section.text, /\.trellis\/spec\/guides\/index\.md/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('assemble turns an invalid files config into a diagnostic without legacy fallback', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-assemble-docbad-'))
+  try {
+    seedSpec(root, ['guides/index.md'])
+    writeDocConfig(root, '{ invalid json')
+    const assemble = await mountAssembler({ cwd: root })
+    const out = await assemble()
+    const section = out.sections.find((s) => s.name === SPEC_INDEX_SECTION)
+    assert.ok(section, 'the diagnostic must use the same section')
+    assert.match(section.text, /配置无效/)
+    assert.match(section.text, /不会回退读取旧/)
+    assert.doesNotMatch(section.text, /\.trellis\/spec\/guides\/index\.md/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('assemble keeps the custom files whitelist across subdirectory sessions', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-assemble-docsub-'))
+  try {
+    seedDocFile(root, 'docs/a.md')
+    writeDocConfig(root, { files: ['docs/a.md'] })
+    const sub = path.join(root, 'packages', 'app')
+    mkdirSync(sub, { recursive: true })
+    const assemble = await mountAssembler({ cwd: sub, allowlist: [root] })
+    const out = await assemble()
+    const section = out.sections.find((s) => s.name === SPEC_INDEX_SECTION)
+    assert.ok(section)
+    assert.match(section.text, /## 文件：docs\/a\.md/)
+    assert.ok(section.text.includes(root.replace(/\\/g, '/')) || section.text.includes(root))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+test('a configured files whitelist is memoized: repeat assembly does no fs work', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-assemble-docmemo-'))
+  try {
+    seedDocFile(root, 'docs/a.md')
+    writeDocConfig(root, { files: ['docs/a.md'] })
+    const assemble = await mountAssembler({ cwd: root })
+
+    const first = await assemble()
+    const afterCold = fsCalls.n
+    assert.ok(afterCold > 0)
+    assert.match(first.sections.find((s) => s.name === SPEC_INDEX_SECTION).text, /docs\/a\.md/)
+
+    const second = await assemble()
+    assert.equal(fsCalls.n, afterCold, 'configured files must use the same zero-fs memo path')
+    assert.equal(
+      second.sections.find((s) => s.name === SPEC_INDEX_SECTION).text,
+      first.sections.find((s) => s.name === SPEC_INDEX_SECTION).text,
+    )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})

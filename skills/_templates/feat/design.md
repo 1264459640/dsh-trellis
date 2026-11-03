@@ -26,7 +26,7 @@ execution_lane: standard   # quick | standard
 - （实现路径权衡，为什么选择该方案）
 
 ## 验证计划
-- 每项验收标准对应的**可执行验证命令**（编译/测试/运行入口，按项目 `.trellis/spec/` 质量门）：
+- 每项验收标准对应的**可执行验证命令**（编译/测试/运行入口，按项目配置的规范文件与质量门）：
   1. 
 - 若存在需要独立测试验证的步骤，请在任务步骤清单（`trellis_task_update` 的 `steps`/`step`）中
   标注 `verification: 'ai'`；若存在需要人工验收的步骤，标注 `verification: 'human'`。

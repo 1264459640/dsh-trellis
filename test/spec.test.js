@@ -1,15 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, realpathSync, statSync, rmSync, symlinkSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, realpathSync, statSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   SPEC_ROOT_PREFIX,
   SPEC_INDEX_SECTION,
+  MAX_DOC_FILE_BYTES,
+  MAX_DOC_TOTAL_BYTES,
   compareSpecPaths,
   listProjectSpecs,
   formatSpecIndexInstruction,
   appendSpecInstruction,
+  renderDocBodies,
 } from '../lib/spec.js'
 import { READONLY_SECTION, appendReadonlyInstruction } from '../lib/readonly.js'
 
@@ -34,6 +37,9 @@ function mockFs(root) {
         type: entry.isDirectory() ? 'directory' : entry.isFile() ? 'file' : 'other',
         target: target(path.join(t.targetKey, entry.name)),
       }))
+    },
+    async readText(t) {
+      return statSync(t.targetKey).isFile() ? readFileSync(t.targetKey, 'utf8') : ''
     },
     // Mirrors dsh-fs FileSystem.contains: a junction/symlink that resolves
     // outside the parent is NOT contained.
@@ -283,5 +289,94 @@ test('spec index coexists with the read-only section in every authorization phas
       expectedReadonly ? 1 : 0,
       `${phase}: unexpected read-only section count`,
     )
+  }
+})
+
+test('renderDocBodies injects configured bodies in order under the project root', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-bodies-'))
+  try {
+    writeFileSync(path.join(root, 'b.md'), '# B\n\nrule B\n')
+    writeFileSync(path.join(root, 'a.md'), '# A\n\nrule A\n')
+    const text = await renderDocBodies(mockFs(root), root, ['b.md', 'a.md'])
+    assert.match(text, /Trellis 项目文档正文/)
+    assert.match(text, /路径相对项目根/)
+    assert.ok(text.indexOf('## 文件：b.md') < text.indexOf('## 文件：a.md'), 'configured order is the priority order')
+    assert.match(text, /rule B/)
+    assert.match(text, /rule A/)
+    assert.doesNotMatch(text, /undefined|null/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('renderDocBodies clamps one file to the per-file budget on a line boundary', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-clamp-'))
+  try {
+    const lines = Array.from({ length: 400 }, (_, i) => `- 第 ${i} 行：这是一条用于验证截断行为的较长规则说明。`)
+    writeFileSync(path.join(root, 'big.md'), lines.join('\n'))
+    const text = await renderDocBodies(mockFs(root), root, ['big.md'])
+    assert.match(text, /正文已截断，仅注入前 8KB/)
+    assert.match(text, /read big\.md/)
+    const block = text.split('## 文件：big.md\n')[1].split('\n\n（正文已截断')[0]
+    assert.ok(Buffer.byteLength(block, 'utf8') <= MAX_DOC_FILE_BYTES, 'the body must respect the per-file cap')
+    assert.ok(!block.includes('\uFFFD'), 'a cut must not leave a broken multi-byte character')
+    assert.ok(block.endsWith('\n'), 'the cut must land on a line boundary')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('renderDocBodies stops at the total budget and marks the rest path-only', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-total-'))
+  try {
+    const exact = 'x'.repeat(MAX_DOC_FILE_BYTES - 1) + '\n'
+    const files = [0, 1, 2, 3, 4].map((i) => `f${i}.md`)
+    for (const file of files) writeFileSync(path.join(root, file), exact)
+    const text = await renderDocBodies(mockFs(root), root, files)
+    assert.match(text, /## 文件：f4\.md\n（超出注入预算，未注入正文；完整内容请 read f4\.md）/)
+    assert.equal((text.match(/超出注入预算/g) || []).length, 1, 'only the file past the budget degrades')
+    assert.ok(text.length > MAX_DOC_TOTAL_BYTES, 'the first four files are still injected in full')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('renderDocBodies isolates a read failure to its own file', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-readfail-'))
+  try {
+    writeFileSync(path.join(root, 'good.md'), '# good\n')
+    writeFileSync(path.join(root, 'bad.md'), '# bad\n')
+    const base = mockFs(root)
+    const fs = {
+      ...base,
+      async readText(target, signal) {
+        if (String(target.targetKey).endsWith('bad.md')) throw new Error('EACCES')
+        return base.readText(target, signal)
+      },
+    }
+    const text = await renderDocBodies(fs, root, ['bad.md', 'good.md'])
+    assert.match(text, /## 文件：bad\.md\n（读取失败，未注入正文；请手动 read bad\.md）/)
+    assert.match(text, /## 文件：good\.md\n# good/)
+    assert.doesNotMatch(text, /- bad\.md/, 'a single failure must not degrade the whole list to paths')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('renderDocBodies falls back to the path-only whitelist when every read fails', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-doc-allfail-'))
+  try {
+    writeFileSync(path.join(root, 'a.md'), '# a\n')
+    const base = mockFs(root)
+    const fs = { ...base, async readText() { throw new Error('EACCES') } }
+    const text = await renderDocBodies(fs, root, ['a.md'])
+    assert.match(text, /- a\.md/)
+    assert.doesNotMatch(text, /## 文件：a\.md/)
+
+    // A backend without readText cannot inject bodies at all; keep the paths.
+    const bare = await renderDocBodies({ resolve: async () => ({}) }, root, ['a.md'])
+    assert.match(bare, /- a\.md/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
   }
 })

@@ -82,9 +82,11 @@
 7. **工程规范索引（`trellis:spec-index`）＝ 免 workflow.md 的 spec 注入通道**（feat-10-22 沉淀）：
    本插件不再创建或注入 `.trellis/workflow.md`（项目级 `[workflow-state:*]` 覆盖块**仍然读取**），
    因此"项目带 `.trellis/spec/`"这一事实不能只靠面包屑传递。
-   - **装配期注入**：`system-prompt/assemble` 在命中 allowlist 且项目有 `.trellis/spec/` 时追加
-     `trellis:spec-index` 段（`lib/spec.js`：`listProjectSpecs` + `formatSpecIndexInstruction` +
-     `appendSpecInstruction`）。**只注入索引（路径 + 先读约束），绝不注入正文**——正文由模型按需 read。
+   - **装配期注入**：`system-prompt/assemble` 在命中 allowlist 后追加 `trellis:spec-index` 段
+     （`lib/spec.js` + `appendSpecInstruction`），分两条分支：
+     存在 `.trellis/doc.json` 时按 `files` 注入**正文**（`renderDocBodies`；单文件 8KB、总量 32KB，
+     超限截断并标注「已截断/超出预算 + read 路径」）；无配置时仍走 `.trellis/spec/**` **索引**
+     （路径 + 先读约束，不注入正文）。
    - **与只读策略解耦**：spec 索引是领域知识而非写保护，由独立开关 `injectSpecIndex`（默认 true）控制，
      **不得**挂在 `enforceReadonlyPlanning` 之下。
    - **路径必须有根锚点**：`matchAllowlist` 是祖先匹配，会话 cwd 可能是子目录，渲染必须带
@@ -136,3 +138,22 @@
 - `trellis_artifact_update` 的默认 slug 跟随**会话绑定任务**，不一定是本次正在推进的任务
   （证据：feat-09-07 曾把 design.md 误写入绑定任务 trellis-right-phase-panel，靠 `git checkout`
   还原）。写产物时若会话绑定任务 ≠ 目标任务，必须显式传 `slug`，否则会污染其他任务目录。
+
+## 项目文档入口（feat-11-02-custom-doc-index-setup-spec 沉淀）
+
+1. **`.trellis/doc.json` 的 `files` 是运行时注入白名单**：每项必须是项目根相对的
+   Markdown 完整路径；支持多个文件，按配置顺序注入**正文**，归一化后去重。目录永远不进入提示词。
+   正文受双预算约束（`MAX_DOC_FILE_BYTES = 8KB`、`MAX_DOC_TOTAL_BYTES = 32KB`）：超限必须截断并
+   标注「已截断/超出预算 + read 路径」，读取失败同样标注路径；禁止静默省略或悄悄降级为纯路径。
+2. **无配置时保留旧扫描**：不存在 `.trellis/doc.json` 时继续扫描 `.trellis/spec/**/*.md`。
+   显式配置后只认 files，不回退旧目录；任一 files 项无效时整组配置无效，并注入固定诊断
+   （`DOC_CONFIG_ERROR_INSTRUCTION`），不抛错中断 assembly。
+3. **`root` 只是 Skill 元数据**：默认 `.trellis/spec`，供 bootstrap/update-spec 做文档发现
+   与沉淀；不得用它拼接或过滤 files，也不得让它改变运行时注入结果。
+4. **bootstrap 分支**：`trellis-spec-bootstrap` 的迁移分支只写 `.trellis/doc.json`，不改业务
+   Docs；初始化分支保留最小 Spec 骨架，并把实际创建、需注入的文件写入 files。
+5. **files 必须随新增规范同步维护**：`trellis-update-spec` 新建需长期注入的文档时，必须把
+   完整相对路径加入 files；只更新已有文件正文无需改配置。归属不明时询问用户，禁止静默
+   写回旧 Spec。
+6. **不要回退为目录扫描**：自定义 files 只支持明确文件，不新增 root 递归扫描、多 root 或
+   目录注入；需要目录内新文件时由 Skill 显式加入 files。

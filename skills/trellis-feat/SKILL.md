@@ -70,7 +70,7 @@ epic/多交付物 → parent + child tasks（父任务管集成验收）。
 | design approved；planning 产物齐 + 人卡通过 | 规划期用 `trellis_task_update` 录入 `steps`（含验收与 `verification`）；写 `task.json.status=in_progress` | 进入 impl |
 | in_progress；代码未完成 | impl | `trellis-before-dev` → 按 `task.json.steps` 逐步实现（可派实现子代理） |
 | 实现完成；review 非 passed | review | **派独立子代理**写 `review.md`；机械自修可另用 `trellis-check` |
-| review 过；check 未通过 | check | 派 `trellis-check`，按项目 `.trellis/spec/` 质量门验证；将结果写入 `review.md` |
+| review 过；check 未通过 | check | 派 `trellis-check`，按项目配置的规范文件与质量门验证；将结果写入 `review.md` |
 | check 通过 | finish | `trellis-update-spec`（如有）→ commit → `trellis-finish-work` / archive |
 
 **Quick 路径**：prd（可轻）→（可选极简 design）→ 写 `status=in_progress` → impl → check/review 精简 → finish。
@@ -112,7 +112,7 @@ review.md
 
 - 实现前：`trellis-before-dev`（读项目 spec 与已评审产物）。
 - 实现后：`trellis-check`（对照 prd 验收 + 相关 spec）。
-- 新约定：`trellis-update-spec`，写入 `.trellis/spec/`（含 `decisions/`）。
+- 新约定：`trellis-update-spec`，按 `.trellis/doc.json` 的 files/root 找到权威文档；无配置时按 root 默认目录，新增需注入文档同步 files。
 
 ## 退出
 

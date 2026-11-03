@@ -35,7 +35,7 @@ Trellis 核心三类工作流。
    若工作区存在与本任务无关的未提交改动，可通过 `modified_files` 声明任务真实改动文件，
    局部 Git 校验（清单内文件须已提交；清单外改动放行并告警）。
 5. 细阶段用 `work.stage` + 产物文件恢复；**仓库产物优先于聊天历史**。
-6. 写代码前读 `.trellis/spec/`（对应分层 + `guides/` 思考指南）。
+6. 写代码前读项目配置的规范入口：有 `.trellis/doc.json` 时按 files 清单与导航阅读；无配置时按 root 默认目录读取对应规范与 `guides/`。
 7. 规划/需求澄清加载 `trellis-brainstorm`；实现前 `trellis-before-dev`；质量门 `trellis-check`；
    收工走原生 Trellis 生命周期（commit → `trellis-finish-work` / `trellis_task_archive`）；沉淀 `trellis-update-spec`。
 8. 人卡点未通过时，禁止写 `status=in_progress`（或禁止进入写码阶段）。

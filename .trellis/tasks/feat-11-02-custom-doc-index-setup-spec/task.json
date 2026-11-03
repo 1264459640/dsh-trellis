@@ -1,0 +1,74 @@
+{
+  "title": "支持可配置文档文件注入与 Spec 迁移初始化",
+  "status": "in_progress",
+  "work": {
+    "type": "feat",
+    "mode": "standard",
+    "stage": "check",
+    "execution_lane": "standard"
+  },
+  "description": "通过 .trellis/doc.json 的 files 配置运行时注入文件，并保留 root 作为 Skill 的默认文档根元数据；扩展 bootstrap 迁移/初始化并同步相关工作流。",
+  "steps": [
+    {
+      "id": "doc-files-injection",
+      "title": "实现 files 多文件注入并隔离 root 元数据",
+      "status": "completed",
+      "spec": "修改 lib/resolve.js、lib/spec.js、lib/index.js；补 test/spec.test.js 与 test/assemble.test.js，证明 root 不影响注入。",
+      "acceptance": [
+        "无配置保持旧扫描，显式 files 只注入清单文件",
+        "多个项目根相对 Markdown 文件按顺序独占注入并去重，root 不参与解析",
+        "任一 files 配置或文件无效时不扫描旧 Spec，并注入短诊断",
+        "TTL 内 memo 零额外 fs，相关测试通过"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "node --test test/assemble.test.js test/doc-config.test.js：27 tests, 27 pass；覆盖无配置兼容、多文件顺序/去重、root 不影响注入、无效配置诊断与不回退、子目录锚定。"
+    },
+    {
+      "id": "bootstrap-migration",
+      "title": "扩展 bootstrap 的迁移、初始化与 root 校验",
+      "status": "completed",
+      "spec": "修改 skills/trellis-spec-bootstrap/SKILL.md，增加多文件迁移、初始化清单和 root 使用规则。",
+      "acceptance": [
+        "迁移分支支持确认主 root 和多个文件并写完整相对路径，只改配置",
+        "初始化分支写默认 root 和实际创建文件清单",
+        "root 在 Skill 使用前校验，已有配置不静默覆盖"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "独立子代理行为验证：迁移 fixture 只新增 .trellis/doc.json（root=docs，files 含跨 root 的 GLOSSARY.md，未改正文/未建 spec）；初始化 fixture 基于真实 src 仅建 Core/Ui 最小骨架并写 3 个实际 files。node --test test/native-steps.test.js：30 pass；skill-contract：4 pass。"
+    },
+    {
+      "id": "workflow-consumers",
+      "title": "同步工作流消费者与 files/root 职责",
+      "status": "completed",
+      "spec": "修改 before-dev、check、update-spec、feat、refactor 与相关模板，保持无配置行为并补齐 files/root 分支。",
+      "acceptance": [
+        "before-dev/check 按 files 读取规范",
+        "update-spec 将 root 作为默认沉淀起点，新建需注入文档同步 files，归属不明会询问",
+        "feat/refactor/模板不再把旧目录描述为唯一质量门"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "skill-contract 4/4 通过；独立子代理验证 update-spec 在 root/files 无法裁定归属时未写入任何文件，并给出 ADR/Domain/Architecture 单一具体问题；before-dev/check/feat/refactor 与模板已改为 files 优先且全量回归 249/249。"
+    },
+    {
+      "id": "docs-and-regression",
+      "title": "补齐文档、行为验证与全量回归",
+      "status": "completed",
+      "spec": "更新 README.md、README_EN.md 与相关规范，执行 Skill 行为验证和完整回归并记录证据。",
+      "acceptance": [
+        "files/root 分工、bootstrap 分支与清单维护在中英文 README 可查",
+        "Skill 行为验证、定向测试、完整 node --test 与 git diff --check 全部通过",
+        "未新增独立 Skill，未修改 FordProject 业务文档"
+      ],
+      "verification": "ai",
+      "verified": true,
+      "verifiedBy": "ai",
+      "verificationNotes": "README.md/README_EN.md 已补 files/root 契约；node --test 249/249 通过；git diff --check clean；bootstrap 迁移/初始化两个独立 fixture 行为验证通过；未写入 E:/Project/FordProject。"
+    }
+  ]
+}

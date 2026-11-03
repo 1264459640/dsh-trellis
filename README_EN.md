@@ -184,10 +184,33 @@ Configure via the Web UI (sidebar **Plugins** icon → **@banana-peeljj12/dsh-tr
 |---|---|---|---|
 | `allowlist` | `string[]` | `[]` | **Project Allowlist**: Absolute paths of enabled workspace roots. Empty disables interception |
 | `enforceReadonlyPlanning` | `boolean` | `false` | **Read-Only Planning**: Strips code modification tools during planning stages when enabled |
-| `injectSpecIndex` | `boolean` | `true` | **Inject Spec Index**: when the project carries `.trellis/spec/`, appends a compact spec index (layered `index.md` paths plus a read-first constraint) to the system prompt, so the model aligns with the engineering specs before proposing or writing code. Only the index is injected, never spec bodies |
+| `injectSpecIndex` | `boolean` | `true` | **Inject project docs**: when `.trellis/doc.json` exists, injects the document **bodies** listed in `files` (8KB per file / 32KB total; anything cut is truncated and marked with its path); without it, the legacy `.trellis/spec/` index scan is preserved |
 | `skipKeywords` | `string[]` | `['no-trellis']` | **Skip Keywords**: Suppresses the per-turn breadcrumb and interception when the user message contains one of these words. The session-level prompt sections (`injectSpecIndex` / `enforceReadonlyPlanning`) are not suppressed per turn — turn them off with their own switches |
 | `injectStep` | `number` | `1` | Breadcrumb prompt injection step index (default: first step of turn) |
 | `inline` | `boolean` | `false` | Enables codex-inline style phase dispatch |
+
+---
+
+## Project Documentation Entry
+
+A project can declare the Markdown files Trellis should read in `.trellis/doc.json`:
+
+```json
+{
+  "root": ".trellis/spec",
+  "files": [
+    ".trellis/spec/guides/index.md",
+    ".trellis/spec/trellis-workflow/task-engine/index.md"
+  ]
+}
+```
+
+- `files`: the runtime injection whitelist. Every entry is a project-relative Markdown file path. Multiple files are supported, injected in order, and deduplicated. **Bodies are injected**, not paths.
+- **Budgets**: at most 8KB per file and 32KB of bodies in total (UTF-8 bytes). Anything over the budget is truncated and marked `truncated / over budget — read <path>` so the model can fetch the rest; unreadable files are marked with their path too.
+- `root`: Skill metadata only. `trellis-spec-bootstrap` and `trellis-update-spec` use it as the default documentation root for discovery and updates. It neither prefixes nor filters `files`, and changing it never changes runtime injection.
+- Without `.trellis/doc.json`, the legacy `.trellis/spec/` scan is preserved (index only, no bodies). Once explicitly configured, unlisted legacy Specs are no longer injected.
+- An invalid explicit config produces a short repair diagnostic instead of silently falling back to the legacy tree.
+- Add any new long-lived injected document to `files`. Existing Docs projects can use the migration branch of `trellis-spec-bootstrap`; new projects use its initialization branch.
 
 ---
 
@@ -200,7 +223,7 @@ dsh-trellis/
 │   ├── task.js             # Task engine: step state machine, verification gates, and audits
 │   ├── skills.js           # Skills provider: provisions standard workflow skills into workspace
 │   ├── breadcrumb.js       # Context builder: extracts focused steps and formats prompts
-│   ├── spec.js             # Spec index: walks .trellis/spec, renders the index and assembles the trellis:spec-index section
+│   ├── spec.js             # Spec index: reads the .trellis/doc.json files whitelist or falls back to .trellis/spec
 │   ├── readonly.js         # Authorization logic: undecided / planning / authorized states
 │   ├── state.js            # State resolution: stage inference, session pointers, slug checks
 │   ├── artifact.js         # Sandboxed writes: whitelisted artifact updates and security checks

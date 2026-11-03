@@ -680,22 +680,24 @@ test('ensureProjectSkills auto-updates bundled skills on plugin version upgrade'
 test('builtin breadcrumbs teach spec conformance in planning and in_progress', () => {
   const planning = composeBreadcrumb('planning', { workflow: '', sourceProject: '/proj' })
   assert.equal(planning.source, 'builtin')
+  assert.match(planning.text, /\.trellis\/doc\.json/)
   assert.match(planning.text, /\.trellis\/spec\//)
-  assert.match(planning.text, /index\.md/)
 
   const inline = composeBreadcrumb('planning-inline', { workflow: '' })
-  assert.match(inline.text, /\.trellis\/spec\//)
+  assert.match(inline.text, /\.trellis\/doc\.json/)
 
   const impl = composeBreadcrumb('in_progress', { workflow: '' })
+  assert.match(impl.text, /\.trellis\/doc\.json/)
   assert.match(impl.text, /\.trellis\/spec\//)
   assert.match(impl.text, /Before editing code/)
 
   const implInline = composeBreadcrumb('in_progress-inline', { workflow: '' })
+  assert.match(implInline.text, /\.trellis\/doc\.json/)
   assert.match(implInline.text, /\.trellis\/spec\//)
 
   // no_task / completed stay clean: no spec nagging where there is nothing to do.
-  assert.doesNotMatch(composeBreadcrumb('no_task', { workflow: '' }).text, /\.trellis\/spec\//)
-  assert.doesNotMatch(composeBreadcrumb('completed', { workflow: '' }).text, /\.trellis\/spec\//)
+  assert.doesNotMatch(composeBreadcrumb('no_task', { workflow: '' }).text, /\.trellis\/doc\.json/)
+  assert.doesNotMatch(composeBreadcrumb('completed', { workflow: '' }).text, /\.trellis\/doc\.json/)
 })
 
 test('a project workflow.md block still wins over the builtin fallback', () => {
@@ -729,7 +731,7 @@ test('formatStepPrompt states the spec pre-read requirement with and without ste
     total: 1,
   })
   assert.match(withSpec, /规范前置（必须）/)
-  assert.match(withSpec, /\.trellis\/spec\//)
+  assert.match(withSpec, /\.trellis\/doc\.json/)
 
   const withoutSpec = formatStepPrompt({
     step: { id: 's2', title: 't', acceptance: ['a'], status: 'in_progress' },
@@ -737,7 +739,7 @@ test('formatStepPrompt states the spec pre-read requirement with and without ste
     total: 1,
   })
   assert.match(withoutSpec, /规范前置/)
-  assert.match(withoutSpec, /\.trellis\/spec\//)
+  assert.match(withoutSpec, /\.trellis\/doc\.json/)
   assert.doesNotMatch(withoutSpec, /规范前置（必须）/)
 })
 
@@ -768,6 +770,29 @@ test('the spec pointer is timing-aware: blocked and verifying steps get the foll
 
 test('formatStepReminder stays a single short line (no spec block on dedup)', () => {
   const reminder = formatStepReminder({ id: 's1', title: 't' })
-  assert.doesNotMatch(reminder, /\.trellis\/spec\//)
+  assert.doesNotMatch(reminder, /\.trellis\/doc\.json/)
   assert.equal(reminder.split('\n').length, 1)
+})
+test('ensureProjectSkills ships and upgrades the bootstrap migration contract', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'trellis-bootstrap-sync-'))
+  try {
+    const fs = mockFs(root)
+    const res = await ensureProjectSkills(fs, root)
+    assert.ok(res.copied.includes('trellis-spec-bootstrap'))
+
+    const skillFile = path.join(root, '.agents', 'skills', 'trellis-spec-bootstrap', 'SKILL.md')
+    const shipped = readFileSync(skillFile, 'utf8')
+    assert.match(shipped, /迁移分支/)
+    assert.match(shipped, /初始化分支/)
+    assert.match(shipped, /\.trellis\/doc\.json/)
+    assert.match(shipped, /files/)
+
+    writeFileSync(skillFile, 'stale bootstrap without migration')
+    writeFileSync(path.join(root, '.agents', 'skills', VERSION_FILE_NAME), '0.1.0')
+    const upgraded = await ensureProjectSkills(fs, root)
+    assert.ok(upgraded.updated.includes('trellis-spec-bootstrap'))
+    assert.match(readFileSync(skillFile, 'utf8'), /迁移分支/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })

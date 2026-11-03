@@ -1,0 +1,11 @@
+{
+  "title": "确认 .trellis/doc.json 的 files 注入是否丢失",
+  "status": "planning",
+  "work": {
+    "type": "issue",
+    "mode": "standard",
+    "stage": "report",
+    "execution_lane": "standard"
+  },
+  "description": "用户反馈：在 FordProject 增加 .trellis/doc.json（自定义文档位置）后，怀疑自动注入（面包屑 / spec-index）能力丢失。需确认 files 清单是否仍注入、注入的是什么内容，以及是否存在真实回归。"
+}
